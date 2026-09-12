@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNAC | Registro y Padrón Oficial</title>
+    <title>UNAC | Registro y Padrón Oficial 2026-B</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        :root { --accent: #ffc107; --dark: #050505; }
+        /* COLOR CIAN ACTUALIZADO */
+        :root { --accent: #00E5FF; --dark: #050505; }
         
         body, html { 
             margin: 0; padding: 0; min-height: 100vh; 
@@ -47,7 +48,7 @@
         /* GLASSMORPHISM */
         .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
         
-        .form-container { width: 100%; height: 700px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(255, 193, 7, 0.2); background: rgba(255,255,255,0.02); }
+        .form-container { width: 100%; height: 700px; border-radius: 20px; overflow: hidden; border: 1px solid rgba(0, 229, 255, 0.2); background: rgba(255,255,255,0.02); }
 
         input[type="text"] {
             width: 100%; max-width: 400px; padding: 18px;
@@ -78,25 +79,25 @@
 </head>
 <body>
 
-    <!-- MENÚ MÓVIL -->
+    <!-- MENÚ MÓVIL (CIAN) -->
     <div id="mobile-menu">
-        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl"><i class="fa-solid fa-xmark"></i></button>
         <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white">Inicio</a>
         <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-white">Rutas</a>
         <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-white">Ticket</a>
-        <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-yellow-500 underline decoration-yellow-500">Registro</a>
+        <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-cyan-400 underline decoration-cyan-400">Registro</a>
         <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-white">Noticias</a>
         <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white">Contacto</a>
     </div>
 
     <div class="main-wrapper">
-        <!-- HEADER -->
+        <!-- HEADER (CIAN) -->
         <header class="flex justify-between items-center relative z-20 animate-fade-up">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
+                <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
                 <div class="flex flex-col text-left leading-none uppercase">
                     <span class="text-[10px] font-black tracking-widest leading-none">UNAC</span>
-                    <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
+                    <span class="text-[9px] text-cyan-400 font-bold">Movilidad</span>
                 </div>
             </div>
 
@@ -109,7 +110,7 @@
                 <a href="contacto.html" class="nav-link">Contacto</a>
             </nav>
             
-            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
+            <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
                 MENU <i class="fa-solid fa-bars-staggered"></i>
             </button>
         </header>
@@ -118,15 +119,15 @@
             
             <!-- PASO 1 -->
             <div class="w-full text-center mb-20 animate-fade-up">
-                <span class="text-yellow-500 text-[10px] font-black uppercase tracking-[5px] mb-2 block">PASO 01: INSCRIPCIÓN</span>
-                <h2 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-8">Formulario de <span class="text-yellow-500">Registro</span></h2>
+                <span class="text-cyan-400 text-[10px] font-black uppercase tracking-[5px] mb-2 block">PASO 01: INSCRIPCIÓN</span>
+                <h2 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-8">Formulario de <span class="text-cyan-400">Registro</span></h2>
                 <div class="form-container glass">
                     <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSc5WSGfVJaDvTaZ4HNSEEim4G-1m3nzOYZlT_UgvzOBfObKew/viewform?embedded=true" width="100%" height="100%" frameborder="0">Cargando...</iframe>
                 </div>
 
-                <!-- NUEVO CUADRITO DE ENLACE DIRECTO (AÑADIDO AQUÍ) -->
+                <!-- ENLACE DIRECTO (CIAN) -->
                 <div class="mt-6 flex justify-center">
-                    <a href="https://forms.gle/UTVuVyzZpcMAAPKd9" target="_blank" rel="noopener noreferrer" class="glass px-6 py-4 border border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 hover:scale-105 transition-all duration-300 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3">
+                    <a href="https://forms.gle/UTVuVyzZpcMAAPKd9" target="_blank" rel="noopener noreferrer" class="glass px-6 py-4 border border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10 hover:scale-105 transition-all duration-300 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i> Link directo al formulario
                     </a>
                 </div>
@@ -135,10 +136,11 @@
             <!-- PASO 2 -->
             <div class="w-full text-center mb-10 animate-fade-up" style="animation-delay: 0.2s;">
                 <div class="w-full h-px bg-white/5 mb-16"></div>
-                <span class="text-yellow-500 text-[10px] font-black uppercase tracking-[5px] mb-2 block">PASO 02: Verificación Oficial 2026-A</span>
-                <h2 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-10">Consulta de <span class="text-yellow-500">Padrón</span></h2>
+                <!-- TEXTO 2026-B ACTUALIZADO -->
+                <span class="text-cyan-400 text-[10px] font-black uppercase tracking-[5px] mb-2 block">PASO 02: Verificación Oficial 2026-B</span>
+                <h2 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-10">Consulta de <span class="text-cyan-400">Padrón</span></h2>
                 
-                <div class="glass p-10 w-full max-w-xl mx-auto text-center mb-8 border-t-2 border-yellow-500/50">
+                <div class="glass p-10 w-full max-w-xl mx-auto text-center mb-8 border-t-2 border-cyan-400/50">
                     <input type="text" id="dniInput" placeholder="N° DE DNI" maxlength="8">
                     <div class="mt-6">
                         <button class="btn-search" id="searchBtn">Verificar Registro</button>
@@ -157,7 +159,7 @@
                     </div>
                 </div>
 
-                <!-- ERROR CORREGIDO CON MENSAJE SOLICITADO -->
+                <!-- ERROR CORREGIDO -->
                 <div id="errorBox" class="glass p-8 w-full max-w-xl mx-auto hidden border-red-500/30">
                     <div class="text-center">
                         <i class="fa-solid fa-circle-xmark text-red-500 text-5xl mb-4"></i>
@@ -173,9 +175,9 @@
         </main>
 
         <footer class="w-full py-10 flex flex-col items-center border-t border-white/5 bg-black/20 mt-10 relative z-20">
-            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
             <span class="text-center text-[9px] text-gray-500 tracking-[1px] text-center px-4 uppercase font-light italic">
-                © 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.
+                © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
             </span>
         </footer>
     </div>
@@ -237,7 +239,8 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
-            globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 4), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.15 }));
+            // COLOR DEL GLOBO 3D A CIAN
+            globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 4), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.15 }));
             scene.add(globe);
             animate();
         }
