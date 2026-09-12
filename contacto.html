@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNAC | Contacto y Delegados</title>
+    <title>UNAC | Contacto y Delegados 2026-B</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        :root { --accent: #ffc107; --dark: #050505; --fire: #ff4500; }
+        /* COLOR CIAN ACTUALIZADO */
+        :root { --accent: #00E5FF; --dark: #050505; --fire: #0077ff; }
         body, html { margin: 0; padding: 0; min-height: 100vh; background-color: var(--dark); font-family: 'Inter', sans-serif; color: #ffffff; overflow-x: hidden; }
 
         /* ANIMACIONES */
@@ -23,9 +24,10 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* RESPLANDOR ACTUALIZADO A COLOR CIAN */
         @keyframes cardGlow {
-            0% { border-color: rgba(255, 193, 7, 0.1); box-shadow: 0 0 5px rgba(255, 193, 7, 0.05); }
-            100% { border-color: rgba(255, 193, 7, 0.5); box-shadow: 0 0 25px rgba(255, 193, 7, 0.2); }
+            0% { border-color: rgba(0, 229, 255, 0.1); box-shadow: 0 0 5px rgba(0, 229, 255, 0.05); }
+            100% { border-color: rgba(0, 229, 255, 0.5); box-shadow: 0 0 25px rgba(0, 229, 255, 0.2); }
         }
 
         .main-wrapper {
@@ -65,11 +67,12 @@
             padding: 3px;
         }
 
+        /* ACTUALIZADO EL "FUEGO" A UN ARO DE ENERGÍA AZUL/CIAN */
         .circle-fire-wrapper::before {
             content: '';
             position: absolute;
             width: 150%; height: 150%;
-            background: conic-gradient(transparent, transparent, #ffc107, #ff4500, #ffc107);
+            background: conic-gradient(transparent, transparent, var(--accent), var(--fire), var(--accent));
             animation: rotateFire 2s linear infinite;
         }
 
@@ -107,23 +110,25 @@
 </head>
 <body oncontextmenu="return false;">
 
+    <!-- MENÚ MÓVIL (CIAN) -->
     <div id="mobile-menu">
-        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl"><i class="fa-solid fa-xmark"></i></button>
         <a href="index.html" class="text-xl font-black uppercase text-white">Inicio</a>
         <a href="rutas.html" class="text-xl font-black uppercase text-white">Rutas</a>
         <a href="ticket.html" class="text-xl font-black uppercase text-white">Ticket</a>
         <a href="registro.html" class="text-xl font-black uppercase text-white">Registro</a>
         <a href="noticias.html" class="text-xl font-black uppercase text-white">Noticias</a>
-        <a href="contacto.html" class="text-xl font-black uppercase text-yellow-500 underline">Contacto</a>
+        <a href="contacto.html" class="text-xl font-black uppercase text-cyan-400 underline decoration-cyan-400">Contacto</a>
     </div>
 
     <div class="main-wrapper">
+        <!-- HEADER (CIAN) -->
         <header class="flex justify-between items-center relative z-20 animate-fade-up">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
+                <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
                 <div class="flex flex-col text-left leading-none uppercase">
                     <span class="text-[10px] font-black tracking-widest leading-none">UNAC</span>
-                    <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
+                    <span class="text-[9px] text-cyan-400 font-bold">Movilidad</span>
                 </div>
             </div>
             <nav class="hidden md:flex gap-8 nav-minimal nav-desktop">
@@ -134,7 +139,7 @@
                 <a href="noticias.html" class="nav-link">Noticias</a>
                 <a href="contacto.html" class="nav-link active-link">Contacto</a>
             </nav>
-            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
+            <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
                 MENU <i class="fa-solid fa-bars-staggered"></i>
             </button>
         </header>
@@ -142,8 +147,8 @@
         <main class="max-w-5xl mx-auto px-4 py-12 flex flex-col items-center">
             
             <div class="text-center mb-16 animate-fade-up">
-                <span class="text-yellow-500 text-[10px] font-black uppercase tracking-[5px] mb-2 block">ATENCIÓN AL ESTUDIANTE</span>
-                <h1 class="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-4">Delegados de <span class="text-yellow-500">Ruta</span></h1>
+                <span class="text-cyan-400 text-[10px] font-black uppercase tracking-[5px] mb-2 block">ATENCIÓN AL ESTUDIANTE</span>
+                <h1 class="text-4xl md:text-6xl font-black uppercase italic tracking-tighter mb-4">Delegados de <span class="text-cyan-400">Ruta</span></h1>
                 <p class="text-gray-400 max-w-2xl mx-auto text-sm font-light leading-relaxed">
                     Comunícate directamente con los delegados encargados de la Ruta Ventanilla para resolver cualquier duda sobre paraderos, cupos o incidencias.
                 </p>
@@ -151,7 +156,7 @@
 
             <!-- GRID DE DELEGADOS -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full mb-20 animate-fade-up">
-                <!-- Antonella CORREGIDO -->
+                <!-- Antonella -->
                 <div class="card-delegate glass">
                     <div class="circle-fire-wrapper">
                         <div class="inner-circle">
@@ -159,7 +164,7 @@
                         </div>
                     </div>
                     <h3 class="text-lg font-black uppercase italic leading-tight mb-1">Antonella Flores</h3>
-                    <p class="text-yellow-500 text-[10px] font-black tracking-widest uppercase mb-2">FCC</p>
+                    <p class="text-cyan-400 text-[10px] font-black tracking-widest uppercase mb-2">FCC</p>
                     <p class="text-white/60 text-[9px] font-bold uppercase mb-3">DELEGADA DE TURNO NOCHE</p>
                     <p class="text-gray-400 text-xs mb-4 italic">✨ 📑 🚌 📈</p>
                     <a href="https://wa.me/51971302428" target="_blank" class="btn-whatsapp">Contactar</a>
@@ -173,7 +178,7 @@
                         </div>
                     </div>
                     <h3 class="text-lg font-black uppercase italic leading-tight mb-1">Sebastian De La Cruz</h3>
-                    <p class="text-yellow-500 text-[10px] font-black tracking-widest uppercase mb-2">FIQ</p>
+                    <p class="text-cyan-400 text-[10px] font-black tracking-widest uppercase mb-2">FIQ</p>
                     <p class="text-white/60 text-[9px] font-bold uppercase mb-3">DELEGADO</p>
                     <p class="text-gray-400 text-xs mb-4 italic">🧪 ⚗️ 🚌 ⚙️</p>
                     <a href="https://wa.me/51917002183" target="_blank" class="btn-whatsapp">Contactar</a>
@@ -187,7 +192,7 @@
                         </div>
                     </div>
                     <h3 class="text-lg font-black uppercase italic leading-tight mb-1">Jefry Cuya</h3>
-                    <p class="text-yellow-500 text-[10px] font-black tracking-widest uppercase mb-2">FIEE</p>
+                    <p class="text-cyan-400 text-[10px] font-black tracking-widest uppercase mb-2">FIEE</p>
                     <p class="text-white/60 text-[9px] font-bold uppercase mb-3">DELEGADO DE TURNO DIA</p>
                     <p class="text-gray-400 text-xs mb-4 italic">⚡ 🔌 🚌 🛠️</p>
                     <a href="https://wa.me/51994052971" target="_blank" class="btn-whatsapp">Contactar</a>
@@ -196,18 +201,18 @@
 
             <!-- TRANSPARENCIA -->
             <div class="w-full max-w-3xl glass p-10 animate-fade-up">
-                <div class="text-center mb-8"><h2 class="text-xl font-black uppercase italic text-yellow-500 tracking-widest">📘 Propósito y Transparencia 🚀</h2></div>
+                <div class="text-center mb-8"><h2 class="text-xl font-black uppercase italic text-cyan-400 tracking-widest">📘 Propósito y Transparencia 🚀</h2></div>
                 <div class="space-y-4">
                     <div class="transparency-item">
-                        <b class="text-yellow-500 text-sm block mb-1 uppercase font-black">Fomentar el Desarrollo e Innovación 💡</b>
+                        <b class="text-cyan-400 text-sm block mb-1 uppercase font-black">Fomentar el Desarrollo e Innovación 💡</b>
                         <p class="text-xs text-gray-300 leading-relaxed">Buscamos optimizar los procesos de transporte mediante herramientas digitales y tecnológicas de vanguardia para beneficio de la comunidad.</p>
                     </div>
                     <div class="transparency-item">
-                        <b class="text-yellow-500 text-sm block mb-1 uppercase font-black">Gestión Académica 🚌</b>
+                        <b class="text-cyan-400 text-sm block mb-1 uppercase font-black">Gestión Académica 🚌</b>
                         <p class="text-xs text-gray-300 leading-relaxed">Facilitar la organización de la movilidad estudiantil de manera eficiente y moderna para todos los usuarios registrados.</p>
                     </div>
                     <div class="transparency-item">
-                        <b class="text-yellow-500 text-sm block mb-1 uppercase font-black">Neutralidad Total 🚫</b>
+                        <b class="text-cyan-400 text-sm block mb-1 uppercase font-black">Neutralidad Total 🚫</b>
                         <p class="text-xs text-gray-300 leading-relaxed">No tenemos fines políticos ni malintencionados. Este espacio es ajeno a cualquier ideología externa a la gestión de servicios universitarios.</p>
                     </div>
                 </div>
@@ -217,8 +222,9 @@
         </main>
 
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/20 mt-10 relative z-20">
-            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
-            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic">© 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <!-- ACTUALIZADO A 2026-B -->
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic">© 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
         </footer>
     </div>
 
@@ -233,7 +239,8 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
-            globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 4), new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.1 }));
+            /* COLOR DEL GLOBO A CIAN */
+            globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 4), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.1 }));
             scene.add(globe);
             animate();
         }
