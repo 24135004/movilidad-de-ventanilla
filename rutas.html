@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNAC | Monitor de Rutas Oficial</title>
+    <title>UNAC | Monitor de Rutas Oficial 2026-B</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        :root { --accent: #ffc107; --dark: #050505; }
+        /* COLOR CIAN ACTUALIZADO */
+        :root { --accent: #00E5FF; --dark: #050505; }
         
         body, html { 
             margin: 0; padding: 0; min-height: 100vh; 
@@ -48,7 +49,7 @@
         /* CARDS GLASS */
         .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
         .route-card { padding: 15px; transition: 0.4s; cursor: pointer; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); }
-        .route-card.active { border-color: var(--accent); background: rgba(255, 193, 7, 0.12); transform: scale(1.02); }
+        .route-card.active { border-color: var(--accent); background: rgba(0, 229, 255, 0.12); transform: scale(1.02); } /* Fondo cyan transparente */
         .route-card.disabled { opacity: 0.4; border-color: #ef4444; }
 
         /* PARADEROS GRID */
@@ -83,11 +84,11 @@
 </head>
 <body>
 
-    <!-- MENÚ MÓVIL ACTUALIZADO -->
+    <!-- MENÚ MÓVIL ACTUALIZADO (CIAN) -->
     <div id="mobile-menu">
-        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-yellow-500 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl"><i class="fa-solid fa-xmark"></i></button>
         <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white">Inicio</a>
-        <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-yellow-500 underline decoration-yellow-500">Rutas</a>
+        <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-cyan-400 underline decoration-cyan-400">Rutas</a>
         <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-white">Ticket</a>
         <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-white">Registro</a>
         <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-white">Noticias</a>
@@ -95,15 +96,15 @@
     </div>
 
     <div class="main-wrapper">
-        <!-- HEADER ACTUALIZADO -->
+        <!-- HEADER ACTUALIZADO (CIAN) -->
         <header class="flex justify-between items-center animate-fade-up relative z-20">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-yellow-500 rounded flex items-center justify-center">
+                <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center">
                     <i class="fa-solid fa-bus text-black text-lg"></i>
                 </div>
                 <div class="flex flex-col text-left leading-none uppercase">
                     <span class="text-[10px] font-black tracking-widest leading-none">UNAC</span>
-                    <span class="text-[9px] text-yellow-500 font-bold">Movilidad</span>
+                    <span class="text-[9px] text-cyan-400 font-bold">Movilidad</span>
                 </div>
             </div>
 
@@ -116,17 +117,16 @@
                 <a href="contacto.html" class="nav-link">Contacto</a>
             </nav>
             
-            <button onclick="toggleMenu()" class="md:hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
+            <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2">
                 MENU <i class="fa-solid fa-bars-staggered"></i>
             </button>
         </header>
 
         <main class="max-w-7xl mx-auto px-4 py-8 flex flex-col items-center">
             
-            <!-- NUEVO TITULO DE SECCIÓN -->
             <div class="text-center mb-10 animate-fade-up">
-                <span class="text-yellow-500 text-[10px] font-black uppercase tracking-[5px] mb-2 block">RECORRIDO Y PARADAS</span>
-                <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-4">Ruta Ventanilla <span class="text-yellow-500">2026-A</span></h1>
+                <span class="text-cyan-400 text-[10px] font-black uppercase tracking-[5px] mb-2 block">RECORRIDO Y PARADAS</span>
+                <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter mb-4">Ruta Ventanilla <span class="text-cyan-400">2026-B</span></h1>
                 <p class="text-gray-400 max-w-2xl mx-auto text-sm md:text-base font-light">
                     Consulta los puntos estratégicos de recojo y el trayecto oficial hacia el Campus Bellavista.
                 </p>
@@ -135,33 +135,37 @@
             <div class="w-full main-grid animate-fade-up">
                 <!-- PANEL IZQUIERDO -->
                 <div class="col-span-12 lg:col-span-4 space-y-6 flex flex-col items-center lg:items-start">
-                    <h1 class="text-xl font-black uppercase italic tracking-tighter text-center lg:text-left w-full">Panel de <span class="text-yellow-500">Operación</span></h1>
+                    <h1 class="text-xl font-black uppercase italic tracking-tighter text-center lg:text-left w-full">Panel de <span class="text-cyan-400">Operación</span></h1>
                     
                     <div class="space-y-2 w-full flex flex-col items-center">
                         <div onclick="selectRoute(0)" id="route-0" class="route-card glass active w-full">
-                            <p class="text-[9px] font-bold text-yellow-500 uppercase tracking-widest">5:15 AM • Lunes a Viernes</p>
+                            <p class="text-[9px] font-bold text-cyan-400 uppercase tracking-widest">5:15 AM • Lunes a Viernes</p>
                             <h3 class="text-[9px] font-black uppercase leading-tight italic">SEDE UNAC / UNAC</h3>
                         </div>
                         <div onclick="selectRoute(1)" id="route-1" class="route-card glass w-full">
-                            <p class="text-[9px] font-bold text-yellow-500 uppercase tracking-widest">6:00 PM • Lunes a Viernes</p>
+                            <p class="text-[9px] font-bold text-cyan-400 uppercase tracking-widest">6:00 PM • Lunes a Viernes</p>
                             <h3 class="text-[9px] font-black uppercase leading-tight italic">UNAC / SEDE UNAC</h3>
                         </div>
-                        <div onclick="selectRoute(2)" id="route-2" class="route-card glass disabled w-full">
-                            <p class="text-[9px] font-bold text-red-500 uppercase tracking-widest">2:15 PM • Pendiente</p>
+                        
+                        <!-- RUTA 2:15 PM HABILITADA -->
+                        <div onclick="selectRoute(2)" id="route-2" class="route-card glass w-full">
+                            <p class="text-[9px] font-bold text-cyan-400 uppercase tracking-widest">2:15 PM • Lunes a Viernes</p>
                             <h3 class="text-[9px] font-black uppercase leading-tight italic">UNAC / INKA COLA</h3>
                         </div>
-                        <div onclick="selectRoute(3)" id="route-3" class="route-card glass disabled w-full">
-                            <p class="text-[9px] font-bold text-red-500 uppercase tracking-widest">10:15 PM • Pendiente</p>
+                        
+                        <!-- RUTA 10:15 PM HABILITADA -->
+                        <div onclick="selectRoute(3)" id="route-3" class="route-card glass w-full">
+                            <p class="text-[9px] font-bold text-cyan-400 uppercase tracking-widest">10:15 PM • Lunes a Viernes</p>
                             <h3 class="text-[9px] font-black uppercase leading-tight italic">UNAC / TELEFONO</h3>
                         </div>
                     </div>
 
-                    <div class="glass p-6 border-l-4 border-yellow-500 shadow-xl w-full text-left requirements-box">
-                        <h4 class="text-[10px] font-black text-yellow-500 uppercase tracking-[4px] mb-5 border-b border-white/5 pb-2 italic">DOCUMENTACIÓN REQUERIDA</h4>
+                    <div class="glass p-6 border-l-4 border-cyan-400 shadow-xl w-full text-left requirements-box">
+                        <h4 class="text-[10px] font-black text-cyan-400 uppercase tracking-[4px] mb-5 border-b border-white/5 pb-2 italic">DOCUMENTACIÓN REQUERIDA</h4>
                         <div class="space-y-4 text-[10px]">
-                            <div class="flex gap-4"><i class="fa-solid fa-id-card text-yellow-500 text-lg"></i> <div><p class="font-black text-white uppercase italic">Carnet Universitario Vigente</p><p class="text-gray-400 font-light mt-1">Obligatorio para acceder al servicio de movilidad.</p></div></div>
+                            <div class="flex gap-4"><i class="fa-solid fa-id-card text-cyan-400 text-lg"></i> <div><p class="font-black text-white uppercase italic">Carnet Universitario Vigente</p><p class="text-gray-400 font-light mt-1">Obligatorio para acceder al servicio de movilidad.</p></div></div>
                             <div class="flex gap-4"><i class="fa-solid fa-address-card text-white text-lg"></i> <div><p class="font-black text-white uppercase italic">DNI Original</p><p class="text-gray-400 font-light mt-1">Opcional para verificación de identidad adicional.</p></div></div>
-                            <div class="flex gap-4"><i class="fa-solid fa-file-invoice text-yellow-500 text-lg"></i> <div><p class="font-black text-white uppercase italic">Constancia de Matrícula</p><p class="text-gray-400 font-light mt-1">Actualizada semestre vigente, si no tiene carnet.</p></div></div>
+                            <div class="flex gap-4"><i class="fa-solid fa-file-invoice text-cyan-400 text-lg"></i> <div><p class="font-black text-white uppercase italic">Constancia de Matrícula</p><p class="text-gray-400 font-light mt-1">Actualizada semestre vigente, si no tiene carnet.</p></div></div>
                         </div>
                     </div>
 
@@ -172,18 +176,18 @@
                 <div class="col-span-12 lg:col-span-8 space-y-4 w-full">
                     <div class="glass p-6">
                         <div class="flex justify-between items-end">
-                            <p id="route-name" class="text-[10px] text-yellow-500 font-black uppercase tracking-widest">Monitor GPS...</p>
+                            <p id="route-name" class="text-[10px] text-cyan-400 font-black uppercase tracking-widest">Monitor GPS...</p>
                             <p id="clock" class="text-xl font-bold tracking-widest text-white">00:00:00</p>
                         </div>
                         <div class="hud-bar">
                             <div id="bar-fill" class="hud-fill" style="width: 0%"></div>
                             <div id="bus-icon" class="absolute top-[-10px] transition-all duration-1000" style="left: 0%;">
-                                <div class="bg-yellow-500 p-1.5 rounded-lg shadow-xl shadow-yellow-500/50"><i class="fa-solid fa-bus text-black text-[9px]"></i></div>
+                                <div class="bg-cyan-400 p-1.5 rounded-lg shadow-xl shadow-cyan-400/50"><i class="fa-solid fa-bus text-black text-[9px]"></i></div>
                             </div>
                         </div>
                         <div class="flex justify-between text-[9px] text-gray-500 font-black uppercase italic tracking-tighter">
                             <span id="p-orig">Origen</span>
-                            <span id="eta-txt" class="text-yellow-500 font-bold">MONITOR ACTIVO</span>
+                            <span id="eta-txt" class="text-cyan-400 font-bold">MONITOR ACTIVO</span>
                             <span id="p-dest">Destino</span>
                         </div>
                     </div>
@@ -201,7 +205,7 @@
                         <div class="md:col-span-8 glass p-6 border-l-4 border-red-600 bg-red-950/10 alert-side">
                             <h5 class="text-red-500 font-black text-[11px] mb-4 uppercase tracking-[3px]">❗ DATO ADICIONAL IMPORTANTE</h5>
                             <p class="text-[13px] leading-relaxed text-white font-medium mb-3 italic">
-                                AVISO ESTUDIANTIL: Debido a la alta demanda masiva, informamos que el último paradero con capacidad garantizada es <span class="text-yellow-500 font-black underline underline-offset-4 uppercase">CARSA VENTANILLA 😫</span>. No se confíen de cupos posteriores.
+                                AVISO ESTUDIANTIL: Debido a la alta demanda masiva, informamos que el último paradero con capacidad garantizada es <span class="text-cyan-400 font-black underline underline-offset-4 uppercase">CARSA VENTANILLA 😫</span>. No se confíen de cupos posteriores.
                             </p>
                             <p class="text-[11px] text-gray-300 italic border-t border-white/5 pt-3">Comuníquense con el <span class="text-white font-bold underline">delegado 🧐</span> para verificar espacios reales 😰.</p>
                         </div>
@@ -215,9 +219,9 @@
         </main>
 
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/20 mt-10 relative z-20">
-            <span class="text-center text-[10px] font-bold tracking-[8px] text-yellow-500 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
             <span class="text-center text-[9px] text-gray-500 tracking-[1px] text-center px-4 uppercase font-light italic">
-                © 2026 UNAC - Movilidad Universitaria. Todos los derechos reservados.
+                © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
             </span>
         </footer>
     </div>
@@ -285,7 +289,8 @@
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
             const geometry = new THREE.IcosahedronGeometry(30, 4); 
-            const material = new THREE.MeshBasicMaterial({ color: 0xffc107, wireframe: true, transparent: true, opacity: 0.18 });
+            // COLOR DEL GLOBO CIAN
+            const material = new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.18 });
             globe = new THREE.Mesh(geometry, material); scene.add(globe);
             const ptsG = new THREE.IcosahedronGeometry(30.5, 4);
             const ptsM = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.4 });
