@@ -158,7 +158,7 @@
             </button>
         </header>
 
-        <!-- LOGIN SEGURO CON FIREBASE AUTH (SIN CLAVES VISIBLES EN EL CÓDIGO) -->
+        <!-- LOGIN SEGURO CON FIREBASE AUTH -->
         <div id="login-container" class="w-full max-w-sm px-6 mt-10 text-center">
             <div class="mb-8">
                 <h1 class="text-3xl font-black uppercase italic tracking-tighter">Acceso <span class="text-cyan-400">Oficial</span></h1>
@@ -291,12 +291,11 @@
         
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth(); // INICIALIZAMOS LA AUTENTICACIÓN
+        const auth = firebase.auth(); 
 
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         const soundError = new Audio('https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3');
 
-        // VARIABLES DE SESIÓN LOCALES
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
         let tokenActivo = localStorage.getItem('unac_session_token') || "";
 
@@ -309,7 +308,6 @@
         function getFechaID() { return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0]; }
 
         window.onload = function() {
-            // FIREBASE VERIFICA LA SESIÓN AUTOMÁTICAMENTE
             auth.onAuthStateChanged((user) => {
                 if (user && delegadoActivo !== "") {
                     document.getElementById('login-container').classList.add('hidden');
@@ -322,31 +320,30 @@
             });
         };
 
-        // ====== INICIO DE SESIÓN 100% SEGURO MEDIANTE UIDs ======
+        // ====== INICIO DE SESIÓN SEGURO ======
         async function intentarLogin() {
             const dni = document.getElementById('userDni').value.trim();
             const pass = document.getElementById('userPass').value.trim();
             
             if(!dni || !pass) { return Swal.fire({ icon: 'error', title: 'Error', text: 'Ingrese sus credenciales', background: '#111', color: '#fff' }); }
             
+            // EL SISTEMA AGREGA EL CORREO POR DEBÁS, EL DELEGADO SOLO ESCRIBE SU DNI
             const fakeEmail = `${dni}@unac.edu.pe`;
 
             try {
-                // Firebase valida la contraseña (No visible en el código frontend)
                 const userCredential = await auth.signInWithEmailAndPassword(fakeEmail, pass);
                 const uid = userCredential.user.uid;
                 
                 let rol = "";
                 
-                // VALIDAMOS SEGURIDAD: Solo pasas si el UID que nos manda Firebase coincide
-                // UID CORREGIDO AQUÍ PARA EL DNI 71886034
+                // VALIDACIÓN DE UIDS
                 if (uid === "z7SefoEto4Yr3YlqoLibedSfrPw2" && dni === "71886034") {
                     rol = "master";
                 } else if (uid === "viuHCS6eUgYafWyn8kriHLSVjcd2" && dni === "77570731") {
                     rol = "sub";
                 } else {
                     await auth.signOut();
-                    return Swal.fire({ icon: 'error', title: 'Acceso Denegado', text: 'Usuario no reconocido por el sistema de seguridad.', background: '#111', color: '#fff' });
+                    return Swal.fire({ icon: 'error', title: 'Acceso Denegado', text: 'Usuario no reconocido.', background: '#111', color: '#fff' });
                 }
 
                 if (rol === "sub") {
@@ -369,10 +366,20 @@
                     .then(() => { location.reload(); });
 
             } catch (error) { 
-                Swal.fire({ icon: 'error', title: 'Datos Incorrectos', text: 'El DNI o la contraseña no coinciden.', background: '#111', color: '#fff' });
+                let mensajeError = "Ocurrió un error desconocido.";
+                if (error.code === 'auth/user-not-found') {
+                    mensajeError = `Firebase no encuentra el correo: ${fakeEmail}. ¡Verifica en tu consola que esté escrito así!`;
+                } else if (error.code === 'auth/wrong-password') {
+                    mensajeError = "La contraseña es incorrecta.";
+                } else if (error.code === 'auth/invalid-email') {
+                    mensajeError = "Formato de correo inválido.";
+                } else {
+                    mensajeError = error.message; 
+                }
+                Swal.fire({ icon: 'error', title: 'Acceso Rechazado', text: mensajeError, background: '#111', color: '#fff' });
             }
         }
-        // ========================================================
+        // =====================================
 
         async function cerrarSesion() { 
             if (delegadoActivo) {
@@ -381,7 +388,6 @@
                     db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/estado`).set('inactivo');
                 } catch(e) {}
             }
-            
             await auth.signOut();
             localStorage.removeItem('unac_session_dni'); 
             localStorage.removeItem('unac_session_token');
