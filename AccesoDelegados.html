@@ -13,12 +13,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <!-- FIREBASE COMPAT -->
+    <!-- FIREBASE COMPAT CON AUTH -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <style>
-        /* COLOR CIAN ACTUALIZADO */
         :root { --accent: #00E5FF; --dark: #050505; --red-bg: #ef4444; --green-bg: #10b981; }
         body { background-color: var(--dark); font-family: 'Inter', sans-serif; color: white; margin: 0; min-height: 100vh; }
         .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
@@ -37,17 +37,14 @@
         .notif-error { background: var(--red-bg); }
         .notif-warning { background: #f59e0b; }
 
-        /* DISEÑO DE TARJETAS DE TURNOS (CIAN) */
         .turno-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; text-align: center; transition: 0.3s; position: relative; overflow: hidden; }
         .turno-card.active { border-color: var(--accent); background: rgba(0, 229, 255, 0.05); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); }
         .badge-status { position: absolute; top: 10px; right: 10px; font-size: 8px; font-weight: 900; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; }
         .badge-off { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
         .badge-on { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
 
-        /* VENTANAS MODALES */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         
-        /* SWITCH ESTILO iOS */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .4s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.1); }
@@ -55,7 +52,6 @@
         input:checked + .slider { background-color: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); background-color: black; }
 
-        /* LISTA MAESTRA Y ETIQUETAS */
         #master-list-view { position: fixed; inset: 0; background: #050505; z-index: 1000; display: none; flex-direction: column; }
         .student-card { border-left: 5px solid transparent; transition: 0.3s; margin-bottom: 8px; }
         .status-red { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
@@ -64,90 +60,66 @@
         .badge-seat { background: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(16,185,129,0.3); }
         .badge-stand { background: #f59e0b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(245,158,11,0.3); }
 
-        /* ANCHO AUMENTADO PARA ALBERGAR MÁS COLUMNAS EN EL REPORTE */
         #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: white; color: black; width: 850px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
-        
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
         .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.5s; }
-
         .hidden-config { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- NOTIFICACIONES FLASH -->
     <div id="flash-notif">
         <i id="flash-icon" class="fa-solid fa-circle-check text-7xl mb-4"></i><br>
         <span id="flash-text" class="text-3xl uppercase italic tracking-tighter">--</span>
         <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
     </div>
 
-    <!-- MODAL DE AJUSTES DEL BUS (CIAN) -->
+    <!-- MODAL AJUSTES BUS -->
     <div id="modal-ajustes" class="modal-overlay">
         <div class="glass p-6 w-[90%] max-w-sm relative">
             <button onclick="cerrarAjustes()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
             <h2 class="text-xl font-black text-cyan-400 uppercase italic mb-4"><i class="fa-solid fa-gears"></i> Ajustes del Bus</h2>
-            
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Cantidad Total de Asientos</label>
             <input type="number" id="cfg-cupos" placeholder="Ej: 40">
-
-            <!-- CONFIGURACIÓN TARDE -->
             <div class="bg-black/40 border border-white/5 p-3 rounded-xl mb-3">
                 <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Activar con Programación (Tarde)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="cfg-tarde-prog" onchange="toggleTimeConfig('tarde')">
-                        <span class="slider"></span>
-                    </label>
+                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Activar Prog. Tarde</span>
+                    <label class="switch"><input type="checkbox" id="cfg-tarde-prog" onchange="toggleTimeConfig('tarde')"><span class="slider"></span></label>
                 </div>
                 <div id="box-hora-tarde" class="mt-3 hidden-config">
-                    <label class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Definir Hora (Tarde)</label>
+                    <label class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Definir Hora</label>
                     <input type="time" id="cfg-hora-tarde" class="text-xl mb-0">
                 </div>
             </div>
-
-            <!-- CONFIGURACIÓN NOCHE -->
             <div class="bg-black/40 border border-white/5 p-3 rounded-xl mb-4">
                 <div class="flex justify-between items-center">
-                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Activar con Programación (Noche)</span>
-                    <label class="switch">
-                        <input type="checkbox" id="cfg-noche-prog" onchange="toggleTimeConfig('noche')">
-                        <span class="slider"></span>
-                    </label>
+                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Activar Prog. Noche</span>
+                    <label class="switch"><input type="checkbox" id="cfg-noche-prog" onchange="toggleTimeConfig('noche')"><span class="slider"></span></label>
                 </div>
                 <div id="box-hora-noche" class="mt-3 hidden-config">
-                    <label class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Definir Hora (Noche)</label>
+                    <label class="text-[9px] text-gray-400 uppercase font-bold block mb-1">Definir Hora</label>
                     <input type="time" id="cfg-hora-noche" class="text-xl mb-0">
                 </div>
             </div>
-
             <button onclick="guardarAjustes()" class="btn-gold shadow-lg mt-2"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
         </div>
     </div>
 
-    <!-- MODAL DE CONTROL DE DELEGADOS (SOLO MAESTRO) -->
+    <!-- MODAL CONTROL DELEGADOS -->
     <div id="modal-control-delegados" class="modal-overlay">
         <div class="glass p-6 w-[90%] max-w-sm relative text-center">
             <button onclick="cerrarControlDelegados()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
             <h2 class="text-xl font-black text-purple-500 uppercase italic mb-4"><i class="fa-solid fa-shield-halved"></i> Control de Accesos</h2>
-
             <div class="bg-black/40 border border-white/5 p-4 rounded-xl mb-4 text-left">
                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Delegado Secundario (77570731)</p>
-                
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-xs font-bold text-white">Estado de Sesión:</span>
                     <span id="status-secundario" class="text-xs font-black text-red-500">DESCONECTADO</span>
                 </div>
-                
                 <div class="flex justify-between items-center mt-4 border-t border-white/10 pt-4">
                     <span class="text-[10px] font-black text-white uppercase tracking-widest">Permitir Ingreso al Panel</span>
-                    <label class="switch">
-                        <input type="checkbox" id="cfg-permitir-secundario" onchange="toggleAccesoSecundario()">
-                        <span class="slider"></span>
-                    </label>
+                    <label class="switch"><input type="checkbox" id="cfg-permitir-secundario" onchange="toggleAccesoSecundario()"><span class="slider"></span></label>
                 </div>
-
-                <!-- BOTÓN PARA FORZAR CIERRE DE SESIÓN AL OTRO DNI -->
                 <button onclick="forzarCierreSecundario()" class="w-full bg-red-900/50 hover:bg-red-700 text-red-400 hover:text-white border border-red-600 font-black py-2 rounded-xl mt-4 text-[9px] uppercase tracking-widest transition shadow-lg">
                     <i class="fa-solid fa-power-off"></i> Expulsar de Dispositivos
                 </button>
@@ -155,7 +127,7 @@
         </div>
     </div>
 
-    <!-- VISTA DE LISTA MAESTRA (CIAN) -->
+    <!-- VISTA LISTA MAESTRA -->
     <div id="master-list-view">
         <header class="p-4 border-b border-white/10 flex justify-between items-center bg-black">
             <div>
@@ -163,10 +135,7 @@
                 <p class="text-[9px] text-gray-500 uppercase tracking-widest">Estado del Bus</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="generarReporteAutomatizado()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-blue-500 flex flex-col items-center">
-                    <i class="fa-solid fa-download text-lg"></i>
-                    <span>Descargar Reporte</span>
-                </button>
+                <button onclick="generarReporteAutomatizado()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-blue-500 flex flex-col items-center"><i class="fa-solid fa-download text-lg"></i><span>Descargar</span></button>
                 <button onclick="toggleLista(false)" class="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl hover:bg-red-600 transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </header>
@@ -175,7 +144,6 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL (CIAN) -->
     <div id="main-app" class="flex flex-col items-center w-full">
         <header class="w-full max-w-lg p-6 flex justify-between items-center border-b border-white/10">
             <div class="flex items-center gap-3">
@@ -190,7 +158,7 @@
             </button>
         </header>
 
-        <!-- LOGIN SEGURO CON CONTRASEÑA (CIAN) -->
+        <!-- LOGIN SEGURO CON FIREBASE AUTH (SIN CLAVES VISIBLES EN EL CÓDIGO) -->
         <div id="login-container" class="w-full max-w-sm px-6 mt-10 text-center">
             <div class="mb-8">
                 <h1 class="text-3xl font-black uppercase italic tracking-tighter">Acceso <span class="text-cyan-400">Oficial</span></h1>
@@ -200,24 +168,20 @@
                 <label class="text-[9px] font-black text-cyan-400 uppercase tracking-widest">DNI Delegado</label>
                 <input type="text" id="userDni" placeholder="Ingresa tu DNI" maxlength="8">
                 
-                <label class="text-[9px] font-black text-cyan-400 uppercase tracking-widest block mt-4">Contraseña de Seguridad</label>
+                <label class="text-[9px] font-black text-cyan-400 uppercase tracking-widest block mt-4">Contraseña Segura</label>
                 <input type="password" id="userPass" placeholder="••••••••">
                 
                 <button onclick="intentarLogin()" class="btn-gold mt-6 shadow-xl">Ingresar al Sistema</button>
             </div>
         </div>
 
-        <!-- PANEL DASHBOARD (CIAN) -->
         <div id="scanner-container" class="w-full max-w-lg px-4 py-4 hidden">
-            
-            <!-- BOTÓN EXCLUSIVO DELEGADO MAESTRO -->
             <div id="master-control-btn" class="hidden w-full mb-4">
                 <button onclick="abrirControlDelegados()" class="w-full bg-purple-900/50 text-purple-400 border border-purple-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-purple-800 hover:text-white transition shadow-lg">
                     <i class="fa-solid fa-user-tie"></i> Gestionar Acceso de Delegados
                 </button>
             </div>
 
-            <!-- TARJETAS DE TURNOS -->
             <div class="mb-6">
                 <div class="flex justify-between items-center mb-3">
                     <span class="text-[11px] font-black uppercase text-gray-400 tracking-widest">Control de Turnos</span>
@@ -225,28 +189,22 @@
                         <i class="fa-solid fa-gear"></i> Configurar Bus
                     </button>
                 </div>
-                
                 <div class="grid grid-cols-2 gap-3">
                     <div id="card-tarde" class="turno-card">
                         <div id="badge-tarde" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-cloud-sun text-2xl text-blue-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Tarde</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-tarde" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <!-- BOTÓN DINÁMICO VERDE / ROJO -->
                         <button onclick="toggleTurno('tarde')" id="btn-tarde" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
                     </div>
-
                     <div id="card-noche" class="turno-card">
                         <div id="badge-noche" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Turno Noche</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Programa: <span id="lbl-hora-noche" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <!-- BOTÓN DINÁMICO VERDE / ROJO -->
                         <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
                     </div>
                 </div>
-                
-                <!-- BARRA DE OCUPACIÓN -->
                 <div class="mt-4 p-3 glass relative">
                     <div class="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1">
                         <span class="text-cyan-400">Ocupación del Bus</span>
@@ -256,7 +214,6 @@
                 </div>
             </div>
 
-            <!-- ESCANER Y BOTONES (CIAN) -->
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-sm font-black uppercase text-gray-400 tracking-widest">Escáner de Abordaje</h2>
                 <button onclick="toggleLista(true)" class="bg-cyan-400 text-black text-[10px] font-black px-4 py-2 rounded-lg uppercase shadow-lg">
@@ -265,7 +222,6 @@
             </div>
 
             <div class="glass p-2 mb-6 border-2 border-cyan-400/30 relative">
-                <!-- Capa de bloqueo temporal de escáner -->
                 <div id="scanner-cooldown-overlay" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center rounded-xl backdrop-blur-sm">
                     <i class="fa-solid fa-shield-halved text-4xl text-cyan-400 mb-2 animate-bounce"></i>
                     <p class="text-[10px] font-black uppercase tracking-widest text-white">Procesando código...</p>
@@ -273,7 +229,6 @@
                 <div id="reader"></div>
             </div>
 
-            <!-- CONTADORES (CIAN) -->
             <div class="grid grid-cols-2 gap-3 mb-6 text-center">
                 <div class="glass p-3 border-b-2 border-cyan-400">
                     <span class="text-[8px] text-gray-400 uppercase font-black block">Mis Escaneos</span>
@@ -285,7 +240,6 @@
                 </div>
             </div>
 
-            <!-- HISTORIAL (CIAN) -->
             <div class="glass p-4 mb-6">
                 <span class="text-[10px] font-black uppercase text-cyan-400 italic mb-3 block">Últimos Abordados en Vivo</span>
                 <div id="historial-reciente" class="max-h-[140px] overflow-y-auto rounded-lg">
@@ -293,7 +247,6 @@
                 </div>
             </div>
 
-            <!-- ZONA DE PELIGRO -->
             <div class="border-t border-white/10 pt-4 grid grid-cols-2 gap-3 mb-10">
                 <button onclick="borrarEscaneos()" class="w-full bg-blue-900/50 text-blue-400 border border-blue-800 font-black py-3 rounded-xl uppercase text-[9px] hover:bg-blue-800 transition"><i class="fa-solid fa-eraser"></i> Borrar Historial</button>
                 <button onclick="reiniciarFirebase()" class="w-full bg-red-900/50 text-red-500 border border-red-800 font-black py-3 rounded-xl uppercase text-[9px] hover:bg-red-800 transition"><i class="fa-solid fa-trash-can"></i> Reset Sistema</button>
@@ -320,15 +273,12 @@
             </thead>
             <tbody id="reporte-tbody"></tbody>
         </table>
-        
-        <!-- FIRMA DE AUTOR -->
         <div style="margin-top: 25px; text-align: center; font-size: 10px; color: #777; border-top: 2px dashed #ccc; padding-top: 15px; font-weight: 900; letter-spacing: 2px;">
             SISTEMA DE SEGURIDAD BIOMÉTRICA - GENERADO POR SEBASTIAN
         </div>
     </div>
 
     <script>
-        /* NUEVAS CREDENCIALES DE FIREBASE INTEGRADAS */
         const firebaseConfig = {
             apiKey: "MnQGBqZY5iStIvWh3JfEyMLK2rCEOpLAzObnilBq",
             authDomain: "ventanilla---01.firebaseapp.com",
@@ -341,15 +291,10 @@
         
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const auth = firebase.auth(); // INICIALIZAMOS LA AUTENTICACIÓN
 
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         const soundError = new Audio('https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3');
-
-        // CREDENCIALES OFICIALES DE DELEGADOS
-        const DELEGADOS_CRED = {
-            "71886034": { pass: "AdminUNAC", role: "master" },
-            "77570731": { pass: "ControlBus", role: "sub" }
-        };
 
         // VARIABLES DE SESIÓN LOCALES
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
@@ -357,83 +302,78 @@
 
         let listaGlobalAlumnos = []; 
         let directorioAlumnos = {}; 
-        
-        let configGlobal = { 
-            cupos: 40, hora_tarde: '', hora_noche: '', 
-            tarde_activo: false, noche_activo: false,
-            prog_tarde: false, prog_noche: false
-        };
-        
+        let configGlobal = { cupos: 40, hora_tarde: '', hora_noche: '', tarde_activo: false, noche_activo: false, prog_tarde: false, prog_noche: false };
         let serverTimeOffset = 0; 
         let isScannerCooldown = false; 
 
-        function getFechaID() {
-            return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0];
-        }
+        function getFechaID() { return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0]; }
 
         window.onload = function() {
-            if (delegadoActivo && delegadoActivo !== "") {
-                document.getElementById('login-container').classList.add('hidden');
-                document.getElementById('scanner-container').classList.remove('hidden');
-                iniciarSistema();
-            }
+            // FIREBASE VERIFICA LA SESIÓN AUTOMÁTICAMENTE
+            auth.onAuthStateChanged((user) => {
+                if (user && delegadoActivo !== "") {
+                    document.getElementById('login-container').classList.add('hidden');
+                    document.getElementById('scanner-container').classList.remove('hidden');
+                    iniciarSistema();
+                } else {
+                    document.getElementById('login-container').classList.remove('hidden');
+                    document.getElementById('scanner-container').classList.add('hidden');
+                }
+            });
         };
 
-        // FUNCIÓN DE LOGIN A PRUEBA DE FALLOS
+        // ====== INICIO DE SESIÓN 100% SEGURO MEDIANTE UIDs ======
         async function intentarLogin() {
+            const dni = document.getElementById('userDni').value.trim();
+            const pass = document.getElementById('userPass').value.trim();
+            
+            if(!dni || !pass) { return Swal.fire({ icon: 'error', title: 'Error', text: 'Ingrese sus credenciales', background: '#111', color: '#fff' }); }
+            
+            const fakeEmail = `${dni}@unac.edu.pe`;
+
             try {
-                const dni = document.getElementById('userDni').value.trim();
-                const pass = document.getElementById('userPass').value.trim();
+                // Firebase valida la contraseña (No visible en el código frontend)
+                const userCredential = await auth.signInWithEmailAndPassword(fakeEmail, pass);
+                const uid = userCredential.user.uid;
                 
-                if (DELEGADOS_CRED[dni] && DELEGADOS_CRED[dni].pass === pass) {
-                    
-                    if (DELEGADOS_CRED[dni].role === "sub") {
-                        try {
-                            const snapPermiso = await db.ref('sistema/delegados_auth/77570731_permitido').once('value');
-                            if (snapPermiso.exists() && snapPermiso.val() === false) {
-                                return Swal.fire({
-                                    icon: 'error', 
-                                    title: 'Acceso Restringido', 
-                                    text: 'El Delegado Maestro ha desactivado tu acceso al panel.',
-                                    background: '#111', color: '#fff'
-                                });
-                            }
-                        } catch (err) { }
-                    }
-
-                    const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                    
-                    try {
-                        await db.ref(`sistema/delegados_auth/sesiones/${dni}`).set({
-                            estado: 'activo',
-                            ultimo_ingreso: new Date().toLocaleString(),
-                            token: newToken
-                        });
-                    } catch (err) { }
-
-                    delegadoActivo = dni;
-                    tokenActivo = newToken;
-                    localStorage.setItem('unac_session_dni', dni);
-                    localStorage.setItem('unac_session_token', newToken);
-                    
-                    Swal.fire({
-                        title: '¡Acceso Concedido!',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#111', color: '#fff'
-                    }).then(() => { location.reload(); });
-
-                } else { 
-                    Swal.fire({ 
-                        icon: 'error', title: 'Datos Incorrectos', text: 'El DNI o la contraseña no coinciden.', background: '#111', color: '#fff' 
-                    });
+                let rol = "";
+                
+                // VALIDAMOS SEGURIDAD: Solo pasas si el UID que nos manda Firebase coincide
+                if (uid === "bHjU8xxpVgX8vc56X8yCbX66kud2" && dni === "71886034") {
+                    rol = "master";
+                } else if (uid === "viuHCS6eUgYafWyn8kriHLSVjcd2" && dni === "77570731") {
+                    rol = "sub";
+                } else {
+                    await auth.signOut();
+                    return Swal.fire({ icon: 'error', title: 'Acceso Denegado', text: 'Usuario no reconocido por el sistema de seguridad.', background: '#111', color: '#fff' });
                 }
-            } catch (error) { alert("Error: " + error.message); }
-        }
 
-        // CIERRE DE SESIÓN SEGURO
-        function cerrarSesion() { 
+                if (rol === "sub") {
+                    const snapPermiso = await db.ref('sistema/delegados_auth/77570731_permitido').once('value');
+                    if (snapPermiso.exists() && snapPermiso.val() === false) {
+                        await auth.signOut();
+                        return Swal.fire({ icon: 'error', title: 'Acceso Restringido', text: 'El Delegado Maestro ha desactivado tu acceso al panel.', background: '#111', color: '#fff' });
+                    }
+                }
+
+                const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                await db.ref(`sistema/delegados_auth/sesiones/${dni}`).set({ estado: 'activo', ultimo_ingreso: new Date().toLocaleString(), token: newToken });
+
+                delegadoActivo = dni;
+                tokenActivo = newToken;
+                localStorage.setItem('unac_session_dni', dni);
+                localStorage.setItem('unac_session_token', newToken);
+                
+                Swal.fire({ title: '¡Acceso Concedido!', icon: 'success', timer: 1500, showConfirmButton: false, background: '#111', color: '#fff' })
+                    .then(() => { location.reload(); });
+
+            } catch (error) { 
+                Swal.fire({ icon: 'error', title: 'Datos Incorrectos', text: 'El DNI o la contraseña no coinciden.', background: '#111', color: '#fff' });
+            }
+        }
+        // ========================================================
+
+        async function cerrarSesion() { 
             if (delegadoActivo) {
                 try {
                     db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/token`).remove();
@@ -441,6 +381,7 @@
                 } catch(e) {}
             }
             
+            await auth.signOut();
             localStorage.removeItem('unac_session_dni'); 
             localStorage.removeItem('unac_session_token');
             location.reload(); 
@@ -455,7 +396,6 @@
             notificarFlash(isChecked ? "ACCESO PERMITIDO" : "ACCESO BLOQUEADO", isChecked ? "success" : "error", "Permisos del DNI 77570731 actualizados.");
         }
 
-        // Forzamos un código específico ('EXPULSADO') para que el sistema del otro celular reaccione de inmediato
         function forzarCierreSecundario() {
             db.ref(`sistema/delegados_auth/sesiones/77570731/token`).set('EXPULSADO');
             db.ref(`sistema/delegados_auth/sesiones/77570731/estado`).set('inactivo');
@@ -476,10 +416,8 @@
             document.getElementById('cfg-noche-prog').checked = configGlobal.prog_noche;
             document.getElementById('cfg-hora-noche').value = configGlobal.hora_noche;
             toggleTimeConfig('noche');
-
             document.getElementById('modal-ajustes').style.display = 'flex';
         }
-        
         function cerrarAjustes() { document.getElementById('modal-ajustes').style.display = 'none'; }
         
         function guardarAjustes() {
@@ -489,10 +427,7 @@
             const prog_n = document.getElementById('cfg-noche-prog').checked;
             const hn = prog_n ? (document.getElementById('cfg-hora-noche').value || "") : "";
             
-            db.ref('sistema/config').update({ 
-                cupos_maximos: c, prog_tarde: prog_t, hora_tarde: ht, prog_noche: prog_n, hora_noche: hn 
-            });
-
+            db.ref('sistema/config').update({ cupos_maximos: c, prog_tarde: prog_t, hora_tarde: ht, prog_noche: prog_n, hora_noche: hn });
             document.getElementById('txt-cupos').innerText = `0 / ${c}`;
             notificarFlash("AJUSTES GUARDADOS", "success", "Configuración de bus actualizada");
             cerrarAjustes();
@@ -516,12 +451,8 @@
         }
 
         function actualizarUI_Tarjetas() {
-            const cTarde = document.getElementById('card-tarde');
-            const bTarde = document.getElementById('badge-tarde');
-            const btnTarde = document.getElementById('btn-tarde');
-            
+            const cTarde = document.getElementById('card-tarde'); const bTarde = document.getElementById('badge-tarde'); const btnTarde = document.getElementById('btn-tarde');
             document.getElementById('lbl-hora-tarde').innerText = configGlobal.prog_tarde ? (configGlobal.hora_tarde || 'Sin definir') : 'MODO MANUAL';
-            
             if(configGlobal.tarde_activo) {
                 cTarde.classList.add('active'); bTarde.className = 'badge-status badge-on'; bTarde.innerText = configGlobal.prog_tarde ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
                 btnTarde.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; btnTarde.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
@@ -530,12 +461,8 @@
                 btnTarde.innerHTML = '<i class="fa-solid fa-play"></i> Activar Turno'; btnTarde.className = 'w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1';
             }
 
-            const cNoche = document.getElementById('card-noche');
-            const bNoche = document.getElementById('badge-noche');
-            const btnNoche = document.getElementById('btn-noche');
-            
+            const cNoche = document.getElementById('card-noche'); const bNoche = document.getElementById('badge-noche'); const btnNoche = document.getElementById('btn-noche');
             document.getElementById('lbl-hora-noche').innerText = configGlobal.prog_noche ? (configGlobal.hora_noche || 'Sin definir') : 'MODO MANUAL';
-            
             if(configGlobal.noche_activo) {
                 cNoche.classList.add('active'); bNoche.className = 'badge-status badge-on'; bNoche.innerText = configGlobal.prog_noche ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
                 btnNoche.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; btnNoche.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
@@ -547,34 +474,24 @@
 
         function toggleTurno(t) {
             let currentState = (t === 'tarde') ? configGlobal.tarde_activo : configGlobal.noche_activo;
-            
-            if (currentState) {
-                db.ref(`sistema/config/${t}_activo`).set(false);
-                notificarFlash("TURNO DESACTIVADO", "error", "Se bloqueó la emisión de tickets");
-            } else {
-                db.ref(`sistema/config/${t}_activo`).set(true);
-                notificarFlash("TURNO ACTIVADO", "success", "Los alumnos ya pueden sacar ticket");
-            }
+            if (currentState) { db.ref(`sistema/config/${t}_activo`).set(false); notificarFlash("TURNO DESACTIVADO", "error", "Se bloqueó la emisión de tickets");
+            } else { db.ref(`sistema/config/${t}_activo`).set(true); notificarFlash("TURNO ACTIVADO", "success", "Los alumnos ya pueden sacar ticket"); }
         }
 
         function iniciarSistema() {
-            // Sistema anti-clonación
             db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/token`).on('value', snap => {
                 const firebaseToken = snap.val();
                 const miTokenLocal = localStorage.getItem('unac_session_token');
 
                 if (miTokenLocal && miTokenLocal !== "") {
-                    // Si el token de Firebase cambió por otra sesión, o el Maestro puso 'EXPULSADO'
                     if (firebaseToken !== miTokenLocal) {
                         Swal.fire({
                             title: 'Sesión Terminada',
                             text: firebaseToken === 'EXPULSADO' ? 'El Administrador cerró tu sesión de forma remota.' : 'Alguien ha iniciado sesión en otro dispositivo.',
-                            icon: 'warning', background: '#111', color: '#fff',
-                            allowOutsideClick: false, showConfirmButton: true, confirmButtonText: 'Entendido'
+                            icon: 'warning', background: '#111', color: '#fff', allowOutsideClick: false, showConfirmButton: true, confirmButtonText: 'Entendido'
                         }).then(() => {
-                            localStorage.removeItem('unac_session_dni');
-                            localStorage.removeItem('unac_session_token');
-                            location.reload();
+                            auth.signOut();
+                            localStorage.removeItem('unac_session_dni'); localStorage.removeItem('unac_session_token'); location.reload();
                         });
                     }
                 }
@@ -582,23 +499,18 @@
 
             if (delegadoActivo === "71886034") {
                 document.getElementById('master-control-btn').classList.remove('hidden');
-                
                 db.ref('sistema/delegados_auth').on('value', snap => {
                     const data = snap.val() || {};
                     const permitido = data['77570731_permitido'] !== false;
                     const sesionSec = (data['sesiones'] && data['sesiones']['77570731']) ? data['sesiones']['77570731'].estado : 'inactivo';
-
                     document.getElementById('cfg-permitir-secundario').checked = permitido;
 
                     const statusEl = document.getElementById('status-secundario');
                     if (statusEl) {
-                        // Verifica que esté 'activo' y que su token no sea 'EXPULSADO'
                         if (sesionSec === 'activo' && data['sesiones']['77570731'].token && data['sesiones']['77570731'].token !== 'EXPULSADO') {
-                            statusEl.innerText = 'EN LÍNEA';
-                            statusEl.className = 'text-xs font-black text-green-500 animate-pulse';
+                            statusEl.innerText = 'EN LÍNEA'; statusEl.className = 'text-xs font-black text-green-500 animate-pulse';
                         } else {
-                            statusEl.innerText = 'DESCONECTADO';
-                            statusEl.className = 'text-xs font-black text-red-500';
+                            statusEl.innerText = 'DESCONECTADO'; statusEl.className = 'text-xs font-black text-red-500';
                         }
                     }
                 });
@@ -620,12 +532,9 @@
 
             db.ref('sistema/config').on('value', snap => {
                 const dataRT = snap.val() || {};
-                configGlobal.cupos = dataRT.cupos_maximos || 40;
-                configGlobal.prog_tarde = dataRT.prog_tarde || false;
-                configGlobal.hora_tarde = dataRT.hora_tarde || '';
-                configGlobal.tarde_activo = dataRT.tarde_activo || false;
-                configGlobal.prog_noche = dataRT.prog_noche || false;
-                configGlobal.hora_noche = dataRT.hora_noche || '';
+                configGlobal.cupos = dataRT.cupos_maximos || 40; configGlobal.prog_tarde = dataRT.prog_tarde || false;
+                configGlobal.hora_tarde = dataRT.hora_tarde || ''; configGlobal.tarde_activo = dataRT.tarde_activo || false;
+                configGlobal.prog_noche = dataRT.prog_noche || false; configGlobal.hora_noche = dataRT.hora_noche || '';
                 configGlobal.noche_activo = dataRT.noche_activo || false;
                 actualizarUI_Tarjetas();
             });
@@ -633,7 +542,6 @@
             db.ref('sistema').on('value', snap => {
                 const fechaHoy = getFechaID();
                 const data = snap.val() || {};
-                
                 const viajes = data.viajes ? data.viajes[fechaHoy] : {};
                 const asistencias = (data.asistencias && data.asistencias[fechaHoy]) ? data.asistencias[fechaHoy] : {};
                 
@@ -643,14 +551,11 @@
                     const tReg = viajes[turno] ? viajes[turno].registros : null;
                     if (tReg) {
                         let cantidad = Object.keys(tReg).length;
-                        if((turno === 'tarde' && configGlobal.tarde_activo) || (turno === 'noche' && configGlobal.noche_activo)){
-                            ticketsTurnoActivo += cantidad;
-                        }
+                        if((turno === 'tarde' && configGlobal.tarde_activo) || (turno === 'noche' && configGlobal.noche_activo)){ ticketsTurnoActivo += cantidad; }
 
                         Object.keys(tReg).forEach(dni => {
                             const verificado = asistencias[dni] ? true : false;
                             const codFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Codigo || directorioAlumnos[dni].codigo) : 'S/C';
-                            
                             combined.push({ dni: dni, codigo: codFinal, nombre: tReg[dni].nombre, hora: tReg[dni].hora, orden: tReg[dni].orden || 999, turno: turno.toUpperCase(), verificado: verificado });
                             if(verificado) { historyData.push({ nombre: tReg[dni].nombre, hora: asistencias[dni].hora, delegado: asistencias[dni].delegado }); }
                         });
@@ -663,8 +568,6 @@
                 document.getElementById('txt-cupos').innerText = `${ticketsTurnoActivo} / ${configGlobal.cupos}`;
                 let porcentaje = (ticketsTurnoActivo / configGlobal.cupos) * 100;
                 document.getElementById('barra-cupos').style.width = `${Math.min(porcentaje, 100)}%`;
-                
-                /* COLOR DE BARRA CIAN APLICADO AQUÍ */
                 document.getElementById('barra-cupos').style.background = porcentaje >= 100 ? "#ef4444" : "#00E5FF";
 
                 document.getElementById('contador-glo').innerText = Object.keys(asistencias).length;
@@ -676,26 +579,17 @@
 
         async function onScanSuccess(text) {
             if (isScannerCooldown) return; 
-            
-            isScannerCooldown = true;
-            document.getElementById('scanner-cooldown-overlay').style.display = 'flex'; 
+            isScannerCooldown = true; document.getElementById('scanner-cooldown-overlay').style.display = 'flex'; 
 
             let dniScanned = ""; let tKey = "";
-            
-            if (text.startsWith('UNAC-V-')) {
-                const parts = text.split('-');
-                if (parts.length >= 4) { dniScanned = parts[2]; tKey = (parts[3] === 'T') ? 'tarde' : (parts[3] === 'N' ? 'noche' : 'mañana'); }
-            } else {
-                if (text.includes(':')) { const p = text.split(':'); dniScanned = p[1]; tKey = p[0].includes('-T') ? 'tarde' : 'noche'; } 
-                else if (text.includes('-')) { const p = text.split('-'); dniScanned = p[2]; tKey = p[3].toLowerCase() === 't' ? 'tarde' : 'noche'; }
-            }
+            if (text.startsWith('UNAC-V-')) { const parts = text.split('-'); if (parts.length >= 4) { dniScanned = parts[2]; tKey = (parts[3] === 'T') ? 'tarde' : (parts[3] === 'N' ? 'noche' : 'mañana'); } }
+            else { if (text.includes(':')) { const p = text.split(':'); dniScanned = p[1]; tKey = p[0].includes('-T') ? 'tarde' : 'noche'; } else if (text.includes('-')) { const p = text.split('-'); dniScanned = p[2]; tKey = p[3].toLowerCase() === 't' ? 'tarde' : 'noche'; } }
             
             const liberarCamara = () => { setTimeout(() => { isScannerCooldown = false; document.getElementById('scanner-cooldown-overlay').style.display = 'none'; }, 3000); };
 
             if(!dniScanned) { notificarFlash("QR INVÁLIDO", "error", "Formato no reconocido"); if(soundError.readyState) soundError.play(); return liberarCamara(); }
 
             const fechaHoy = getFechaID();
-            
             const snapTicket = await db.ref(`sistema/viajes/${fechaHoy}/${tKey}/registros/${dniScanned}`).once('value');
             if(!snapTicket.exists()) { notificarFlash("TICKET CADUCADO", "error", "No figura en la lista de hoy"); if(soundError.readyState) soundError.play(); return liberarCamara(); }
 
@@ -704,7 +598,6 @@
 
             const nombre = snapTicket.val().nombre;
             await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).set({ nombre: nombre, hora: new Date().toLocaleTimeString(), delegado: delegadoActivo });
-
             soundOk.play(); notificarFlash("VERIFICADO ✅", "success", nombre); liberarCamara();
         }
 
@@ -727,42 +620,22 @@
 
             try {
                 const canvas = await html2canvas(document.getElementById('reporte-foto-container'), { scale: 2 });
-                const linkDescarga = document.createElement('a');
-                linkDescarga.download = `Reporte_UNAC_${getFechaID()}.png`;
-                linkDescarga.href = canvas.toDataURL('image/png');
-                linkDescarga.click();
+                const linkDescarga = document.createElement('a'); linkDescarga.download = `Reporte_UNAC_${getFechaID()}.png`; linkDescarga.href = canvas.toDataURL('image/png'); linkDescarga.click();
                 Swal.fire({title: '¡Éxito!', text: 'La imagen de la lista ha sido descargada.', icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#10b981'});
             } catch (e) { Swal.fire({title: 'Error', text: 'No se pudo generar la imagen.', icon: 'error', background: '#111', color: '#fff'}); }
         }
 
         async function borrarEscaneos() {
-            Swal.fire({
-                title: '¿Borrar Historial?', text: 'Se eliminarán todos los escaneos (asistencias) de hoy. Los tickets emitidos NO se borrarán.', icon: 'warning',
-                showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, borrar', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    await db.ref(`sistema/asistencias/${getFechaID()}`).remove();
-                    notificarFlash("ESCANEOS BORRADOS", "success", "Historial limpio");
-                }
-            });
+            Swal.fire({ title: '¿Borrar Historial?', text: 'Se eliminarán todos los escaneos (asistencias) de hoy. Los tickets emitidos NO se borrarán.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, borrar', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+            }).then(async (result) => { if (result.isConfirmed) { await db.ref(`sistema/asistencias/${getFechaID()}`).remove(); notificarFlash("ESCANEOS BORRADOS", "success", "Historial limpio"); } });
         }
 
         async function reiniciarFirebase() {
-            Swal.fire({
-                title: '¿REINICIO TOTAL?', text: '¡Peligro! Esto borrará TODOS los tickets, contadores y escaneos de hoy. El sistema y la lista maestra quedarán en 0 absoluto.', icon: 'error',
-                showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'RESETEAR SISTEMA', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+            Swal.fire({ title: '¿REINICIO TOTAL?', text: '¡Peligro! Esto borrará TODOS los tickets, contadores y escaneos de hoy.', icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'RESETEAR SISTEMA', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    const fecha = getFechaID();
-                    await db.ref(`sistema/viajes/${fecha}`).remove(); await db.ref(`sistema/asistencias/${fecha}`).remove();
-                    
-                    listaGlobalAlumnos = [];
-                    document.getElementById('contenedor-lista-maestra').innerHTML = "<p class='text-center text-gray-500 py-10'>No hay tickets.</p>";
-                    document.getElementById('historial-reciente').innerHTML = "<p class='text-center text-[10px] text-gray-600 py-4 italic'>Esperando escaneos...</p>";
-                    document.getElementById('txt-cupos').innerText = `0 / ${configGlobal.cupos}`;
-                    document.getElementById('barra-cupos').style.width = `0%`;
-                    document.getElementById('contador-glo').innerText = "0"; document.getElementById('contador-mi').innerText = "0";
-
+                    const fecha = getFechaID(); await db.ref(`sistema/viajes/${fecha}`).remove(); await db.ref(`sistema/asistencias/${fecha}`).remove();
+                    listaGlobalAlumnos = []; document.getElementById('contenedor-lista-maestra').innerHTML = "<p class='text-center text-gray-500 py-10'>No hay tickets.</p>"; document.getElementById('historial-reciente').innerHTML = "<p class='text-center text-[10px] text-gray-600 py-4 italic'>Esperando escaneos...</p>"; document.getElementById('txt-cupos').innerText = `0 / ${configGlobal.cupos}`; document.getElementById('barra-cupos').style.width = `0%`; document.getElementById('contador-glo').innerText = "0"; document.getElementById('contador-mi').innerText = "0";
                     notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); setTimeout(() => location.reload(), 1500);
                 }
             });
