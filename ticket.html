@@ -8,7 +8,6 @@
     <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -54,18 +53,12 @@
         .time-badge { position: relative; z-index: 2; background: white; color: black; padding: 5px 20px; border-radius: 10px; font-weight: 900; font-size: 12px; margin: 15px 0 10px; box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
         .delegate-msg { position: relative; z-index: 2; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 700; max-width: 200px; margin-top: 10px; line-height: 1.4; }
 
-        .ticket-tech { background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); }
-        .tech-header { background: #000; color: #fff; padding: 30px; text-align: center; border-bottom: 6px solid var(--accent); }
-        .asiento-display { font-family: 'Montserrat'; font-size: 110px; font-weight: 900; color: #000; line-height: 1; margin: 20px 0; }
-        .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
-        .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
-
         .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; letter-spacing: 2px; }
         .input-tech:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); }
         
         #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
         .hidden-section { display: none !important; }
-        @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } .asiento-display { font-size: 80px; } }
+        @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } }
     </style>
 </head>
 <body>
@@ -85,7 +78,7 @@
         <p class="text-[9px] text-gray-500 font-bold uppercase mt-6 tracking-[6px]">SISTEMA SEGURIDAD BIOMÉTRICA UNAC</p>
     </div>
 
-    <!-- MENÚ MÓVIL COMPLETO (CIAN) -->
+    <!-- MENÚ MÓVIL COMPLETO -->
     <div id="mobile-menu">
         <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl"><i class="fa-solid fa-xmark"></i></button>
         <a href="index.html" class="text-xl font-black uppercase text-white">Inicio</a>
@@ -164,72 +157,47 @@
                     </div>
                 </div>
 
-                <!-- TARJETAS DE TURNOS (TEXTOS GIGANTES Y DIFERENCIADOS) -->
+                <!-- TARJETAS DE TURNOS (Sincronizadas con variables del Panel Delegado) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    
                     <!-- TARDE 2:15 PM -->
-                    <div id="card-m" class="card-panorama" style="background-image: url('DSC07555-768x432.jpg');" onclick="Core.requestTicket('tarde')">
-                        <span id="badge-m" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 uppercase">Evaluando...</span>
+                    <div id="card-tarde1" class="card-panorama" style="background-image: url('DSC07555-768x432.jpg');" onclick="Core.goToPage('turnotarde.html', 'tarde1')">
+                        <span id="badge-tarde1" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white flex flex-col items-center leading-none mt-2">
                             TARDE 
                             <span class="text-cyan-400 text-2xl md:text-3xl mt-1 tracking-widest">2:15 PM</span>
                         </h3>
-                        <div class="time-badge">AUTOACTIVACIÓN</div>
-                        <p class="delegate-msg text-cyan-400">Autoactivación (9:00 PM - 7:00 AM)</p>
+                        <div id="time-badge-tarde1" class="time-badge">--:--</div>
+                        <p class="delegate-msg text-cyan-400">Sincronizado con Panel de Delegado</p>
                     </div>
 
                     <!-- TARDE 6:00 PM -->
-                    <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTarde()">
-                        <span id="badge-t" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 uppercase">Evaluando...</span>
+                    <div id="card-tarde2" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToPage('turnotarde.html', 'tarde2')">
+                        <span id="badge-tarde2" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white flex flex-col items-center leading-none mt-2">
                             TARDE 
                             <span class="text-cyan-400 text-2xl md:text-3xl mt-1 tracking-widest">6:00 PM</span>
                         </h3>
-                        <div id="time-badge-t" class="time-badge">--:--</div>
+                        <div id="time-badge-tarde2" class="time-badge">--:--</div>
                         <p class="delegate-msg text-cyan-400">Sincronizado con Panel de Delegado</p>
                     </div>
                 </div>
 
                 <!-- NOCHE 10:15 PM -->
-                <div id="card-n" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.requestTicket('noche')">
-                    <span id="badge-n" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
+                <div id="card-noche" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.goToPage('turnonoche.html', 'noche')">
+                    <span id="badge-noche" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                     <h3 class="shift-title text-white text-5xl flex flex-col items-center leading-none mt-2">
                         NOCHE 
                         <span class="text-cyan-400 text-3xl md:text-4xl mt-2 tracking-widest">10:15 PM</span>
                     </h3>
-                    <div id="time-badge-n" class="time-badge">--:--</div>
+                    <div id="time-badge-noche" class="time-badge">--:--</div>
                     <p class="delegate-msg text-cyan-400">Sincronizado con Panel de Delegado</p>
                 </div>
+                
                 <!-- GLOBO 2 -->
                 <div id="globe-box-2"></div>
             </div>
 
-            <!-- PASO 3 : TICKET GENERADO -->
-            <div id="step-3" class="hidden-section animate-fade-up text-center">
-                <div class="ticket-tech">
-                    <div class="tech-header"><h2>MOVILIDAD UNAC</h2><p class="text-[10px] text-cyan-400 tracking-widest mt-1">RUTA VENTANILLA</p></div>
-                    <div class="p-8">
-                        <p id="t-fecha" class="text-sm font-black text-gray-500 uppercase mb-6"></p>
-                        <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative">
-                            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">NÚMERO DE ASIENTO</p>
-                            <div id="seat-area" class="asiento-display">--</div>
-                        </div>
-                        <div id="qrcode-vip" class="flex justify-center mb-8 border-4 border-black p-4 rounded-3xl w-max mx-auto"></div>
-                        <div class="data-grid space-y-3 text-left">
-                            <div class="flex flex-col border-b border-gray-300 pb-2">
-                                <span class="text-[9px] text-gray-500">PASAJERO:</span> 
-                                <span id="t-nom" class="font-bold text-[12px] uppercase"></span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-300 pb-2">
-                                <div class="flex flex-col"><span class="text-[9px] text-gray-500">DNI:</span> <span id="t-dni" class="font-bold text-[13px]"></span></div>
-                                <div class="flex flex-col text-right"><span class="text-[9px] text-gray-500">CÓDIGO:</span> <span id="t-cod" class="font-bold text-[13px]"></span></div>
-                            </div>
-                            <div class="turno-box shadow-lg"><span>TURNO ASIGNADO</span> <span id="t-turno-val" class="text-white"></span></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button onclick="location.reload()" class="mt-8 bg-white/10 text-white font-black px-8 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-red-600 transition">Cerrar Sesión Segura</button>
-            </div>
         </main>
 
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
@@ -258,8 +226,8 @@
         const Core = {
             alumno: null,
             config: {},
-            currentMananaActive: false,
-            currentTardeActive: false,
+            currentTarde1Active: false,
+            currentTarde2Active: false,
             currentNocheActive: false,
 
             init: function() { 
@@ -271,11 +239,7 @@
                 });
 
                 this.listenFirebase(); 
-                setInterval(() => this.checkSchedules(), 30000);
-            },
-
-            getRealTime: function() {
-                return new Date(Date.now() + serverTimeOffset);
+                setInterval(() => this.checkSchedules(), 15000); // Revisa cada 15 seg
             },
 
             listenFirebase: function() {
@@ -288,25 +252,27 @@
             checkSchedules: function() {
                 if (!this.config) return;
 
-                const now = this.getRealTime();
-                const currentMins = now.getHours() * 60 + now.getMinutes();
-
-                this.currentMananaActive = (currentMins >= 1260 || currentMins < 420);
-                this.currentTardeActive = (this.config.tarde_activo === true);
+                // Las 3 variables oficiales controladas desde el Panel de Delegados
+                this.currentTarde1Active = (this.config.tarde1_activo === true);
+                this.currentTarde2Active = (this.config.tarde2_activo === true);
                 this.currentNocheActive = (this.config.noche_activo === true);
 
-                if(document.getElementById('time-badge-t')) {
-                    document.getElementById('time-badge-t').innerText = this.config.prog_tarde ? 
-                        "PROGRAMADO: " + (this.config.hora_tarde || '--:--') : "ACTIVACIÓN MANUAL";
+                if(document.getElementById('time-badge-tarde1')) {
+                    document.getElementById('time-badge-tarde1').innerText = this.config.prog_tarde1 ? 
+                        "PROGRAMADO: " + (this.config.hora_tarde1 || '--:--') : "ACTIVACIÓN MANUAL";
                 }
-                if(document.getElementById('time-badge-n')) {
-                    document.getElementById('time-badge-n').innerText = this.config.prog_noche ? 
+                if(document.getElementById('time-badge-tarde2')) {
+                    document.getElementById('time-badge-tarde2').innerText = this.config.prog_tarde2 ? 
+                        "PROGRAMADO: " + (this.config.hora_tarde2 || '--:--') : "ACTIVACIÓN MANUAL";
+                }
+                if(document.getElementById('time-badge-noche')) {
+                    document.getElementById('time-badge-noche').innerText = this.config.prog_noche ? 
                         "PROGRAMADO: " + (this.config.hora_noche || '--:--') : "ACTIVACIÓN MANUAL";
                 }
 
-                this.upUI('badge-m', 'card-m', this.currentMananaActive);
-                this.upUI('badge-t', 'card-t', this.currentTardeActive);
-                this.upUI('badge-n', 'card-n', this.currentNocheActive);
+                this.upUI('badge-tarde1', 'card-tarde1', this.currentTarde1Active);
+                this.upUI('badge-tarde2', 'card-tarde2', this.currentTarde2Active);
+                this.upUI('badge-noche', 'card-noche', this.currentNocheActive);
             },
 
             upUI: function(bid, cid, act) {
@@ -334,7 +300,7 @@
                 overlay.style.display = 'flex';
                 
                 const steps = [
-                    {p:"25%",t:"VERIFICANDO HORA DE SERVIDOR..."},
+                    {p:"25%",t:"VERIFICANDO CONEXIÓN A BASE DE DATOS..."},
                     {p:"50%",t:"BUSCANDO IDENTIDAD EN PADRÓN..."},
                     {p:"85%",t:"CARGANDO PERFIL ESTUDIANTIL..."},
                     {p:"100%",t:"ACCESO AUTORIZADO"}
@@ -342,7 +308,7 @@
                 for (const s of steps) { 
                     msg.innerText = s.t; 
                     bar.style.width = s.p; 
-                    await new Promise(r => setTimeout(r, 1500)); 
+                    await new Promise(r => setTimeout(r, 1000)); 
                 }
 
                 db.ref('alumnos/' + dni).once('value').then(snap => {
@@ -381,76 +347,30 @@
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
             },
 
-            goToTarde: function() {
-                if (this.currentTardeActive && this.alumno) {
+            // ENVÍA A LA OTRA PÁGINA (PASA DATOS POR SESSIONSTORAGE)
+            goToPage: function(pageUrl, turnoId) {
+                let isActive = false;
+                if (turnoId === 'tarde1') isActive = this.currentTarde1Active;
+                if (turnoId === 'tarde2') isActive = this.currentTarde2Active;
+                if (turnoId === 'noche') isActive = this.currentNocheActive;
+
+                if (isActive && this.alumno) {
+                    // Validamos sesión para que la otra página deje entrar
                     sessionStorage.setItem('valid_session', 'true'); 
                     sessionStorage.setItem('auth_timestamp', Date.now());
-                    window.location.href = "turnotarde.html";
+                    
+                    // Guardamos la info del alumno para no tener que volver a consultarla
+                    sessionStorage.setItem('alumno_dni', this.alumno.dni);
+                    sessionStorage.setItem('alumno_nombre', this.alumno.Estudiante);
+                    sessionStorage.setItem('alumno_codigo', this.alumno.Codigo || this.alumno.codigo || "S/C");
+                    
+                    // Guardamos el ID del turno exacto ('tarde1', 'tarde2', 'noche')
+                    sessionStorage.setItem('turno_activo', turnoId);
+
+                    window.location.href = pageUrl;
                 } else {
                     Swal.fire({icon: 'error', title: 'Turno Cerrado', text: 'El delegado ha cerrado este turno.', background: '#111', color: '#fff'});
                 }
-            },
-
-            requestTicket: function(turno) {
-                if (turno === 'tarde' && !this.currentMananaActive) return Swal.fire('Acceso Denegado', 'El turno solo se habilita de 9:00 PM a 7:00 AM.', 'error');
-                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El delegado ha cerrado este turno.', 'error');
-
-                const fecha = this.getRealTime().toISOString().split('T')[0]; 
-                const ruta = `sistema/viajes/${fecha}/${turno}`;
-                
-                document.getElementById('scanning-overlay').style.display = 'flex';
-                document.getElementById('loader-msg').innerText = "GENERANDO TICKET OFICIAL...";
-                
-                db.ref(`${ruta}/registros/${this.alumno.dni}`).once('value').then(snap => {
-                    if(snap.exists()) return this.renderTicket(turno, snap.val());
-                    
-                    db.ref(`${ruta}/contador`).transaction(c => (c || 0) + 1, (err, comm, snapC) => {
-                        if(err) {
-                            document.getElementById('scanning-overlay').style.display = 'none';
-                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase.', 'error');
-                        }
-
-                        if(comm){
-                            const data = { orden: snapC.val(), nombre: this.alumno.Estudiante || "Estudiante", hora: new Date().toLocaleTimeString() };
-                            db.ref(`${ruta}/registros/${this.alumno.dni}`).set(data)
-                            .then(() => {
-                                this.renderTicket(turno, data);
-                            }).catch(e => {
-                                document.getElementById('scanning-overlay').style.display = 'none';
-                                Swal.fire('Error', 'No se pudo guardar el ticket.', 'error');
-                            });
-                        }
-                    });
-                });
-            },
-
-            renderTicket: function(turno, data) {
-                document.getElementById('t-nom').innerText = data.nombre;
-                document.getElementById('t-dni').innerText = this.alumno.dni;
-                document.getElementById('t-cod').innerText = this.alumno.Codigo || this.alumno.codigo || "S/C";
-                document.getElementById('t-turno-val').innerText = turno.toUpperCase();
-                
-                const fOpc = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-                document.getElementById('t-fecha').innerText = this.getRealTime().toLocaleDateString('es-PE', fOpc).toUpperCase();
-                
-                const area = document.getElementById('seat-area');
-                if (data.orden <= (this.config.cupos_maximos || 40)) {
-                    area.innerText = data.orden.toString().padStart(2,'0');
-                    area.style.color = "#000";
-                } else {
-                    area.innerText = "PARADO";
-                    area.style.color = "#e11d48";
-                    area.style.fontSize = "70px";
-                }
-
-                document.getElementById('qrcode-vip').innerHTML = "";
-                const turnoLetra = turno.charAt(0).toUpperCase(); 
-                const qrText = `UNAC-V-${this.alumno.dni}-${turnoLetra}-${data.orden}`;
-                new QRCode(document.getElementById("qrcode-vip"), { text: qrText, width: 220, height: 220, colorDark: "#000000", colorLight: "#ffffff", correctLevel : QRCode.CorrectLevel.H });
-                
-                document.getElementById('scanning-overlay').style.display = 'none';
-                document.getElementById('step-2').classList.add('hidden-section');
-                document.getElementById('step-3').classList.remove('hidden-section');
             },
 
             initThree: function(id) {
