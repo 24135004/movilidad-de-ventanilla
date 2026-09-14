@@ -364,7 +364,7 @@
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
         let tokenActivo = localStorage.getItem('unac_session_token') || "";
         let misPermisos = []; 
-        let subDelegadosData = {}; // Guarda la lista de delegados para mostrarla
+        let subDelegadosData = {}; 
 
         let listaGlobalAlumnos = []; 
         let directorioAlumnos = {}; 
@@ -390,50 +390,76 @@
             }
         };
 
-        // ====== INICIO DE SESIÓN MULTI-DELEGADO ======
+        // ====== INICIO DE SESIÓN MULTI-DELEGADO INTEGRADO ======
         async function intentarLogin() {
             const dni = document.getElementById('userDni').value.trim();
             const pass = document.getElementById('userPass').value.trim();
-            if(!dni || !pass) { return Swal.fire({ icon: 'error', title: 'Error', text: 'Ingrese sus credenciales', background: '#111', color: '#fff' }); }
+            if(!dni || !pass) { 
+                return Swal.fire({ icon: 'error', title: 'Error', text: 'Ingrese sus credenciales', background: '#111', color: '#fff' }); 
+            }
             
             try {
                 if (dni === "71886034") {
+                    // Login como Administrador Maestro (Firebase Auth)
                     const fakeEmail = `${dni}@unac.edu.pe`;
                     await auth.signInWithEmailAndPassword(fakeEmail, pass);
                 } else {
+                    // Delegado secundario: cerrar sesiones residuales de Auth si las hubiera
+                    if (auth.currentUser) {
+                        try { await auth.signOut(); } catch(e) {}
+                    }
+
+                    // Consultar en la base de datos de delegados
                     const snap = await db.ref(`sistema/delegados_auth/sub_users/${dni}`).once('value');
-                    if(!snap.exists()) throw new Error('Usuario no registrado o no reconocido.');
+                    if(!snap.exists()) throw new Error('Delegado no registrado en el sistema.');
+                    
                     const userData = snap.val();
                     if(userData.password !== pass) throw new Error('La contraseña es incorrecta.');
-                    if(userData.activo === false) throw new Error('El Administrador ha bloqueado tu acceso.');
+                    if(userData.activo === false) throw new Error('El Administrador ha deshabilitado tu acceso.');
                 }
 
+                // Generar token de sesión único y registrarlo en Firebase
                 const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                await db.ref(`sistema/delegados_auth/sesiones/${dni}`).set({ estado: 'activo', ultimo_ingreso: new Date().toLocaleString(), token: newToken });
+                await db.ref(`sistema/delegados_auth/sesiones/${dni}`).set({ 
+                    estado: 'activo', 
+                    ultimo_ingreso: new Date().toLocaleString(), 
+                    token: newToken 
+                });
 
                 localStorage.setItem('unac_session_dni', dni);
                 localStorage.setItem('unac_session_token', newToken);
                 
-                Swal.fire({ title: '¡Acceso Concedido!', icon: 'success', timer: 1500, showConfirmButton: false, background: '#111', color: '#fff' })
-                    .then(() => { location.reload(); });
+                Swal.fire({ 
+                    title: '¡Acceso Concedido!', 
+                    icon: 'success', 
+                    timer: 1300, 
+                    showConfirmButton: false, 
+                    background: '#111', 
+                    color: '#fff' 
+                }).then(() => { 
+                    location.reload(); 
+                });
 
             } catch (error) { 
                 let msg = error.message;
                 if(error.code === 'auth/wrong-password') msg = "Contraseña maestra incorrecta.";
-                if(error.code === 'auth/user-not-found') msg = "El maestro no fue encontrado.";
+                if(error.code === 'auth/user-not-found') msg = "El usuario maestro no existe en Auth.";
+                if(error.code === 'PERMISSION_DENIED') msg = "Permiso denegado en la base de datos. Verifica las reglas.";
                 Swal.fire({ icon: 'error', title: 'Acceso Rechazado', text: msg, background: '#111', color: '#fff' });
             }
         }
-        // =====================================
+        // ========================================================
 
         async function cerrarSesion() { 
             if (delegadoActivo) {
                 try {
-                    db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/token`).remove();
-                    db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/estado`).set('inactivo');
+                    await db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/token`).remove();
+                    await db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/estado`).set('inactivo');
                 } catch(e) {}
             }
-            if (delegadoActivo === "71886034") await auth.signOut();
+            if (auth.currentUser) {
+                try { await auth.signOut(); } catch(e) {}
+            }
             localStorage.removeItem('unac_session_dni'); 
             localStorage.removeItem('unac_session_token');
             location.reload(); 
@@ -480,7 +506,7 @@
             document.getElementById('cfg-sub-dni').value = "";
             document.getElementById('cfg-sub-pass').value = "";
             document.getElementById('perm-tarde1').checked = false;
-            document.getElementById('perm-tarde2').checked = true; // Por defecto Tarde 6PM
+            document.getElementById('perm-tarde2').checked = true;
             document.getElementById('perm-noche').checked = false;
             document.getElementById('cfg-sub-activo').checked = true;
             document.getElementById('cfg-sub-dni').focus();
@@ -526,7 +552,6 @@
         }
 
         function eliminarDelegado(dniDirecto = null) {
-            // Si damos clic en la lista usamos dniDirecto, si no, usamos el del formulario
             let dni = (typeof dniDirecto === 'string') ? dniDirecto : document.getElementById('cfg-sub-dni').value.trim();
             
             if(!dni || dni.length !== 8) return notificarFlash("ERROR", "error", "Selecciona un DNI primero");
@@ -540,7 +565,6 @@
                     db.ref(`sistema/delegados_auth/sub_users/${dni}`).remove();
                     db.ref(`sistema/delegados_auth/sesiones/${dni}`).remove();
                     
-                    // Si el usuario eliminado estaba escrito en el formulario, lo limpiamos
                     if(document.getElementById('cfg-sub-dni').value.trim() === dni) {
                         limpiarFormDelegado();
                     }
@@ -663,7 +687,6 @@
                 misPermisos = ['tarde1', 'tarde2', 'noche'];
                 document.getElementById('master-control-btn').classList.remove('hidden');
                 
-                // Cargar lista de subdelegados en tiempo real para el maestro
                 db.ref('sistema/delegados_auth/sub_users').on('value', snap => {
                     subDelegadosData = snap.val() || {};
                     renderListaDelegados();
