@@ -22,7 +22,7 @@
         :root { --accent: #00E5FF; --dark: #050505; --red-bg: #ef4444; --green-bg: #10b981; }
         body { background-color: var(--dark); font-family: 'Inter', sans-serif; color: white; margin: 0; min-height: 100vh; }
         .glass { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 20px; }
-        input[type="text"], input[type="number"], input[type="time"], input[type="password"] { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 229, 255, 0.3); color: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; outline: none; text-align: center; font-weight: 700; }
+        input[type="text"], input[type="number"], input[type="time"], input[type="password"] { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 229, 255, 0.3); color: white; padding: 12px; border-radius: 10px; margin-bottom: 10px; outline: none; text-align: center; font-weight: 700; }
         
         .btn-gold { background: var(--accent); color: black; width: 100%; padding: 15px; border-radius: 10px; font-weight: 900; text-transform: uppercase; transition: 0.3s; cursor: pointer; }
         #reader { width: 100% !important; border: none !important; border-radius: 15px; overflow: hidden; background: #111; }
@@ -124,15 +124,27 @@
 
     <!-- MODAL CONTROL DELEGADOS (SOLO MAESTRO) -->
     <div id="modal-control-delegados" class="modal-overlay">
-        <div class="glass p-6 w-[90%] max-w-sm relative text-center">
+        <div class="glass p-6 w-[95%] max-w-sm relative text-center max-h-[95vh] overflow-y-auto">
             <button onclick="cerrarControlDelegados()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
-            <h2 class="text-xl font-black text-purple-500 uppercase italic mb-4"><i class="fa-solid fa-users-gear"></i> Gestión de Delegados</h2>
+            <h2 class="text-xl font-black text-purple-500 uppercase italic mb-4"><i class="fa-solid fa-users-gear"></i> Gestión Delegados</h2>
             
-            <div class="bg-black/40 border border-white/5 p-4 rounded-xl mb-4 text-left">
-                <label class="text-[9px] font-black text-cyan-400 uppercase tracking-widest block mb-1">Buscar / Crear DNI Sub-Delegado</label>
+            <!-- LISTA DE DELEGADOS ACTIVOS -->
+            <div class="bg-black/40 border border-white/5 p-3 rounded-xl mb-4 text-left">
+                <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
+                    <h3 class="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Registrados (<span id="contador-delegados">0</span>)</h3>
+                    <button onclick="limpiarFormDelegado()" class="text-[9px] text-gray-300 hover:text-white bg-white/10 px-2 py-1 rounded"><i class="fa-solid fa-plus"></i> Nuevo</button>
+                </div>
+                <div id="lista-delegados" class="max-h-36 overflow-y-auto space-y-2 pr-1">
+                    <p class="text-[9px] text-gray-500 italic text-center py-2">Cargando...</p>
+                </div>
+            </div>
+
+            <!-- FORMULARIO CREAR / EDITAR -->
+            <div class="bg-black/40 border border-white/5 p-4 rounded-xl mb-2 text-left">
+                <label class="text-[9px] font-black text-green-400 uppercase tracking-widest block mb-1" id="lbl-form-title">Añadir / Editar DNI</label>
                 <input type="text" id="cfg-sub-dni" placeholder="Ej: 77570731" maxlength="8">
                 
-                <label class="text-[9px] font-black text-cyan-400 uppercase tracking-widest block mb-1 mt-2">Contraseña de Acceso</label>
+                <label class="text-[9px] font-black text-cyan-400 uppercase tracking-widest block mb-1">Contraseña de Acceso</label>
                 <input type="text" id="cfg-sub-pass" placeholder="Asigna una clave">
                 
                 <label class="text-[10px] font-black text-white uppercase tracking-widest block mt-3 mb-2 border-b border-white/10 pb-1">Permisos de Turno</label>
@@ -142,18 +154,23 @@
                     <label><input type="checkbox" id="perm-noche"> Activar Noche (10:15 PM)</label>
                 </div>
                 
-                <div class="flex justify-between items-center mt-4 border-t border-white/10 pt-4 mb-4">
+                <div class="flex justify-between items-center mt-3 border-t border-white/10 pt-3 mb-4">
                     <span class="text-[10px] font-black text-white uppercase tracking-widest">Permitir Ingreso al Panel</span>
                     <label class="switch"><input type="checkbox" id="cfg-sub-activo" checked><span class="slider"></span></label>
                 </div>
 
                 <button onclick="guardarSubUsuario()" class="w-full bg-green-900/50 hover:bg-green-700 text-green-400 hover:text-white border border-green-600 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest transition shadow-lg mb-2">
-                    <i class="fa-solid fa-floppy-disk"></i> Guardar Privilegios
+                    <i class="fa-solid fa-floppy-disk"></i> Guardar Cambios
                 </button>
 
-                <button onclick="forzarCierreSecundario()" class="w-full bg-red-900/50 hover:bg-red-700 text-red-400 hover:text-white border border-red-600 font-black py-2 rounded-xl text-[9px] uppercase tracking-widest transition shadow-lg">
-                    <i class="fa-solid fa-power-off"></i> Expulsar DNI Indicado
-                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="forzarCierreEspecifico()" class="w-full bg-orange-900/50 hover:bg-orange-700 text-orange-400 hover:text-white border border-orange-600 font-black py-2 rounded-xl text-[8px] uppercase tracking-widest transition shadow-lg">
+                        <i class="fa-solid fa-power-off"></i> Expulsar
+                    </button>
+                    <button onclick="eliminarDelegado()" class="w-full bg-red-900/50 hover:bg-red-700 text-red-400 hover:text-white border border-red-600 font-black py-2 rounded-xl text-[8px] uppercase tracking-widest transition shadow-lg">
+                        <i class="fa-solid fa-trash"></i> Eliminar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -209,7 +226,7 @@
         <div id="scanner-container" class="w-full max-w-lg px-4 py-4 hidden">
             <div id="master-control-btn" class="hidden w-full mb-4">
                 <button onclick="abrirControlDelegados()" class="w-full bg-purple-900/50 text-purple-400 border border-purple-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-purple-800 hover:text-white transition shadow-lg">
-                    <i class="fa-solid fa-user-tie"></i> Gestionar Acceso de Delegados
+                    <i class="fa-solid fa-users-gear"></i> Gestionar Permisos y Accesos
                 </button>
             </div>
 
@@ -347,6 +364,7 @@
         let delegadoActivo = localStorage.getItem('unac_session_dni') || "";
         let tokenActivo = localStorage.getItem('unac_session_token') || "";
         let misPermisos = []; 
+        let subDelegadosData = {}; // Guarda la lista de delegados para mostrarla
 
         let listaGlobalAlumnos = []; 
         let directorioAlumnos = {}; 
@@ -380,11 +398,9 @@
             
             try {
                 if (dni === "71886034") {
-                    // Maestro usa Firebase Auth directamente
                     const fakeEmail = `${dni}@unac.edu.pe`;
                     await auth.signInWithEmailAndPassword(fakeEmail, pass);
                 } else {
-                    // Validar Sub-Delegado desde Base de Datos
                     const snap = await db.ref(`sistema/delegados_auth/sub_users/${dni}`).once('value');
                     if(!snap.exists()) throw new Error('Usuario no registrado o no reconocido.');
                     const userData = snap.val();
@@ -392,7 +408,6 @@
                     if(userData.activo === false) throw new Error('El Administrador ha bloqueado tu acceso.');
                 }
 
-                // Generar token para control concurrente
                 const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 await db.ref(`sistema/delegados_auth/sesiones/${dni}`).set({ estado: 'activo', ultimo_ingreso: new Date().toLocaleString(), token: newToken });
 
@@ -424,32 +439,62 @@
             location.reload(); 
         }
 
+        // ====== GESTIÓN DE DELEGADOS (UI LISTA Y FORMULARIO) ======
         function abrirControlDelegados() { document.getElementById('modal-control-delegados').style.display = 'flex'; }
         function cerrarControlDelegados() { document.getElementById('modal-control-delegados').style.display = 'none'; }
         
-        // Auto-cargar datos si existe el Sub-Delegado buscado
-        document.getElementById('cfg-sub-dni').addEventListener('input', async (e) => {
-            const dniBuscado = e.target.value.trim();
-            if(dniBuscado.length === 8) {
-                const snap = await db.ref(`sistema/delegados_auth/sub_users/${dniBuscado}`).once('value');
-                if(snap.exists()) {
-                    const data = snap.val();
-                    document.getElementById('cfg-sub-pass').value = data.password || "";
-                    document.getElementById('perm-tarde1').checked = data.permisos?.includes('tarde1');
-                    document.getElementById('perm-tarde2').checked = data.permisos?.includes('tarde2');
-                    document.getElementById('perm-noche').checked = data.permisos?.includes('noche');
-                    document.getElementById('cfg-sub-activo').checked = data.activo !== false;
-                    notificarFlash("USUARIO ENCONTRADO", "success", "Datos cargados");
-                } else {
-                    document.getElementById('cfg-sub-pass').value = "";
-                    document.getElementById('perm-tarde1').checked = false;
-                    document.getElementById('perm-tarde2').checked = true; // Por defecto Tarde 6PM
-                    document.getElementById('perm-noche').checked = false;
-                    document.getElementById('cfg-sub-activo').checked = true;
-                    notificarFlash("NUEVO REGISTRO", "warning", "Asigne clave y permisos");
-                }
+        function renderListaDelegados() {
+            const listEl = document.getElementById('lista-delegados');
+            const dnis = Object.keys(subDelegadosData);
+            document.getElementById('contador-delegados').innerText = dnis.length;
+            
+            if(dnis.length === 0) {
+                listEl.innerHTML = '<p class="text-[9px] text-gray-500 italic text-center py-2">No hay delegados registrados aún.</p>';
+                return;
             }
-        });
+
+            listEl.innerHTML = dnis.map(dni => {
+                const data = subDelegadosData[dni];
+                const permisos = data.permisos || [];
+                const pText = [
+                    permisos.includes('tarde1') ? '<span class="text-yellow-400 font-bold">2:15 PM</span>' : '',
+                    permisos.includes('tarde2') ? '<span class="text-orange-400 font-bold">6:00 PM</span>' : '',
+                    permisos.includes('noche') ? '<span class="text-purple-400 font-bold">10:15 PM</span>' : ''
+                ].filter(Boolean).join(' | ');
+
+                return `
+                <div class="bg-white/5 border ${data.activo ? 'border-green-500/30' : 'border-red-500/30'} p-2.5 rounded-lg flex justify-between items-center cursor-pointer hover:bg-white/10 transition mb-1" onclick="cargarDelegadoEdit('${dni}')">
+                    <div class="leading-tight">
+                        <p class="text-[12px] font-black text-white mb-0.5"><i class="fa-solid fa-user text-gray-400 text-[10px] mr-1"></i> ${dni} ${data.activo ? '<i class="fa-solid fa-circle-check text-green-500 ml-1 text-[10px]"></i>' : '<i class="fa-solid fa-ban text-red-500 ml-1 text-[10px]"></i>'}</p>
+                        <p class="text-[8px] font-mono text-gray-400 uppercase tracking-widest">${pText || 'NINGÚN TURNO'}</p>
+                    </div>
+                    <i class="fa-solid fa-pen-to-square text-cyan-400 text-lg opacity-50 hover:opacity-100"></i>
+                </div>`;
+            }).join('');
+        }
+
+        function limpiarFormDelegado() {
+            document.getElementById('cfg-sub-dni').value = "";
+            document.getElementById('cfg-sub-pass').value = "";
+            document.getElementById('perm-tarde1').checked = false;
+            document.getElementById('perm-tarde2').checked = true; // Por defecto Tarde 6PM
+            document.getElementById('perm-noche').checked = false;
+            document.getElementById('cfg-sub-activo').checked = true;
+            document.getElementById('cfg-sub-dni').focus();
+            notificarFlash("NUEVO REGISTRO", "success", "Llena los datos abajo");
+        }
+
+        function cargarDelegadoEdit(dni) {
+            const data = subDelegadosData[dni];
+            if(!data) return;
+            document.getElementById('cfg-sub-dni').value = dni;
+            document.getElementById('cfg-sub-pass').value = data.password;
+            document.getElementById('perm-tarde1').checked = data.permisos?.includes('tarde1');
+            document.getElementById('perm-tarde2').checked = data.permisos?.includes('tarde2');
+            document.getElementById('perm-noche').checked = data.permisos?.includes('noche');
+            document.getElementById('cfg-sub-activo').checked = data.activo !== false;
+            notificarFlash("DELEGADO CARGADO", "success", `DNI ${dni}`);
+        }
 
         function guardarSubUsuario() {
             const dni = document.getElementById('cfg-sub-dni').value.trim();
@@ -466,16 +511,35 @@
                 permisos: permisos,
                 activo: document.getElementById('cfg-sub-activo').checked
             });
-            notificarFlash("GUARDADO", "success", "Sub-Delegado Actualizado");
+            notificarFlash("GUARDADO", "success", "Delegado Actualizado");
         }
 
-        function forzarCierreSecundario() {
+        function forzarCierreEspecifico() {
             const dni = document.getElementById('cfg-sub-dni').value.trim();
-            if(!dni) return notificarFlash("ERROR", "error", "Escriba un DNI");
+            if(!dni || dni.length !== 8) return notificarFlash("ERROR", "error", "Selecciona o escribe un DNI");
             db.ref(`sistema/delegados_auth/sesiones/${dni}/token`).set('EXPULSADO');
             db.ref(`sistema/delegados_auth/sesiones/${dni}/estado`).set('inactivo');
             notificarFlash("EXPULSADO", "success", `Sesión de ${dni} cerrada.`);
         }
+
+        function eliminarDelegado() {
+            const dni = document.getElementById('cfg-sub-dni').value.trim();
+            if(!dni || dni.length !== 8) return notificarFlash("ERROR", "error", "Selecciona un DNI primero");
+            
+            Swal.fire({
+                title: '¿Eliminar DNI?',
+                text: `El DNI ${dni} perderá el acceso permanentemente.`,
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, Eliminar', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+            }).then((res) => {
+                if(res.isConfirmed) {
+                    db.ref(`sistema/delegados_auth/sub_users/${dni}`).remove();
+                    db.ref(`sistema/delegados_auth/sesiones/${dni}`).remove();
+                    limpiarFormDelegado();
+                    notificarFlash("ELIMINADO", "success", "Delegado borrado");
+                }
+            });
+        }
+        // ==========================================================
 
         function toggleTimeConfig(turno) {
             const isChecked = document.getElementById(`cfg-${turno}-prog`).checked;
@@ -485,7 +549,6 @@
         function abrirAjustes() {
             document.getElementById('cfg-cupos').value = configGlobal.cupos;
             
-            // Mostrar configuraciones solo de los turnos permitidos al delegado
             document.getElementById('cfg-box-tarde1').style.display = misPermisos.includes('tarde1') ? 'block' : 'none';
             document.getElementById('cfg-tarde1-prog').checked = configGlobal.prog_tarde1;
             document.getElementById('cfg-hora-tarde1').value = configGlobal.hora_tarde1;
@@ -540,7 +603,6 @@
         }
 
         function actualizarUI_Tarjetas() {
-            // Activar visualización según permisos
             document.getElementById('btn-ajustes-bus').classList.remove('hidden');
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 document.getElementById(`card-${t}`).style.display = misPermisos.includes(t) ? 'block' : 'none';
@@ -575,7 +637,6 @@
         function iniciarSistema() {
             document.getElementById('header-user-dni').innerText = `DNI: ${delegadoActivo}`;
 
-            // Monitorear expulsiones remotas o login en otros lados
             db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/token`).on('value', snap => {
                 const firebaseToken = snap.val();
                 const miTokenLocal = localStorage.getItem('unac_session_token');
@@ -588,10 +649,16 @@
                 }
             });
 
-            // Establecer permisos según rol
             if (delegadoActivo === "71886034") {
                 misPermisos = ['tarde1', 'tarde2', 'noche'];
                 document.getElementById('master-control-btn').classList.remove('hidden');
+                
+                // Cargar lista de subdelegados en tiempo real para el maestro
+                db.ref('sistema/delegados_auth/sub_users').on('value', snap => {
+                    subDelegadosData = snap.val() || {};
+                    renderListaDelegados();
+                });
+                
                 actualizarUI_Tarjetas();
             } else {
                 db.ref(`sistema/delegados_auth/sub_users/${delegadoActivo}`).on('value', snap => {
@@ -671,7 +738,6 @@
             
             const liberarCamara = () => { setTimeout(() => { isScannerCooldown = false; document.getElementById('scanner-cooldown-overlay').style.display = 'none'; }, 2500); };
 
-            // Extraer el DNI del QR (Compatible con cualquier formato anterior de tu sistema)
             let dniScanned = ""; 
             if (text.startsWith('UNAC-V-')) { const parts = text.split('-'); if (parts.length >= 3) dniScanned = parts[2]; }
             else if (text.includes(':')) { dniScanned = text.split(':')[1]; } 
@@ -682,12 +748,9 @@
 
             const fechaHoy = getFechaID();
             
-            // Buscar el DNI en los 3 turnos para ver dónde reservó el alumno
             let nombreAlumno = null;
-            
             const snapT1 = await db.ref(`sistema/viajes/${fechaHoy}/tarde1/registros/${dniScanned}`).once('value');
             if (snapT1.exists()) nombreAlumno = snapT1.val().nombre;
-            
             if(!nombreAlumno) {
                 const snapT2 = await db.ref(`sistema/viajes/${fechaHoy}/tarde2/registros/${dniScanned}`).once('value');
                 if (snapT2.exists()) nombreAlumno = snapT2.val().nombre;
