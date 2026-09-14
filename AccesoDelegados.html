@@ -468,7 +468,10 @@
                         <p class="text-[12px] font-black text-white mb-0.5"><i class="fa-solid fa-user text-gray-400 text-[10px] mr-1"></i> ${dni} ${data.activo ? '<i class="fa-solid fa-circle-check text-green-500 ml-1 text-[10px]"></i>' : '<i class="fa-solid fa-ban text-red-500 ml-1 text-[10px]"></i>'}</p>
                         <p class="text-[8px] font-mono text-gray-400 uppercase tracking-widest">${pText || 'NINGÚN TURNO'}</p>
                     </div>
-                    <i class="fa-solid fa-pen-to-square text-cyan-400 text-lg opacity-50 hover:opacity-100"></i>
+                    <div class="flex gap-4 px-2">
+                        <button class="text-cyan-400 text-lg opacity-50 hover:opacity-100"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="event.stopPropagation(); eliminarDelegado('${dni}')" class="text-red-500 text-lg opacity-50 hover:opacity-100"><i class="fa-solid fa-trash"></i></button>
+                    </div>
                 </div>`;
             }).join('');
         }
@@ -522,8 +525,10 @@
             notificarFlash("EXPULSADO", "success", `Sesión de ${dni} cerrada.`);
         }
 
-        function eliminarDelegado() {
-            const dni = document.getElementById('cfg-sub-dni').value.trim();
+        function eliminarDelegado(dniDirecto = null) {
+            // Si damos clic en la lista usamos dniDirecto, si no, usamos el del formulario
+            let dni = (typeof dniDirecto === 'string') ? dniDirecto : document.getElementById('cfg-sub-dni').value.trim();
+            
             if(!dni || dni.length !== 8) return notificarFlash("ERROR", "error", "Selecciona un DNI primero");
             
             Swal.fire({
@@ -534,7 +539,12 @@
                 if(res.isConfirmed) {
                     db.ref(`sistema/delegados_auth/sub_users/${dni}`).remove();
                     db.ref(`sistema/delegados_auth/sesiones/${dni}`).remove();
-                    limpiarFormDelegado();
+                    
+                    // Si el usuario eliminado estaba escrito en el formulario, lo limpiamos
+                    if(document.getElementById('cfg-sub-dni').value.trim() === dni) {
+                        limpiarFormDelegado();
+                    }
+                    
                     notificarFlash("ELIMINADO", "success", "Delegado borrado");
                 }
             });
