@@ -99,7 +99,8 @@
                     </div>
 
                     <div class="mb-8 relative">
-                        <input type="text" id="dniDisplay" class="input-display" placeholder="••••••••" readonly>
+                        <!-- SE AGREGARON REGLAS ESTRICTAS CONTRA AUTOCOMPLETADO Y TECLADO VIRTUAL -->
+                        <input type="text" id="dniDisplay" class="input-display" placeholder="••••••••" readonly autocomplete="off" inputmode="none" onfocus="this.blur()">
                     </div>
 
                     <!-- TECLADO NUMÉRICO -->
@@ -414,7 +415,12 @@
                 } catch (e) {
                     overlay.style.display = 'none';
                     console.error(e);
-                    Swal.fire('Error de Red', 'Problemas de conexión con el servidor. Reintente.', 'error');
+                    // Manejo de error mejorado para mostrar si es denegado por seguridad u otra falla.
+                    if(e.message && e.message.toLowerCase().includes("denied")) {
+                        Swal.fire('Error de Permisos', 'Transacción denegada por seguridad de Firebase. Por favor revisa las Reglas en la base de datos.', 'error');
+                    } else {
+                        Swal.fire('Error de Red', 'Problemas de conexión con el servidor. Reintente.', 'error');
+                    }
                 }
             },
 
