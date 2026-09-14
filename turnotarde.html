@@ -99,7 +99,7 @@
                     </div>
 
                     <div class="mb-8 relative">
-                        <!-- SE AGREGARON REGLAS ESTRICTAS CONTRA AUTOCOMPLETADO Y TECLADO VIRTUAL -->
+                        <!-- REGLAS ESTRICTAS CONTRA AUTOCOMPLETADO Y TECLADO VIRTUAL -->
                         <input type="text" id="dniDisplay" class="input-display" placeholder="••••••••" readonly autocomplete="off" inputmode="none" onfocus="this.blur()">
                     </div>
 
@@ -205,7 +205,7 @@
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyBWaBSpSwoOt6Dtgpa7GSSYI_WxogXwDzg",
+            apiKey: "MnQGBqZY5iStIvWh3JfEyMLK2rCEOpLAzObnilBq",
             authDomain: "ventanilla---01.firebaseapp.com",
             databaseURL: "https://ventanilla---01-default-rtdb.firebaseio.com", 
             projectId: "ventanilla---01",
@@ -219,45 +219,66 @@
         let typedDni = ""; // Inicia vacío, el alumno DEBE usar el teclado
         let serverTimeOffset = 0;
         
-        // Variables globales para la sincronización perfecta
         let turnoDataLoaded = false;
         window.estadoTurno = { activo: false, cupos: 40 };
 
-        // Lee el turno seleccionado en la pantalla anterior (por defecto 6:00PM si no hay nada)
+        // Lee el turno seleccionado en la pantalla anterior
         let turnoActivoID = sessionStorage.getItem('turno_activo') || 'tarde2'; 
         let nombreDisplayTurno = "TARDE";
         let letraQR = "T";
 
-        // Configura los textos dependiendo del turno elegido
         if(turnoActivoID === 'tarde1') { nombreDisplayTurno = "TARDE (2:15 PM)"; letraQR = "T1"; }
         else if(turnoActivoID === 'tarde2') { nombreDisplayTurno = "TARDE (6:00 PM)"; letraQR = "T2"; }
         else if(turnoActivoID === 'noche') { nombreDisplayTurno = "NOCHE (10:15 PM)"; letraQR = "N"; }
 
         const Core = {
             init: function() { 
-                // Actualiza el título para que el alumno sepa qué turno está firmando
+                
+                // --- INICIO: FILTRO DE SEGURIDAD ESTRICTO --- //
+                const isValid = sessionStorage.getItem('valid_session');
+                const authTime = sessionStorage.getItem('auth_timestamp');
+                const sessionDni = sessionStorage.getItem('alumno_dni');
+
+                // 1. Verificar si viene del filtro ticket.html
+                if (isValid !== 'true' || !authTime || !sessionDni) {
+                    window.location.replace('ticket.html');
+                    return;
+                }
+
+                // 2. DETECCIÓN DE RECARGA (ANTI F5 / ATRÁS)
+                if (window.performance && typeof window.performance.getEntriesByType === "function") {
+                    const navEntries = performance.getEntriesByType("navigation");
+                    if (navEntries.length > 0 && (navEntries[0].type === "reload" || navEntries[0].type === "back_forward")) {
+                        // Si actualizó la página o volvió, destruimos la sesión por seguridad
+                        sessionStorage.removeItem('valid_session');
+                        window.location.replace('ticket.html');
+                        return;
+                    }
+                }
+                // --- FIN: FILTRO DE SEGURIDAD ESTRICTO --- //
+
+
                 document.getElementById('title-turno').innerText = nombreDisplayTurno;
 
-                // 1. Sincroniza la hora con Google Firebase
+                // Sincroniza la hora con Google Firebase
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
                 });
 
-                // 2. LISTENER EN TIEMPO REAL: Se conecta permanentemente al panel del Delegado
+                // Conecta al panel del Delegado en tiempo real
                 db.ref('sistema/config').on('value', snap => {
                     const data = snap.val() || {};
-                    // Escucha exactamente la variable del turno seleccionado
                     window.estadoTurno = {
                         activo: data[`${turnoActivoID}_activo`] === true,
                         cupos: data.cupos_maximos || 40
                     };
-                    turnoDataLoaded = true; // Confirma que ya leyó la base de datos real
-                    this.reaccionarAlDelegado(); // Función reactiva
+                    turnoDataLoaded = true; 
+                    this.reaccionarAlDelegado(); 
                 });
 
                 this.initThree(); 
                 
-                // 3. Evalúa SÓLO el tiempo de 1 minuto constantemente
+                // Cronómetro de seguridad de 1 minuto
                 setInterval(() => this.checkSecurityTime(), 1000);
             },
 
@@ -265,7 +286,6 @@
                 return new Date(Date.now() + serverTimeOffset);
             },
 
-            // FUNCIÓN PARA MOSTRAR PANTALLA DE BLOQUEO
             showBlockScreen: function(tipo, cuposMax = 0) {
                 const overlay = document.getElementById('blocking-overlay');
                 const title = document.getElementById('block-title');
@@ -296,11 +316,8 @@
                 overlay.style.display = 'flex';
             },
 
-            // Función Reactiva: Acciona INMEDIATAMENTE cuando el delegado toca su botón
             reaccionarAlDelegado: function() {
                 if (!turnoDataLoaded) return; 
-                
-                // Si el estudiante ya tiene su TICKET a la vista, NO LO BLOQUEAMOS.
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
 
                 const overlay = document.getElementById('blocking-overlay');
@@ -315,14 +332,13 @@
                 }
             },
 
-            // Evalúa ÚNICAMENTE la sesión de 1 minuto
             checkSecurityTime: function() {
                 const isValid = sessionStorage.getItem('valid_session');
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
 
-                // Si pasaron 60,000 ms (1 Minuto), se rompe la sesión
-                if (isValid !== 'true' || !authTime || (currentTime - authTime > 60000)) {
+                // Si pasaron 60,000 ms (1 Minuto), rompe la sesión
+                if (isValid !== 'true' || !authTime || (currentTime - parseInt(authTime) > 60000)) {
                     sessionStorage.removeItem('valid_session'); 
                     this.showBlockScreen('caducado');
                 }
@@ -337,6 +353,24 @@
 
             submitDni: async function() {
                 if(typedDni.length !== 8) return Swal.fire('Error', 'Ingrese su DNI completo de 8 dígitos mediante el teclado.', 'warning');
+                
+                // --- FILTRO DE IDENTIDAD CRUZADA --- //
+                // El estudiante no puede iniciar sesión con un DNI y generar un ticket con otro distinto.
+                const sessionDni = sessionStorage.getItem('alumno_dni');
+                if (typedDni !== sessionDni) {
+                    return Swal.fire({
+                        title: 'ALERTA DE SEGURIDAD',
+                        text: 'El DNI ingresado no coincide con el perfil autenticado en la pantalla anterior. Acción bloqueada por posible fraude.',
+                        icon: 'error',
+                        confirmButtonText: 'Regresar',
+                        background: '#111', color: '#fff'
+                    }).then(() => {
+                        sessionStorage.removeItem('valid_session');
+                        window.location.replace('ticket.html');
+                    });
+                }
+                // ----------------------------------- //
+
                 if(!turnoDataLoaded) return Swal.fire('Conectando...', 'Espere un segundo mientras nos sincronizamos con el panel.', 'info');
                 
                 const overlay = document.getElementById('scanning-overlay');
@@ -367,14 +401,12 @@
                     const refViajeTurno = db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}`);
                     const snapReg = await refViajeTurno.child(`registros/${typedDni}`).once('value');
                     
-                    // Si ya tiene ticket en ESTE turno, ENTRA DIRECTO
                     if(snapReg.exists()){
                         msg.innerText = "RECUPERANDO TICKET...";
                         this.renderFinal(alu, typedDni, snapReg.val());
                         return;
                     }
 
-                    // EVALUAMOS ESTADO PARA LOS NUEVOS TICKETS
                     if (window.estadoTurno.activo === false) {
                         overlay.style.display = 'none';
                         this.showBlockScreen('cerrado');
@@ -384,11 +416,9 @@
                     const cuposMaximos = window.estadoTurno.cupos;
                     msg.innerText = "ASIGNANDO ASIENTO EN SERVIDOR...";
                     
-                    // METODO SEGURO: Evita el error de "Transacción denegada" en Firebase
                     const countSnap = await refViajeTurno.child('contador').once('value');
                     let currentCount = countSnap.val() || 0;
 
-                    // Bloqueo estricto: Si ya se llegó al límite (ej: 40), no emite ticket.
                     if (currentCount >= cuposMaximos) {
                         overlay.style.display = 'none';
                         this.showBlockScreen('lleno', cuposMaximos);
@@ -396,11 +426,8 @@
                     }
 
                     const newSeatNumber = currentCount + 1;
-                    
-                    // Guarda el nuevo número de contador
                     await refViajeTurno.child('contador').set(newSeatNumber);
 
-                    // Guarda el ticket del alumno
                     const data = { 
                         nombre: alu.Estudiante || "Estudiante", 
                         orden: newSeatNumber,
@@ -408,16 +435,13 @@
                     };
                     
                     await refViajeTurno.child(`registros/${typedDni}`).set(data);
-                    
-                    // Todo salió bien, dibuja el ticket
                     this.renderFinal(alu, typedDni, data);
 
                 } catch (e) {
                     overlay.style.display = 'none';
                     console.error(e);
-                    // Manejo de error mejorado para mostrar si es denegado por seguridad u otra falla.
                     if(e.message && e.message.toLowerCase().includes("denied")) {
-                        Swal.fire('Error de Permisos', 'Transacción denegada por seguridad de Firebase. Por favor revisa las Reglas en la base de datos.', 'error');
+                        Swal.fire('Error de Permisos', 'Transacción denegada por seguridad de Firebase. Revisa las Reglas.', 'error');
                     } else {
                         Swal.fire('Error de Red', 'Problemas de conexión con el servidor. Reintente.', 'error');
                     }
@@ -437,13 +461,11 @@
                 document.getElementById('t-hora').innerText = ticket.hora;
                 document.getElementById('t-turno-name').innerText = nombreDisplayTurno;
                 
-                // Pinta el número de asiento asegurado
                 const seatArea = document.getElementById('seat-area');
-                seatArea.innerText = ticket.orden.toString().padStart(2, '0'); // Muestra 01, 02, etc.
+                seatArea.innerText = ticket.orden.toString().padStart(2, '0');
                 
-                // GENERACIÓN DE QR PARA DELEGADO
                 document.getElementById('qrcode-vip').innerHTML = "";
-                const qrText = `UNAC-V-${dni}-${letraQR}-${ticket.orden}`; // Ej: UNAC-V-71886034-T1-15
+                const qrText = `UNAC-V-${dni}-${letraQR}-${ticket.orden}`; 
                 new QRCode(document.getElementById("qrcode-vip"), { 
                     text: qrText, 
                     width: 170, 
