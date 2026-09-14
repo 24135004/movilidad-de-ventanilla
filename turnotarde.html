@@ -94,7 +94,7 @@
             <div id="step-1" class="w-full max-w-sm animate-fade-up">
                 <div class="glass-panel p-8 shadow-2xl">
                     <div class="text-center mb-8">
-                        <h3 class="text-3xl font-black uppercase italic tracking-tighter">Confirmación</h3>
+                        <h3 class="text-3xl font-black uppercase italic tracking-tighter" id="title-turno">Confirmación</h3>
                         <p class="text-[10px] text-gray-400 tracking-[2px] uppercase mt-1 font-bold">Digite su DNI oficial de alumno</p>
                     </div>
 
@@ -139,10 +139,13 @@
                         <!-- FECHA -->
                         <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
-                        <!-- ESTADO DE ASIENTO -->
-                        <div class="bg-green-100 border-2 border-green-500 text-green-700 px-6 py-4 rounded-2xl flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 mb-6 mx-auto w-full max-w-[250px]">
-                            <i class="fa-solid fa-chair text-3xl"></i>
-                            <span id="seat-area" class="text-3xl font-black uppercase tracking-tighter font-['Montserrat']">ASIENTO</span>
+                        <!-- ESTADO DE ASIENTO Y NÚMERO (DINÁMICO) -->
+                        <div id="seat-icon-container" class="bg-green-100 border-2 border-green-500 text-green-700 px-6 py-4 rounded-2xl flex items-center justify-center gap-4 shadow-lg shadow-green-500/20 mb-6 mx-auto w-full max-w-[250px]">
+                            <i id="seat-icon" class="fa-solid fa-chair text-4xl"></i>
+                            <div class="flex flex-col text-left">
+                                <span id="seat-text-label" class="text-[10px] font-black uppercase tracking-widest leading-none mb-1 text-green-800">N° Asiento</span>
+                                <span id="seat-area" class="text-4xl font-black uppercase tracking-tighter font-['Montserrat'] leading-none">--</span>
+                            </div>
                         </div>
 
                         <!-- CÓDIGO QR -->
@@ -173,7 +176,7 @@
                                 </div>
                                 <div>
                                     <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Turno</p>
-                                    <div class="bg-[#050505] text-yellow-500 text-[10px] px-2 py-1 rounded-md font-black inline-block mt-1 uppercase">TARDE</div>
+                                    <div id="t-turno-name" class="bg-[#050505] text-yellow-500 text-[9px] px-2 py-1 rounded-md font-black inline-block mt-1 uppercase text-center leading-tight">TARDE</div>
                                 </div>
                             </div>
                         </div>
@@ -201,11 +204,11 @@
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyBxaeAc2nq7iEeiLejvja3lKGwR4E09QS4",
-            authDomain: "ventanilla-unac.firebaseapp.com",
-            databaseURL: "https://unac-ventanilla-default-rtdb.firebaseio.com", 
-            projectId: "ventanilla-unac",
-            storageBucket: "ventanilla-unac.appspot.com",
+            apiKey: "AIzaSyBWaBSpSwoOt6Dtgpa7GSSYI_WxogXwDzg",
+            authDomain: "ventanilla---01.firebaseapp.com",
+            databaseURL: "https://ventanilla---01-default-rtdb.firebaseio.com", 
+            projectId: "ventanilla---01",
+            storageBucket: "ventanilla---01.appspot.com",
             messagingSenderId: "245380540222",
             appId: "1:245380540222:web:d4ea08b7818bf89d682e6f"
         };
@@ -219,8 +222,28 @@
         let turnoDataLoaded = false;
         window.estadoTurno = { activo: false, cupos: 40 };
 
+        // Lee el turno seleccionado en la pantalla anterior (por defecto 6:00PM si no hay nada)
+        let turnoActivoID = sessionStorage.getItem('turno_activo') || 'tarde2'; 
+        let nombreDisplayTurno = "TARDE";
+        let letraQR = "T";
+
+        // Configura los textos dependiendo del turno elegido
+        if(turnoActivoID === 'tarde1') { nombreDisplayTurno = "TARDE (2:15 PM)"; letraQR = "T1"; }
+        else if(turnoActivoID === 'tarde2') { nombreDisplayTurno = "TARDE (6:00 PM)"; letraQR = "T2"; }
+        else if(turnoActivoID === 'noche') { nombreDisplayTurno = "NOCHE (10:15 PM)"; letraQR = "N"; }
+
         const Core = {
             init: function() { 
+                // Actualiza el título para que el alumno sepa qué turno está firmando
+                document.getElementById('title-turno').innerText = nombreDisplayTurno;
+
+                // Si el alumno ya puso su DNI antes, lo precargamos en el teclado por comodidad
+                const preSavedDni = sessionStorage.getItem('alumno_dni');
+                if(preSavedDni && preSavedDni.length === 8) {
+                    typedDni = preSavedDni;
+                    document.getElementById('dniDisplay').value = typedDni;
+                }
+
                 // 1. Sincroniza la hora con Google Firebase
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
@@ -229,8 +252,9 @@
                 // 2. LISTENER EN TIEMPO REAL: Se conecta permanentemente al panel del Delegado
                 db.ref('sistema/config').on('value', snap => {
                     const data = snap.val() || {};
+                    // Escucha exactamente la variable del turno seleccionado
                     window.estadoTurno = {
-                        activo: data.tarde_activo === true,
+                        activo: data[`${turnoActivoID}_activo`] === true,
                         cupos: data.cupos_maximos || 40
                     };
                     turnoDataLoaded = true; // Confirma que ya leyó la base de datos real
@@ -348,17 +372,18 @@
                     }
 
                     msg.innerText = "BUSCANDO TICKET PREVIO...";
-                    const refViajeTarde = db.ref(`sistema/viajes/${fechaID}/tarde`);
-                    const snapReg = await refViajeTarde.child(`registros/${typedDni}`).once('value');
+                    // Se conecta a la base de datos del turno específico (tarde1, tarde2, etc)
+                    const refViajeTurno = db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}`);
+                    const snapReg = await refViajeTurno.child(`registros/${typedDni}`).once('value');
                     
-                    // REPARACIÓN: Si ya tiene ticket, ENTRA DIRECTO (así esté cerrado o lleno)
+                    // Si ya tiene ticket en ESTE turno, ENTRA DIRECTO
                     if(snapReg.exists()){
                         msg.innerText = "RECUPERANDO TICKET...";
                         this.renderFinal(alu, typedDni, snapReg.val());
                         return;
                     }
 
-                    // AHORA SÍ EVALUAMOS ESTADO PARA LOS NUEVOS
+                    // AHORA SÍ EVALUAMOS ESTADO PARA LOS NUEVOS TICKET
                     const cuposMaximos = window.estadoTurno.cupos;
 
                     if (window.estadoTurno.activo === false) {
@@ -369,8 +394,8 @@
 
                     msg.innerText = "ASIGNANDO ASIENTO EN SERVIDOR...";
                     
-                    // TRANSACCIÓN ATÓMICA: Soporte para 70+ alumnos peleando por un cupo al mismo milisegundo
-                    refViajeTarde.child('contador').transaction(
+                    // TRANSACCIÓN ATÓMICA CON BLOQUEO (Suma solo si hay cupo)
+                    refViajeTurno.child('contador').transaction(
                         (currentCount) => {
                             if ((currentCount || 0) >= cuposMaximos) return; // Cancela si se llenó
                             return (currentCount || 0) + 1; // Reserva el número
@@ -381,6 +406,7 @@
                                 return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase.', 'error');
                             }
                             if (!committed) {
+                                // SE LLENÓ EL BUS -> BLOQUEA PANTALLA
                                 overlay.style.display = 'none';
                                 this.showBlockScreen('lleno', cuposMaximos);
                                 return;
@@ -393,7 +419,7 @@
                                 hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
                             };
                             
-                            refViajeTarde.child(`registros/${typedDni}`).set(data)
+                            refViajeTurno.child(`registros/${typedDni}`).set(data)
                             .then(() => {
                                 this.renderFinal(alu, typedDni, data);
                             })
@@ -421,12 +447,25 @@
                 document.getElementById('t-dni').innerText = dni;
                 document.getElementById('t-cod').innerText = alu.Codigo || alu.codigo || "S/C";
                 document.getElementById('t-hora').innerText = ticket.hora;
+                document.getElementById('t-turno-name').innerText = nombreDisplayTurno;
                 
-                document.getElementById('seat-area').innerText = "ASIENTO";
+                // SISTEMA DINÁMICO DE ASIENTOS
+                const seatContainer = document.getElementById('seat-icon-container');
+                const seatArea = document.getElementById('seat-area');
+                const seatIcon = document.getElementById('seat-icon');
+                const seatLabel = document.getElementById('seat-text-label');
 
+                // TIENE ASIENTO ASEGURADO (VERDE)
+                seatContainer.className = "bg-green-100 border-2 border-green-500 text-green-700 px-6 py-4 rounded-2xl flex items-center justify-center gap-4 shadow-lg shadow-green-500/20 mb-6 mx-auto w-full max-w-[250px]";
+                seatIcon.className = "fa-solid fa-chair text-4xl text-green-600";
+                seatLabel.innerText = "N° ASIENTO";
+                seatLabel.className = "text-[10px] font-black uppercase tracking-widest leading-none mb-1 text-green-800";
+                seatArea.innerText = ticket.orden.toString().padStart(2, '0'); // Muestra 01, 02, etc.
+                seatArea.className = "text-5xl font-black uppercase tracking-tighter font-['Montserrat'] leading-none text-green-900";
+                
                 // GENERACIÓN DE QR PARA DELEGADO
                 document.getElementById('qrcode-vip').innerHTML = "";
-                const qrText = `UNAC-V-${dni}-T-${ticket.orden}`;
+                const qrText = `UNAC-V-${dni}-${letraQR}-${ticket.orden}`; // Ej: UNAC-V-71886034-T1-15
                 new QRCode(document.getElementById("qrcode-vip"), { 
                     text: qrText, 
                     width: 170, 
