@@ -258,14 +258,21 @@
                 }
                 // --- FIN: FILTRO DE SEGURIDAD ESTRICTO --- //
 
-
                 document.getElementById('title-turno').innerText = nombreDisplayTurno;
+
+                // --- NUEVA SOLUCIÓN: Temporizador para límite de conexiones --- //
+                // Si Firebase no conecta en 4 segundos, mandamos pantalla de LLENO
+                setTimeout(() => {
+                    if (!turnoDataLoaded && document.getElementById('step-3').classList.contains('hidden-section')) {
+                        this.showBlockScreen('lleno', window.estadoTurno.cupos || 40);
+                    }
+                }, 4000); 
 
                 // Sincroniza la hora con Google Firebase y escucha si se llena el bus en tiempo real
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
 
-                    // NUEVA MEJORA: Escuchar el contador en vivo para bloquear la pantalla si se llena
+                    // Escuchar el contador en vivo para bloquear la pantalla si se llena
                     if(!capacityListenerAttached) {
                         capacityListenerAttached = true;
                         const fechaActualID = new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0];
@@ -386,7 +393,11 @@
                 }
                 // ----------------------------------- //
 
-                if(!turnoDataLoaded) return Swal.fire({title: 'Conectando...', text: 'Espere un segundo mientras sincronizamos.', icon: 'info', background: '#111', color: '#fff'});
+                // --- NUEVA SOLUCIÓN: Botón asume bloqueo si no hay conexión por límite --- //
+                if(!turnoDataLoaded) {
+                    this.showBlockScreen('lleno', window.estadoTurno.cupos || 40);
+                    return;
+                }
                 
                 const overlay = document.getElementById('scanning-overlay');
                 const msg = document.getElementById('loader-msg');
@@ -430,17 +441,16 @@
 
                     msg.innerText = "ASIGNANDO ASIENTO SEGURO...";
                     
-                    // --- NUEVA MEJORA: TRANSACCIONES ATÓMICAS (Adiós a números repetidos y excesos de cupo) --- //
+                    // --- TRANSACCIONES ATÓMICAS --- //
                     const txResult = await refViajeTurno.child('contador').transaction(function(currentCount) {
                         let count = currentCount || 0;
                         if (count >= window.estadoTurno.cupos) {
-                            return undefined; // Cancela la asignación instantáneamente si llegó a 40
+                            return undefined; 
                         }
-                        return count + 1; // Suma +1 de forma 100% segura y bloqueada
+                        return count + 1; 
                     });
 
                     if (txResult.committed) {
-                        // Se obtuvo el número con éxito
                         const newSeatNumber = txResult.snapshot.val();
                         
                         const data = { 
@@ -452,7 +462,6 @@
                         await refViajeTurno.child(`registros/${typedDni}`).set(data);
                         this.renderFinal(alu, typedDni, data);
                     } else {
-                        // El cupo se llenó justo en el milisegundo que presionó el botón
                         overlay.style.display = 'none';
                         this.showBlockScreen('lleno', window.estadoTurno.cupos);
                     }
@@ -461,11 +470,8 @@
                 } catch (e) {
                     overlay.style.display = 'none';
                     console.error(e);
-                    if(e.message && e.message.toLowerCase().includes("denied")) {
-                        Swal.fire({title: 'Error de Permisos', text: 'Transacción denegada por seguridad.', icon: 'error', background: '#111', color: '#fff'});
-                    } else {
-                        Swal.fire({title: 'Error de Red', text: 'Problemas de conexión con el servidor. Reintente.', icon: 'error', background: '#111', color: '#fff'});
-                    }
+                    // --- NUEVA SOLUCIÓN: Manda error de cupo lleno si Firebase lo patea a medio proceso ---
+                    this.showBlockScreen('lleno', window.estadoTurno.cupos || 40);
                 }
             },
 
