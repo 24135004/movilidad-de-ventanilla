@@ -60,7 +60,7 @@
         .badge-seat { background: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(16,185,129,0.3); }
         .badge-stand { background: #f59e0b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(245,158,11,0.3); }
 
-        #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: white; color: black; width: 850px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+        #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: white; color: black; width: 1050px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
         .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.5s; }
         .hidden-config { display: none; }
@@ -329,7 +329,7 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR INVISIBLE PARA FOTO DEL REPORTE -->
+    <!-- CONTENEDOR INVISIBLE PARA FOTO DEL REPORTE MODIFICADO -->
     <div id="reporte-foto-container">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
             <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900;">🚌 Lista Oficial UNAC - Abordaje</h1>
@@ -338,12 +338,13 @@
         <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-weight: 700;">
             <thead>
                 <tr style="background: #eee; text-align: left; text-transform: uppercase;">
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 5%; text-align: center;">N°</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 12%; text-align: center;">DNI</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 13%; text-align: center;">Código</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 45%;">Estudiante</th>
+                    <th style="padding: 8px; border: 1px solid #ccc; width: 4%; text-align: center;">N°</th>
+                    <th style="padding: 8px; border: 1px solid #ccc; width: 10%; text-align: center;">DNI</th>
+                    <th style="padding: 8px; border: 1px solid #ccc; width: 11%; text-align: center;">Código</th>
+                    <th style="padding: 8px; border: 1px solid #ccc; width: 33%;">Estudiante</th>
+                    <th style="padding: 8px; border: 1px solid #ccc; width: 20%;">Facultad</th>
                     <th style="padding: 8px; border: 1px solid #ccc; width: 10%; text-align: center;">Turno</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 15%; text-align: center;">Estado</th>
+                    <th style="padding: 8px; border: 1px solid #ccc; width: 12%; text-align: center;">Estado</th>
                 </tr>
             </thead>
             <tbody id="reporte-tbody"></tbody>
@@ -400,7 +401,6 @@
             }
         };
 
-        // ====== INICIO DE SESIÓN MULTI-DELEGADO INTEGRADO ======
         async function intentarLogin() {
             const dni = document.getElementById('userDni').value.trim();
             const pass = document.getElementById('userPass').value.trim();
@@ -690,10 +690,14 @@
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
             setInterval(evaluarTurnosAutomaticos, 15000);
 
+            // AGREGADO: Extraer Facultad de los alumnos
             db.ref('alumnos').on('value', snap => {
                 directorioAlumnos = snap.val() || {};
                 if(listaGlobalAlumnos.length > 0) {
-                    listaGlobalAlumnos.forEach(s => { s.codigo = directorioAlumnos[s.dni] ? (directorioAlumnos[s.dni].Codigo || directorioAlumnos[s.dni].codigo) : 'S/C'; });
+                    listaGlobalAlumnos.forEach(s => { 
+                        s.codigo = directorioAlumnos[s.dni] ? (directorioAlumnos[s.dni].Codigo || directorioAlumnos[s.dni].codigo) : 'S/C'; 
+                        s.facultad = directorioAlumnos[s.dni] ? (directorioAlumnos[s.dni].Facultad || directorioAlumnos[s.dni].facultad || 'No Registrada') : 'No Registrada';
+                    });
                     renderMasterList(listaGlobalAlumnos);
                 }
             });
@@ -725,10 +729,22 @@
 
                         Object.keys(tReg).forEach(dni => {
                             const verificado = asistencias[dni] ? true : false;
+                            
+                            // AGREGADO: Facultad y Código dinámico
                             const codFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Codigo || directorioAlumnos[dni].codigo) : 'S/C';
+                            const facFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Facultad || directorioAlumnos[dni].facultad || 'No Registrada') : 'No Registrada';
                             let nombreTurno = turno === 'tarde1' ? "TARDE (2:15)" : (turno === 'tarde2' ? "TARDE (6:00)" : "NOCHE (10:15)");
                             
-                            combined.push({ dni: dni, codigo: codFinal, nombre: tReg[dni].nombre, hora: tReg[dni].hora, orden: tReg[dni].orden || 999, turno: nombreTurno, verificado: verificado });
+                            combined.push({ 
+                                dni: dni, 
+                                codigo: codFinal, 
+                                facultad: facFinal,
+                                nombre: tReg[dni].nombre, 
+                                hora: tReg[dni].hora, 
+                                orden: tReg[dni].orden || 999, 
+                                turno: nombreTurno, 
+                                verificado: verificado 
+                            });
                             if(verificado) { historyData.push({ nombre: tReg[dni].nombre, hora: asistencias[dni].hora, delegado: asistencias[dni].delegado }); }
                         });
                     }
@@ -782,7 +798,6 @@
 
             if(!nombreAlumno) { notificarFlash("TICKET CADUCADO", "error", "No figura en ninguna lista de hoy"); if(soundError.readyState) soundError.play(); return liberarCamara(); }
 
-            // ====== LÓGICA DE CADUCIDAD DE TICKET (HORA LÍMITE) ======
             if (turnoDelTicket && configGlobal[`limite_${turnoDelTicket}`]) {
                 const now = new Date(Date.now() + serverTimeOffset);
                 const currentMins = now.getHours() * 60 + now.getMinutes();
@@ -795,7 +810,6 @@
                     return liberarCamara();
                 }
             }
-            // =========================================================
 
             const snapAsis = await db.ref(`sistema/asistencias/${fechaHoy}/${dniScanned}`).once('value');
             if(snapAsis.exists()) { notificarFlash("YA ESCANEADO", "warning", "El alumno ya subió al bus"); if(soundError.readyState) soundError.play(); return liberarCamara(); }
@@ -811,15 +825,20 @@
             const fechaString = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('reporte-fecha').innerText = fechaString;
             
-            document.getElementById('reporte-tbody').innerHTML = listaGlobalAlumnos.map((s, index) => `
+            // AGREGADO: Enmascarar DNI (primeros 3 dígitos + asteriscos) y añadir Facultad
+            document.getElementById('reporte-tbody').innerHTML = listaGlobalAlumnos.map((s, index) => {
+                const dniOculto = (s.dni && s.dni.length >= 8) ? s.dni.substring(0, 3) + "*****" : "********";
+                return `
                 <tr style="background: ${s.verificado ? "#d1fae5" : "#fee2e2"}; border-bottom: 1px solid #ccc;">
                     <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${index + 1}</td>
-                    <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${s.dni}</td>
+                    <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center; letter-spacing: 2px;">${dniOculto}</td>
                     <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${s.codigo}</td>
                     <td style="padding: 8px; border-right: 1px solid #ccc;">${s.nombre}</td>
+                    <td style="padding: 8px; border-right: 1px solid #ccc; font-size: 9px; text-transform: uppercase;">${s.facultad}</td>
                     <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${s.turno}</td>
                     <td style="padding: 8px; text-align: center; font-weight: bold; color: ${s.verificado ? '#059669' : '#dc2626'}">${s.verificado ? "ABORDÓ" : "FALTA"}</td>
-                </tr>`).join('');
+                </tr>`
+            }).join('');
 
             try {
                 const canvas = await html2canvas(document.getElementById('reporte-foto-container'), { scale: 2 });
