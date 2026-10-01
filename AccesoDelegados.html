@@ -60,9 +60,7 @@
         .badge-seat { background: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(16,185,129,0.3); }
         .badge-stand { background: #f59e0b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(245,158,11,0.3); }
 
-        /* ESTILOS FORZADOS PARA EL CONTENEDOR DE REPORTE (IMPRESIÓN CLARA Y LEGIBLE) */
         #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: #ffffff !important; color: #000000 !important; width: 1050px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
-        
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
         .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.5s; }
         .hidden-config { display: none; }
@@ -331,7 +329,7 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR INVISIBLE PARA FOTO DEL REPORTE (CON COLORES NÍTIDOS Y OSCUROS) -->
+    <!-- CONTENEDOR INVISIBLE PARA FOTO DEL REPORTE -->
     <div id="reporte-foto-container">
         <div style="text-align: center; border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 15px;">
             <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900; color: #000000;">🚌 Lista Oficial UNAC - Abordaje</h1>
@@ -666,6 +664,7 @@
                     badge.className = 'badge-status badge-on bg-cyan-500/20 text-cyan-400 border-cyan-500'; 
                     badge.innerText = '🔵 SORTEO FINALIZADO';
                     
+                    // BOTÓN CAMBIADO A "CERRAR TURNO" (YA NO PERMITE VOLVER A SORTEAR)
                     btn.innerHTML = '<i class="fa-solid fa-power-off"></i> Cerrar Turno'; 
                     btn.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
                     
@@ -685,18 +684,34 @@
             
             if (estado === 'cerrado') {
                 Swal.fire({
-                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana de 10 minutos para recibir solicitudes de los alumnos.', icon: 'question',
+                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana para recibir solicitudes de los alumnos.', icon: 'question',
                     showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir Recepción', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
                         db.ref(`sistema/config/${t}_estado`).set('recepcionando');
                         db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
-                        notificarFlash("RECEPCIÓN INICIADA", "success", "10 minutos corriendo");
+                        notificarFlash("RECEPCIÓN INICIADA", "success", "Ventana de solicitudes abierta");
                     }
                 });
             } 
             else if (estado === 'recepcionando') {
-                ejecutarSorteoJusto(t);
+                // DOBLE VERIFICACIÓN PARA EVITAR SORTEOS ACCIDENTALES O MULTIPLES
+                Swal.fire({
+                    title: '¿Ejecutar Sorteo Justo?', 
+                    text: 'Esta acción seleccionará a los ganadores definitivos y cerrará las inscripciones. Solo se puede hacer una vez por día.', 
+                    icon: 'warning',
+                    showCancelButton: true, 
+                    confirmButtonColor: '#f59e0b', 
+                    cancelButtonColor: '#374151', 
+                    confirmButtonText: 'Sí, Sortear Ahora', 
+                    cancelButtonText: 'Cancelar', 
+                    background: '#111', 
+                    color: '#fff'
+                }).then((res) => {
+                    if(res.isConfirmed) {
+                        ejecutarSorteoJusto(t);
+                    }
+                });
             } 
             else if (estado === 'sorteado') {
                 Swal.fire({
@@ -705,17 +720,23 @@
                 }).then((res) => {
                     if(res.isConfirmed) {
                         db.ref(`sistema/config/${t}_estado`).set('cerrado');
-                        notificarFlash("TURNO CERRADO", "error", "Bloqueado");
+                        notificarFlash("TURNO CERRADO", "error", "Bloqueado permanentemente");
                     }
                 });
             }
         }
 
-        // --- ALGORITMO JUSTO CON PREGUNTA AUTOMÁTICA DE DESCARGA --- //
+        // --- ALGORITMO DE SORTEO JUSTO BLINDADO --- //
         async function ejecutarSorteoJusto(turno) {
-            notificarFlash("CALCULANDO...", "warning", "Ejecutando algoritmo justo");
+            notificarFlash("CALCULANDO...", "warning", "Ejecutando sorteo único");
             const fechaID = getFechaID();
             
+            // VERIFICACIÓN DE SEGURIDAD EXTRA EN SERVIDOR: Comprobar si ya se sorteó
+            const snapCheck = await db.ref(`sistema/config/${turno}_estado`).once('value');
+            if (snapCheck.val() === 'sorteado') {
+                return Swal.fire({title: 'Acción Bloqueada', text: 'El sorteo para este turno ya fue realizado y no se puede repetir.', icon: 'error', background: '#111', color: '#fff'});
+            }
+
             const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
             if(!snapSol.exists()) {
                 Swal.fire({title: 'Sin solicitudes', text: 'Nadie solicitó cupo en este turno.', icon: 'info', background: '#111', color: '#fff'});
@@ -764,10 +785,10 @@
             
             await db.ref().update(updates);
             
-            // PREGUNTA AUTOMÁTICA DE DESCARGA AL TERMINAR EL SORTEO
+            // VENTANA AUTOMÁTICA DE DESCARGA DE LISTA
             Swal.fire({
-                title: '¡Sorteo Finalizado!',
-                text: `Se asignaron ${ganadores.length} cupos de manera justa. ¿Desea descargar la lista de ganadores ahora?`,
+                title: '¡Sorteo Único Finalizado!',
+                text: `Se asignaron ${ganadores.length} cupos exitosamente. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista de ganadores ahora?`,
                 icon: 'success',
                 showCancelButton: true,
                 confirmButtonColor: '#10b981',
