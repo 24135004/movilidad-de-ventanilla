@@ -1,3 +1,5 @@
+--- START OF FILE text/plain ---
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -258,7 +260,7 @@
                         <i class="fa-solid fa-sun text-2xl text-yellow-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (2:15)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('tarde1')" id="btn-tarde1" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
+                        <button onclick="toggleTurno('tarde1')" id="btn-tarde1" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Abrir Recepción</button>
                     </div>
 
                     <!-- TARDE 2 (6:00 PM) -->
@@ -267,7 +269,7 @@
                         <i class="fa-solid fa-cloud-sun text-2xl text-orange-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (6:00)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('tarde2')" id="btn-tarde2" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
+                        <button onclick="toggleTurno('tarde2')" id="btn-tarde2" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Abrir Recepción</button>
                     </div>
 
                     <!-- NOCHE (10:15 PM) -->
@@ -276,7 +278,7 @@
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Noche (10:15)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Activar Turno</button>
+                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Abrir Recepción</button>
                     </div>
                 </div>
 
@@ -381,12 +383,15 @@
         let directorioAlumnos = {}; 
         let configGlobal = { 
             cupos: 40, 
-            hora_tarde1: '', tarde1_activo: false, prog_tarde1: false, limite_tarde1: '',
-            hora_tarde2: '', tarde2_activo: false, prog_tarde2: false, limite_tarde2: '',
-            hora_noche: '', noche_activo: false, prog_noche: false, limite_noche: ''
+            hora_tarde1: '', tarde1_estado: 'cerrado', prog_tarde1: false, limite_tarde1: '',
+            hora_tarde2: '', tarde2_estado: 'cerrado', prog_tarde2: false, limite_tarde2: '',
+            hora_noche: '', noche_estado: 'cerrado', prog_noche: false, limite_noche: ''
         };
         let serverTimeOffset = 0; 
         let isScannerCooldown = false; 
+        
+        // Objeto para manejar escuchas en tiempo real de cantidad de solicitudes
+        let listenersSolicitudes = {};
 
         function getFechaID() { return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0]; }
 
@@ -608,20 +613,23 @@
             cerrarAjustes();
         }
 
+        // EVALUACIÓN AUTOMÁTICA ADAPTADA AL NUEVO ESTADO DE RECEPCIÓN
         function evaluarTurnosAutomaticos() {
             const now = new Date(Date.now() + serverTimeOffset);
             const currentMins = now.getHours() * 60 + now.getMinutes();
             const checkTime = (timeStr) => { if(!timeStr) return 9999; return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10); };
 
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
-                if (configGlobal[`prog_${t}`] && configGlobal[`hora_${t}`] && currentMins >= checkTime(configGlobal[`hora_${t}`]) && !configGlobal[`${t}_activo`]) {
-                    db.ref(`sistema/config/${t}_activo`).set(true);
+                if (configGlobal[`prog_${t}`] && configGlobal[`hora_${t}`] && currentMins >= checkTime(configGlobal[`hora_${t}`]) && (configGlobal[`${t}_estado`] === 'cerrado' || !configGlobal[`${t}_estado`])) {
+                    db.ref(`sistema/config/${t}_estado`).set('recepcionando');
+                    db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
                 }
             });
         }
 
         function actualizarUI_Tarjetas() {
             document.getElementById('btn-ajustes-bus').classList.remove('hidden');
+            
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 document.getElementById(`card-${t}`).style.display = misPermisos.includes(t) ? 'block' : 'none';
                 
@@ -630,26 +638,147 @@
                 const btn = document.getElementById(`btn-${t}`);
                 const lbl = document.getElementById(`lbl-hora-${t}`);
                 
+                let estado = configGlobal[`${t}_estado`] || 'cerrado';
+                
                 lbl.innerText = configGlobal[`prog_${t}`] ? (configGlobal[`hora_${t}`] || 'Sin definir') : 'MODO MANUAL';
                 
-                if(configGlobal[`${t}_activo`]) {
-                    card.classList.add('active'); badge.className = 'badge-status badge-on'; 
-                    badge.innerText = configGlobal[`prog_${t}`] ? '🟢 PROG. ACTIVO' : '🟢 MANUAL ACTIVO';
-                    btn.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno'; 
+                // Limpiar listeners antiguos si ya no está recepcionando
+                if (estado !== 'recepcionando' && listenersSolicitudes[t]) {
+                    db.ref(`sistema/solicitudes/${getFechaID()}/${t}`).off('value', listenersSolicitudes[t]);
+                    listenersSolicitudes[t] = null;
+                }
+                
+                // INTERFAZ DINÁMICA DE LOS 3 ESTADOS
+                if (estado === 'recepcionando') {
+                    card.classList.add('active'); 
+                    badge.className = 'badge-status badge-on'; 
+                    badge.innerText = '🟡 RECEPCIONANDO...';
+                    
+                    btn.innerHTML = '<i class="fa-solid fa-dice"></i> Realizar Sorteo'; 
+                    btn.className = 'w-full bg-yellow-500 hover:bg-yellow-400 text-black py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
+                    
+                    // Escuchar la cantidad de solicitudes en vivo
+                    if(!listenersSolicitudes[t]) {
+                        listenersSolicitudes[t] = snap => {
+                            let count = snap.numChildren();
+                            badge.innerText = `🟡 SOLICITUDES: ${count}`;
+                        };
+                        db.ref(`sistema/solicitudes/${getFechaID()}/${t}`).on('value', listenersSolicitudes[t]);
+                    }
+                    
+                } else if (estado === 'sorteado') {
+                    card.classList.add('active'); 
+                    badge.className = 'badge-status badge-on bg-cyan-500/20 text-cyan-400 border-cyan-500'; 
+                    badge.innerText = '🔵 SORTEO FINALIZADO';
+                    
+                    btn.innerHTML = '<i class="fa-solid fa-power-off"></i> Cerrar Turno'; 
                     btn.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
-                } else {
-                    card.classList.remove('active'); badge.className = 'badge-status badge-off'; 
+                    
+                } else { // 'cerrado'
+                    card.classList.remove('active'); 
+                    badge.className = 'badge-status badge-off'; 
                     badge.innerText = '🔴 DESACTIVADO';
-                    btn.innerHTML = '<i class="fa-solid fa-play"></i> Activar Turno'; 
+                    
+                    btn.innerHTML = '<i class="fa-solid fa-play"></i> Abrir Recepción'; 
                     btn.className = 'w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1';
                 }
             });
         }
 
+        // LÓGICA REESCRITA PARA LOS 3 ESTADOS
         function toggleTurno(t) {
-            let currentState = configGlobal[`${t}_activo`];
-            if (currentState) { db.ref(`sistema/config/${t}_activo`).set(false); notificarFlash("TURNO DESACTIVADO", "error", "Se bloqueó emisión de tickets");
-            } else { db.ref(`sistema/config/${t}_activo`).set(true); notificarFlash("TURNO ACTIVADO", "success", "Los alumnos pueden sacar ticket"); }
+            let estado = configGlobal[`${t}_estado`] || 'cerrado';
+            
+            if (estado === 'cerrado') {
+                Swal.fire({
+                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana de 10 minutos para recibir solicitudes de los alumnos.', icon: 'question',
+                    showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir Recepción', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+                }).then((res) => {
+                    if(res.isConfirmed) {
+                        db.ref(`sistema/config/${t}_estado`).set('recepcionando');
+                        db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
+                        notificarFlash("RECEPCIÓN INICIADA", "success", "10 minutos corriendo");
+                    }
+                });
+            } 
+            else if (estado === 'recepcionando') {
+                ejecutarSorteoJusto(t);
+            } 
+            else if (estado === 'sorteado') {
+                Swal.fire({
+                    title: '¿Cerrar Turno?', text: 'Ya no se podrán verificar ni descargar pases en el portal de alumnos.', icon: 'warning',
+                    showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Cerrar Turno', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+                }).then((res) => {
+                    if(res.isConfirmed) {
+                        db.ref(`sistema/config/${t}_estado`).set('cerrado');
+                        notificarFlash("TURNO CERRADO", "error", "Bloqueado");
+                    }
+                });
+            }
+        }
+
+        // --- EL CORAZÓN DEL SISTEMA: EL ALGORITMO JUSTO --- //
+        async function ejecutarSorteoJusto(turno) {
+            notificarFlash("CALCULANDO...", "warning", "Ejecutando algoritmo justo");
+            const fechaID = getFechaID();
+            
+            // 1. Obtener todas las solicitudes del turno
+            const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
+            if(!snapSol.exists()) {
+                Swal.fire({title: 'Sin solicitudes', text: 'Nadie solicitó cupo en este turno.', icon: 'info', background: '#111', color: '#fff'});
+                db.ref(`sistema/config/${turno}_estado`).set('sorteado');
+                return;
+            }
+            
+            const solicitudes = snapSol.val();
+            const dnisParticipantes = Object.keys(solicitudes);
+            
+            // 2. Obtener el historial completo de viajes para revisar prioridad
+            const snapHist = await db.ref('historial_viajes').once('value');
+            const historial = snapHist.val() || {};
+            
+            // 3. Crear el array de competencia mezclado
+            let arrayCompetencia = dnisParticipantes.map(dni => {
+                return {
+                    dni: dni,
+                    data: solicitudes[dni],
+                    viajesRealizados: historial[dni] || 0,
+                    factorSuerte: Math.random() // Para desempatar si tienen la misma cantidad de viajes
+                };
+            });
+            
+            // 4. EL ALGORITMO DE JUSTICIA (Ordena de menor viajes a mayor, si empatan, suerte)
+            arrayCompetencia.sort((a, b) => {
+                if(a.viajesRealizados === b.viajesRealizados) {
+                    return a.factorSuerte - b.factorSuerte;
+                }
+                return a.viajesRealizados - b.viajesRealizados;
+            });
+            
+            // 5. Seleccionar a los ganadores limitados por los cupos configurados
+            const cuposDisponibles = configGlobal.cupos || 40;
+            const ganadores = arrayCompetencia.slice(0, cuposDisponibles);
+            
+            // 6. Preparar escritura masiva atómica (Rápida y segura)
+            let updates = {};
+            ganadores.forEach((g, index) => {
+                let numeroDeAsiento = index + 1;
+                updates[`sistema/viajes/${fechaID}/${turno}/registros/${g.dni}`] = {
+                    nombre: g.data.nombre,
+                    orden: numeroDeAsiento,
+                    hora: g.data.hora
+                };
+                // Le sumamos 1 a su historial para el próximo día
+                updates[`historial_viajes/${g.dni}`] = g.viajesRealizados + 1;
+            });
+            
+            // Cerramos el turno y actualizamos el contador general de asientos ocupados
+            updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
+            updates[`sistema/config/${turno}_estado`] = 'sorteado';
+            
+            await db.ref().update(updates);
+            
+            Swal.fire({title: '¡Sorteo Finalizado!', text: `Se asignaron ${ganadores.length} cupos de manera justa exitosamente.`, icon: 'success', background: '#111', color: '#fff'});
         }
 
         function iniciarSistema() {
@@ -690,7 +819,6 @@
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
             setInterval(evaluarTurnosAutomaticos, 15000);
 
-            // AGREGADO: Extraer Facultad de los alumnos
             db.ref('alumnos').on('value', snap => {
                 directorioAlumnos = snap.val() || {};
                 if(listaGlobalAlumnos.length > 0) {
@@ -706,9 +834,10 @@
                 const d = snap.val() || {};
                 configGlobal.cupos = d.cupos_maximos || 40; 
                 
-                configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_activo = d.tarde1_activo || false; configGlobal.limite_tarde1 = d.limite_tarde1 || '';
-                configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_activo = d.tarde2_activo || false; configGlobal.limite_tarde2 = d.limite_tarde2 || '';
-                configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_activo = d.noche_activo || false; configGlobal.limite_noche = d.limite_noche || '';
+                // Mapeando a estados en lugar de booleanos
+                configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado'; configGlobal.limite_tarde1 = d.limite_tarde1 || '';
+                configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado'; configGlobal.limite_tarde2 = d.limite_tarde2 || '';
+                configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_estado = d.noche_estado || 'cerrado'; configGlobal.limite_noche = d.limite_noche || '';
                 
                 actualizarUI_Tarjetas();
             });
@@ -725,12 +854,12 @@
                     const tReg = viajes[turno] ? viajes[turno].registros : null;
                     if (tReg) {
                         let cantidad = Object.keys(tReg).length;
-                        if(configGlobal[`${turno}_activo`]) { ticketsTurnoActivo += cantidad; }
+                        // Solo cuenta ocupación si el estado ya está sorteado (terminado)
+                        if(configGlobal[`${turno}_estado`] === 'sorteado') { ticketsTurnoActivo += cantidad; }
 
                         Object.keys(tReg).forEach(dni => {
                             const verificado = asistencias[dni] ? true : false;
                             
-                            // AGREGADO: Facultad y Código dinámico
                             const codFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Codigo || directorioAlumnos[dni].codigo) : 'S/C';
                             const facFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Facultad || directorioAlumnos[dni].facultad || 'No Registrada') : 'No Registrada';
                             let nombreTurno = turno === 'tarde1' ? "TARDE (2:15)" : (turno === 'tarde2' ? "TARDE (6:00)" : "NOCHE (10:15)");
@@ -825,7 +954,6 @@
             const fechaString = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('reporte-fecha').innerText = fechaString;
             
-            // AGREGADO: Enmascarar DNI (primeros 3 dígitos + asteriscos) y añadir Facultad
             document.getElementById('reporte-tbody').innerHTML = listaGlobalAlumnos.map((s, index) => {
                 const dniOculto = (s.dni && s.dni.length >= 8) ? s.dni.substring(0, 3) + "*****" : "********";
                 return `
@@ -853,10 +981,13 @@
         }
 
         async function reiniciarFirebase() {
-            Swal.fire({ title: '¿REINICIO TOTAL?', text: '¡Peligro! Esto borrará TODOS los tickets y escaneos de hoy en los 3 turnos.', icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'RESETEAR SISTEMA', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+            Swal.fire({ title: '¿REINICIO TOTAL?', text: '¡Peligro! Esto borrará TODOS los tickets, escaneos y SOLICITUDES de hoy en los 3 turnos.', icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'RESETEAR SISTEMA', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    const fecha = getFechaID(); await db.ref(`sistema/viajes/${fecha}`).remove(); await db.ref(`sistema/asistencias/${fecha}`).remove();
+                    const fecha = getFechaID(); 
+                    await db.ref(`sistema/viajes/${fecha}`).remove(); 
+                    await db.ref(`sistema/asistencias/${fecha}`).remove();
+                    await db.ref(`sistema/solicitudes/${fecha}`).remove(); // Borra las solicitudes también
                     notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); setTimeout(() => location.reload(), 1500);
                 }
             });
@@ -903,3 +1034,4 @@
     </script>
 </body>
 </html>
+--- END OF FILE text/plain ---
