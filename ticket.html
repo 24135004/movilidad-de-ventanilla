@@ -51,7 +51,13 @@
         .card-panorama.locked:hover { transform: none; }
 
         .shift-title { position: relative; z-index: 2; font-family: 'Montserrat'; font-weight: 900; font-style: italic; font-size: 35px; text-transform: uppercase; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
-        .time-badge { position: relative; z-index: 2; background: white; color: black; padding: 5px 20px; border-radius: 10px; font-weight: 900; font-size: 12px; margin: 15px 0 10px; box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
+        .time-badge { position: relative; z-index: 2; background: white; color: black; padding: 5px 20px; border-radius: 10px; font-weight: 900; font-size: 12px; margin: 15px 0 10px; box-shadow: 0 5px 15px rgba(255,255,255,0.2); transition: 0.3s; }
+        
+        /* -- NUEVO: ESTILOS DINÁMICOS PARA EL CRONÓMETRO Y SORTEO -- */
+        .time-badge.recepcionando { background: #facc15; color: #000; box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); animation: pulse 1.5s infinite; }
+        .time-badge.sorteado { background: var(--accent); color: #000; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
         .delegate-msg { position: relative; z-index: 2; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 700; max-width: 200px; margin-top: 10px; line-height: 1.4; }
 
         .ticket-tech { background: #ffffff; color: #000; border-radius: 50px; width: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; box-shadow: 0 60px 150px rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.1); }
@@ -203,7 +209,7 @@
                 <div id="globe-box-2"></div>
             </div>
 
-            <!-- PASO 3 : TICKET GENERADO (SE MANTIENE INTACTO POR SEGURIDAD) -->
+            <!-- PASO 3 : TICKET GENERADO (MANTENIDO INTACTO SEGÚN SOLICITUD) -->
             <div id="step-3" class="hidden-section animate-fade-up text-center">
                 <div class="ticket-tech">
                     <div class="tech-header"><h2>MOVILIDAD UNAC</h2><p class="text-[10px] text-cyan-400 tracking-widest mt-1">RUTA VENTANILLA</p></div>
@@ -271,7 +277,9 @@
                 });
 
                 this.listenFirebase(); 
-                setInterval(() => this.checkSchedules(), 15000); // Revisa cada 15 seg
+                
+                // REEMPLAZO IMPORTANTE: Actualiza cada segundo para el cronómetro
+                setInterval(() => this.checkSchedules(), 1000); 
             },
 
             getRealTime: function() {
@@ -288,26 +296,64 @@
             checkSchedules: function() {
                 if (!this.config) return;
 
-                // Las 3 variables oficiales controladas desde el Panel de Delegados
-                this.currentTarde1Active = (this.config.tarde1_activo === true);
-                this.currentTarde2Active = (this.config.tarde2_activo === true);
-                this.currentNocheActive = (this.config.noche_activo === true);
+                // -- MODIFICACIÓN: VALIDAMOS SI ESTÁ EN RECEPCIÓN O YA SORTEADO --
+                this.currentTarde1Active = (this.config.tarde1_estado === 'recepcionando' || this.config.tarde1_estado === 'sorteado');
+                this.currentTarde2Active = (this.config.tarde2_estado === 'recepcionando' || this.config.tarde2_estado === 'sorteado');
+                this.currentNocheActive = (this.config.noche_estado === 'recepcionando' || this.config.noche_estado === 'sorteado');
 
-                // Etiquetas de hora para las 3 tarjetas
-                const tbm = document.getElementById('time-badge-m');
-                if(tbm) tbm.innerText = this.config.prog_tarde1 ? "PROGRAMADO: " + (this.config.hora_tarde1 || '--:--') : "ACTIVACIÓN MANUAL";
-                
-                const tbt = document.getElementById('time-badge-t');
-                if(tbt) tbt.innerText = this.config.prog_tarde2 ? "PROGRAMADO: " + (this.config.hora_tarde2 || '--:--') : "ACTIVACIÓN MANUAL";
-                
-                const tbn = document.getElementById('time-badge-n');
-                if(tbn) tbn.innerText = this.config.prog_noche ? "PROGRAMADO: " + (this.config.hora_noche || '--:--') : "ACTIVACIÓN MANUAL";
-
-                this.upUI('badge-m', 'card-m', this.currentTarde1Active);
-                this.upUI('badge-t', 'card-t', this.currentTarde2Active);
-                this.upUI('badge-n', 'card-n', this.currentNocheActive);
+                // -- LLAMADA A LA NUEVA FUNCIÓN DE UI CON CRONÓMETRO --
+                this.updateCardUI('tarde1', 'badge-m', 'card-m', 'time-badge-m');
+                this.updateCardUI('tarde2', 'badge-t', 'card-t', 'time-badge-t');
+                this.updateCardUI('noche', 'badge-n', 'card-n', 'time-badge-n');
             },
 
+            // -- NUEVA FUNCIÓN AGREGADA PARA CONTROLAR EL RELOJ Y LOS ESTADOS --
+            updateCardUI: function(turno, bid, cid, tid) {
+                const b = document.getElementById(bid), c = document.getElementById(cid), t = document.getElementById(tid);
+                if(!b || !c || !t) return;
+
+                let estado = this.config[`${turno}_estado`] || 'cerrado';
+                let inicioRecepcion = this.config[`${turno}_inicio_recepcion`] || 0;
+                const currentTime = this.getRealTime().getTime();
+
+                if (estado === 'recepcionando') {
+                    c.classList.remove('locked'); c.style.pointerEvents = "auto";
+                    
+                    let timeDiff = (inicioRecepcion + 600000) - currentTime; // 10 min = 600,000 ms
+                    if (timeDiff > 0) {
+                        let m = Math.floor(timeDiff / 60000).toString().padStart(2, '0');
+                        let s = Math.floor((timeDiff % 60000) / 1000).toString().padStart(2, '0');
+                        t.innerText = `SOLICITUDES: ${m}:${s}`;
+                        t.className = "time-badge recepcionando";
+                        
+                        b.innerText = "🟡 PARTICIPAR";
+                        b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
+                    } else {
+                        t.innerText = "ESPERANDO RESULTADOS...";
+                        t.className = "time-badge";
+                        b.innerText = "⌛ CERRANDO...";
+                        b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-orange-500/20 text-orange-400 border border-orange-500";
+                    }
+                } else if (estado === 'sorteado') {
+                    c.classList.remove('locked'); c.style.pointerEvents = "auto";
+                    
+                    t.innerText = "RESULTADOS DISPONIBLES";
+                    t.className = "time-badge sorteado";
+                    
+                    b.innerText = "🔵 SORTEO FINALIZADO";
+                    b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-cyan-500/20 text-cyan-400 border border-cyan-500 animate-pulse";
+                } else {
+                    c.classList.add('locked'); c.style.pointerEvents = "none";
+                    
+                    t.innerText = this.config[`prog_${turno}`] ? "PROGRAMADO: " + (this.config[`hora_${turno}`] || '--:--') : "ACTIVACIÓN MANUAL";
+                    t.className = "time-badge";
+                    
+                    b.innerText = "🔴 CERRADO";
+                    b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-red-900/50 text-red-400 border border-red-500";
+                }
+            },
+
+            // FUNCIÓN ORIGINAL MANTENIDA EXACTAMENTE IGUAL
             upUI: function(bid, cid, act) {
                 const b = document.getElementById(bid), c = document.getElementById(cid);
                 if(!b || !c) return;
@@ -402,7 +448,7 @@
                 }
             },
 
-            // FUNCIONES ORIGINALES QUE SE QUEDAN INTACTAS
+            // FUNCIONES ORIGINALES QUE SE QUEDAN INTACTAS (AUNQUE AHORA LA LÓGICA ESTÉ EN LA OTRA PÁGINA)
             requestTicket: function(turno) {
                 if (turno === 'tarde' && !this.currentTarde1Active) return Swal.fire('Acceso Denegado', 'El delegado ha cerrado este turno.', 'error');
                 if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El delegado ha cerrado este turno.', 'error');
