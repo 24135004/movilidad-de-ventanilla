@@ -60,7 +60,9 @@
         .badge-seat { background: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(16,185,129,0.3); }
         .badge-stand { background: #f59e0b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 8px; font-weight: 900; letter-spacing: 1px; box-shadow: 0 2px 5px rgba(245,158,11,0.3); }
 
-        #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: white; color: black; width: 1050px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+        /* ESTILOS FORZADOS PARA EL CONTENEDOR DE REPORTE (IMPRESIÓN CLARA Y LEGIBLE) */
+        #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: #ffffff !important; color: #000000 !important; width: 1050px; padding: 30px; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+        
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
         .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.5s; }
         .hidden-config { display: none; }
@@ -329,27 +331,27 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR INVISIBLE PARA FOTO DEL REPORTE MODIFICADO -->
+    <!-- CONTENEDOR INVISIBLE PARA FOTO DEL REPORTE (CON COLORES NÍTIDOS Y OSCUROS) -->
     <div id="reporte-foto-container">
-        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-            <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900;">🚌 Lista Oficial UNAC - Abordaje</h1>
-            <p id="reporte-fecha" style="margin: 5px 0 0 0; color: #555; font-size: 14px; font-weight: 700; text-transform: uppercase;"></p>
+        <div style="text-align: center; border-bottom: 2px solid #000000; padding-bottom: 10px; margin-bottom: 15px;">
+            <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; font-weight: 900; color: #000000;">🚌 Lista Oficial UNAC - Abordaje</h1>
+            <p id="reporte-fecha" style="margin: 5px 0 0 0; color: #222222; font-size: 14px; font-weight: 700; text-transform: uppercase;"></p>
         </div>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-weight: 700;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px; font-weight: 700; color: #000000;">
             <thead>
-                <tr style="background: #eee; text-align: left; text-transform: uppercase;">
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 4%; text-align: center;">N°</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 10%; text-align: center;">DNI</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 11%; text-align: center;">Código</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 33%;">Estudiante</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 20%;">Facultad</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 10%; text-align: center;">Turno</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; width: 12%; text-align: center;">Estado</th>
+                <tr style="background: #e2e8f0; text-align: left; text-transform: uppercase; color: #000000;">
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 4%; text-align: center;">N°</th>
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 10%; text-align: center;">DNI</th>
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 11%; text-align: center;">Código</th>
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 33%;">Estudiante</th>
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 20%;">Facultad</th>
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 10%; text-align: center;">Turno</th>
+                    <th style="padding: 8px; border: 1px solid #94a3b8; width: 12%; text-align: center;">Estado</th>
                 </tr>
             </thead>
             <tbody id="reporte-tbody"></tbody>
         </table>
-        <div style="margin-top: 25px; text-align: center; font-size: 10px; color: #777; border-top: 2px dashed #ccc; padding-top: 15px; font-weight: 900; letter-spacing: 2px;">
+        <div style="margin-top: 25px; text-align: center; font-size: 10px; color: #333333; border-top: 2px dashed #94a3b8; padding-top: 15px; font-weight: 900; letter-spacing: 2px;">
             SISTEMA DE SEGURIDAD BIOMÉTRICA - GENERADO POR SEBASTIAN
         </div>
     </div>
@@ -388,7 +390,6 @@
         let serverTimeOffset = 0; 
         let isScannerCooldown = false; 
         
-        // Objeto para manejar escuchas en tiempo real de cantidad de solicitudes
         let listenersSolicitudes = {};
 
         function getFechaID() { return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0]; }
@@ -611,7 +612,6 @@
             cerrarAjustes();
         }
 
-        // EVALUACIÓN AUTOMÁTICA ADAPTADA AL NUEVO ESTADO DE RECEPCIÓN
         function evaluarTurnosAutomaticos() {
             const now = new Date(Date.now() + serverTimeOffset);
             const currentMins = now.getHours() * 60 + now.getMinutes();
@@ -640,13 +640,11 @@
                 
                 lbl.innerText = configGlobal[`prog_${t}`] ? (configGlobal[`hora_${t}`] || 'Sin definir') : 'MODO MANUAL';
                 
-                // Limpiar listeners antiguos si ya no está recepcionando
                 if (estado !== 'recepcionando' && listenersSolicitudes[t]) {
                     db.ref(`sistema/solicitudes/${getFechaID()}/${t}`).off('value', listenersSolicitudes[t]);
                     listenersSolicitudes[t] = null;
                 }
                 
-                // INTERFAZ DINÁMICA DE LOS 3 ESTADOS
                 if (estado === 'recepcionando') {
                     card.classList.add('active'); 
                     badge.className = 'badge-status badge-on'; 
@@ -655,7 +653,6 @@
                     btn.innerHTML = '<i class="fa-solid fa-dice"></i> Realizar Sorteo'; 
                     btn.className = 'w-full bg-yellow-500 hover:bg-yellow-400 text-black py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
                     
-                    // Escuchar la cantidad de solicitudes en vivo
                     if(!listenersSolicitudes[t]) {
                         listenersSolicitudes[t] = snap => {
                             let count = snap.numChildren();
@@ -672,7 +669,7 @@
                     btn.innerHTML = '<i class="fa-solid fa-power-off"></i> Cerrar Turno'; 
                     btn.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
                     
-                } else { // 'cerrado'
+                } else { 
                     card.classList.remove('active'); 
                     badge.className = 'badge-status badge-off'; 
                     badge.innerText = '🔴 DESACTIVADO';
@@ -683,7 +680,6 @@
             });
         }
 
-        // LÓGICA REESCRITA PARA LOS 3 ESTADOS
         function toggleTurno(t) {
             let estado = configGlobal[`${t}_estado`] || 'cerrado';
             
@@ -715,12 +711,11 @@
             }
         }
 
-        // --- EL CORAZÓN DEL SISTEMA: EL ALGORITMO JUSTO --- //
+        // --- ALGORITMO JUSTO CON PREGUNTA AUTOMÁTICA DE DESCARGA --- //
         async function ejecutarSorteoJusto(turno) {
             notificarFlash("CALCULANDO...", "warning", "Ejecutando algoritmo justo");
             const fechaID = getFechaID();
             
-            // 1. Obtener todas las solicitudes del turno
             const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
             if(!snapSol.exists()) {
                 Swal.fire({title: 'Sin solicitudes', text: 'Nadie solicitó cupo en este turno.', icon: 'info', background: '#111', color: '#fff'});
@@ -731,21 +726,18 @@
             const solicitudes = snapSol.val();
             const dnisParticipantes = Object.keys(solicitudes);
             
-            // 2. Obtener el historial completo de viajes para revisar prioridad
             const snapHist = await db.ref('historial_viajes').once('value');
             const historial = snapHist.val() || {};
             
-            // 3. Crear el array de competencia mezclado
             let arrayCompetencia = dnisParticipantes.map(dni => {
                 return {
                     dni: dni,
                     data: solicitudes[dni],
                     viajesRealizados: historial[dni] || 0,
-                    factorSuerte: Math.random() // Para desempatar si tienen la misma cantidad de viajes
+                    factorSuerte: Math.random() 
                 };
             });
             
-            // 4. EL ALGORITMO DE JUSTICIA (Ordena de menor viajes a mayor, si empatan, suerte)
             arrayCompetencia.sort((a, b) => {
                 if(a.viajesRealizados === b.viajesRealizados) {
                     return a.factorSuerte - b.factorSuerte;
@@ -753,11 +745,9 @@
                 return a.viajesRealizados - b.viajesRealizados;
             });
             
-            // 5. Seleccionar a los ganadores limitados por los cupos configurados
             const cuposDisponibles = configGlobal.cupos || 40;
             const ganadores = arrayCompetencia.slice(0, cuposDisponibles);
             
-            // 6. Preparar escritura masiva atómica (Rápida y segura)
             let updates = {};
             ganadores.forEach((g, index) => {
                 let numeroDeAsiento = index + 1;
@@ -766,17 +756,30 @@
                     orden: numeroDeAsiento,
                     hora: g.data.hora
                 };
-                // Le sumamos 1 a su historial para el próximo día
                 updates[`historial_viajes/${g.dni}`] = g.viajesRealizados + 1;
             });
             
-            // Cerramos el turno y actualizamos el contador general de asientos ocupados
             updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
             updates[`sistema/config/${turno}_estado`] = 'sorteado';
             
             await db.ref().update(updates);
             
-            Swal.fire({title: '¡Sorteo Finalizado!', text: `Se asignaron ${ganadores.length} cupos de manera justa exitosamente.`, icon: 'success', background: '#111', color: '#fff'});
+            // PREGUNTA AUTOMÁTICA DE DESCARGA AL TERMINAR EL SORTEO
+            Swal.fire({
+                title: '¡Sorteo Finalizado!',
+                text: `Se asignaron ${ganadores.length} cupos de manera justa. ¿Desea descargar la lista de ganadores ahora?`,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#374151',
+                confirmButtonText: 'Sí, Descargar Lista',
+                cancelButtonText: 'No, Ver Luego',
+                background: '#111', color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    generarReporteAutomatizado();
+                }
+            });
         }
 
         function iniciarSistema() {
@@ -832,7 +835,6 @@
                 const d = snap.val() || {};
                 configGlobal.cupos = d.cupos_maximos || 40; 
                 
-                // Mapeando a estados en lugar de booleanos
                 configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado'; configGlobal.limite_tarde1 = d.limite_tarde1 || '';
                 configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado'; configGlobal.limite_tarde2 = d.limite_tarde2 || '';
                 configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_estado = d.noche_estado || 'cerrado'; configGlobal.limite_noche = d.limite_noche || '';
@@ -852,7 +854,6 @@
                     const tReg = viajes[turno] ? viajes[turno].registros : null;
                     if (tReg) {
                         let cantidad = Object.keys(tReg).length;
-                        // Solo cuenta ocupación si el estado ya está sorteado (terminado)
                         if(configGlobal[`${turno}_estado`] === 'sorteado') { ticketsTurnoActivo += cantidad; }
 
                         Object.keys(tReg).forEach(dni => {
@@ -955,14 +956,14 @@
             document.getElementById('reporte-tbody').innerHTML = listaGlobalAlumnos.map((s, index) => {
                 const dniOculto = (s.dni && s.dni.length >= 8) ? s.dni.substring(0, 3) + "*****" : "********";
                 return `
-                <tr style="background: ${s.verificado ? "#d1fae5" : "#fee2e2"}; border-bottom: 1px solid #ccc;">
-                    <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${index + 1}</td>
-                    <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center; letter-spacing: 2px;">${dniOculto}</td>
-                    <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${s.codigo}</td>
-                    <td style="padding: 8px; border-right: 1px solid #ccc;">${s.nombre}</td>
-                    <td style="padding: 8px; border-right: 1px solid #ccc; font-size: 9px; text-transform: uppercase;">${s.facultad}</td>
-                    <td style="padding: 8px; border-right: 1px solid #ccc; text-align: center;">${s.turno}</td>
-                    <td style="padding: 8px; text-align: center; font-weight: bold; color: ${s.verificado ? '#059669' : '#dc2626'}">${s.verificado ? "ABORDÓ" : "FALTA"}</td>
+                <tr style="background: ${s.verificado ? "#d1fae5" : "#fee2e2"}; border-bottom: 1px solid #94a3b8; color: #000000;">
+                    <td style="padding: 8px; border: 1px solid #94a3b8; text-align: center; color: #000000; font-weight: 800;">${index + 1}</td>
+                    <td style="padding: 8px; border: 1px solid #94a3b8; text-align: center; letter-spacing: 2px; color: #000000; font-weight: 800;">${dniOculto}</td>
+                    <td style="padding: 8px; border: 1px solid #94a3b8; text-align: center; color: #000000; font-weight: 800;">${s.codigo}</td>
+                    <td style="padding: 8px; border: 1px solid #94a3b8; color: #000000; font-weight: 800;">${s.nombre}</td>
+                    <td style="padding: 8px; border: 1px solid #94a3b8; font-size: 10px; text-transform: uppercase; color: #000000; font-weight: 800;">${s.facultad}</td>
+                    <td style="padding: 8px; border: 1px solid #94a3b8; text-align: center; color: #000000; font-weight: 800;">${s.turno}</td>
+                    <td style="padding: 8px; border: 1px solid #94a3b8; text-align: center; font-weight: 900; color: ${s.verificado ? '#047857' : '#b91c1c'}">${s.verificado ? "ABORDÓ" : "FALTA"}</td>
                 </tr>`
             }).join('');
 
@@ -985,7 +986,7 @@
                     const fecha = getFechaID(); 
                     await db.ref(`sistema/viajes/${fecha}`).remove(); 
                     await db.ref(`sistema/asistencias/${fecha}`).remove();
-                    await db.ref(`sistema/solicitudes/${fecha}`).remove(); // Borra las solicitudes también
+                    await db.ref(`sistema/solicitudes/${fecha}`).remove();
                     notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); setTimeout(() => location.reload(), 1500);
                 }
             });
