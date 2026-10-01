@@ -258,7 +258,13 @@
                         <i class="fa-solid fa-sun text-2xl text-yellow-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (2:15)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('tarde1')" id="btn-tarde1" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Abrir Recepción</button>
+                        
+                        <!-- BOTONES INDEPENDIENTES DEBAJO DE CADA TURNO -->
+                        <div class="space-y-1.5 mt-2">
+                            <button onclick="cambiarEstadoTurno('tarde1', 'recepcionando')" id="btn-abrir-tarde1" class="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🟢 Abrir</button>
+                            <button onclick="cambiarEstadoTurno('tarde1', 'sortear')" id="btn-sortear-tarde1" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-1.5 rounded font-black text-[8px] uppercase transition shadow">🎲 Sortear</button>
+                            <button onclick="cambiarEstadoTurno('tarde1', 'cerrar')" id="btn-cerrar-tarde1" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🔴 Cerrar</button>
+                        </div>
                     </div>
 
                     <!-- TARDE 2 (6:00 PM) -->
@@ -267,7 +273,13 @@
                         <i class="fa-solid fa-cloud-sun text-2xl text-orange-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (6:00)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('tarde2')" id="btn-tarde2" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Abrir Recepción</button>
+                        
+                        <!-- BOTONES INDEPENDIENTES DEBAJO DE CADA TURNO -->
+                        <div class="space-y-1.5 mt-2">
+                            <button onclick="cambiarEstadoTurno('tarde2', 'recepcionando')" id="btn-abrir-tarde2" class="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🟢 Abrir</button>
+                            <button onclick="cambiarEstadoTurno('tarde2', 'sortear')" id="btn-sortear-tarde2" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-1.5 rounded font-black text-[8px] uppercase transition shadow">🎲 Sortear</button>
+                            <button onclick="cambiarEstadoTurno('tarde2', 'cerrar')" id="btn-cerrar-tarde2" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🔴 Cerrar</button>
+                        </div>
                     </div>
 
                     <!-- NOCHE (10:15 PM) -->
@@ -276,7 +288,13 @@
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Noche (10:15)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-bold">MANUAL</span></p>
-                        <button onclick="toggleTurno('noche')" id="btn-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1"><i class="fa-solid fa-play"></i> Abrir Recepción</button>
+                        
+                        <!-- BOTONES INDEPENDIENTES DEBAJO DE CADA TURNO -->
+                        <div class="space-y-1.5 mt-2">
+                            <button onclick="cambiarEstadoTurno('noche', 'recepcionando')" id="btn-abrir-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🟢 Abrir</button>
+                            <button onclick="cambiarEstadoTurno('noche', 'sortear')" id="btn-sortear-noche" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-1.5 rounded font-black text-[8px] uppercase transition shadow">🎲 Sortear</button>
+                            <button onclick="cambiarEstadoTurno('noche', 'cerrar')" id="btn-cerrar-noche" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🔴 Cerrar</button>
+                        </div>
                     </div>
                 </div>
 
@@ -610,13 +628,15 @@
             cerrarAjustes();
         }
 
+        // EVALUACIÓN BLINDADA: Solo abre recepción si el estado es estricta y verdaderamente 'cerrado' (nunca si ya fue sorteado)
         function evaluarTurnosAutomaticos() {
             const now = new Date(Date.now() + serverTimeOffset);
             const currentMins = now.getHours() * 60 + now.getMinutes();
             const checkTime = (timeStr) => { if(!timeStr) return 9999; return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10); };
 
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
-                if (configGlobal[`prog_${t}`] && configGlobal[`hora_${t}`] && currentMins >= checkTime(configGlobal[`hora_${t}`]) && (configGlobal[`${t}_estado`] === 'cerrado' || !configGlobal[`${t}_estado`])) {
+                let estadoActual = configGlobal[`${t}_estado`] || 'cerrado';
+                if (configGlobal[`prog_${t}`] && configGlobal[`hora_${t}`] && currentMins >= checkTime(configGlobal[`hora_${t}`]) && estadoActual === 'cerrado') {
                     db.ref(`sistema/config/${t}_estado`).set('recepcionando');
                     db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
                 }
@@ -631,25 +651,31 @@
                 
                 const card = document.getElementById(`card-${t}`);
                 const badge = document.getElementById(`badge-${t}`);
-                const btn = document.getElementById(`btn-${t}`);
                 const lbl = document.getElementById(`lbl-hora-${t}`);
+                
+                const btnAbrir = document.getElementById(`btn-abrir-${t}`);
+                const btnSortear = document.getElementById(`btn-sortear-${t}`);
+                const btnCerrar = document.getElementById(`btn-cerrar-${t}`);
                 
                 let estado = configGlobal[`${t}_estado`] || 'cerrado';
                 
                 lbl.innerText = configGlobal[`prog_${t}`] ? (configGlobal[`hora_${t}`] || 'Sin definir') : 'MODO MANUAL';
                 
+                // Limpiar listeners antiguos de solicitudes si ya no está recepcionando
                 if (estado !== 'recepcionando' && listenersSolicitudes[t]) {
                     db.ref(`sistema/solicitudes/${getFechaID()}/${t}`).off('value', listenersSolicitudes[t]);
                     listenersSolicitudes[t] = null;
                 }
                 
+                // CONTROL VISUAL DE LOS BOTONES INDEPENDIENTES Y ESTADOS
                 if (estado === 'recepcionando') {
                     card.classList.add('active'); 
                     badge.className = 'badge-status badge-on'; 
                     badge.innerText = '🟡 RECEPCIONANDO...';
                     
-                    btn.innerHTML = '<i class="fa-solid fa-dice"></i> Realizar Sorteo'; 
-                    btn.className = 'w-full bg-yellow-500 hover:bg-yellow-400 text-black py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
+                    btnAbrir.style.display = 'none';
+                    btnSortear.style.display = 'block';
+                    btnCerrar.style.display = 'block';
                     
                     if(!listenersSolicitudes[t]) {
                         listenersSolicitudes[t] = snap => {
@@ -664,77 +690,76 @@
                     badge.className = 'badge-status badge-on bg-cyan-500/20 text-cyan-400 border-cyan-500'; 
                     badge.innerText = '🔵 SORTEO FINALIZADO';
                     
-                    // BOTÓN CAMBIADO A "CERRAR TURNO" (YA NO PERMITE VOLVER A SORTEAR)
-                    btn.innerHTML = '<i class="fa-solid fa-power-off"></i> Cerrar Turno'; 
-                    btn.className = 'w-full bg-red-600 hover:bg-red-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg mt-1';
+                    // Bloquea completamente la opción de volver a sortear o abrir
+                    btnAbrir.style.display = 'none';
+                    btnSortear.style.display = 'none';
+                    btnCerrar.style.display = 'block';
                     
-                } else { 
+                } else { // 'cerrado'
                     card.classList.remove('active'); 
                     badge.className = 'badge-status badge-off'; 
                     badge.innerText = '🔴 DESACTIVADO';
                     
-                    btn.innerHTML = '<i class="fa-solid fa-play"></i> Abrir Recepción'; 
-                    btn.className = 'w-full bg-green-600 hover:bg-green-500 text-white py-2 rounded font-black text-[9px] uppercase transition shadow-lg border border-green-500 mt-1';
+                    btnAbrir.style.display = 'block';
+                    btnSortear.style.display = 'none';
+                    btnCerrar.style.display = 'none';
                 }
             });
         }
 
-        function toggleTurno(t) {
-            let estado = configGlobal[`${t}_estado`] || 'cerrado';
-            
-            if (estado === 'cerrado') {
+        // CONTROLADOR DE LOS BOTONES INDEPENDIENTES DEBAJO DE CADA TARJETA
+        function cambiarEstadoTurno(t, accion) {
+            let estadoActual = configGlobal[`${t}_estado`] || 'cerrado';
+
+            if (accion === 'recepcionando') {
                 Swal.fire({
                     title: '¿Abrir Recepción?', text: 'Se abrirá la ventana para recibir solicitudes de los alumnos.', icon: 'question',
-                    showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir Recepción', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+                    showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
                         db.ref(`sistema/config/${t}_estado`).set('recepcionando');
                         db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
-                        notificarFlash("RECEPCIÓN INICIADA", "success", "Ventana de solicitudes abierta");
+                        notificarFlash("RECEPCIÓN INICIADA", "success", "Ventana abierta");
                     }
                 });
             } 
-            else if (estado === 'recepcionando') {
-                // DOBLE VERIFICACIÓN PARA EVITAR SORTEOS ACCIDENTALES O MULTIPLES
+            else if (accion === 'sortear') {
+                if (estadoActual === 'sorteado') {
+                    return Swal.fire({title: 'Ya Sorteado', text: 'El sorteo para este turno ya se realizó y no se puede repetir.', icon: 'error', background: '#111', color: '#fff'});
+                }
                 Swal.fire({
                     title: '¿Ejecutar Sorteo Justo?', 
-                    text: 'Esta acción seleccionará a los ganadores definitivos y cerrará las inscripciones. Solo se puede hacer una vez por día.', 
-                    icon: 'warning',
-                    showCancelButton: true, 
-                    confirmButtonColor: '#f59e0b', 
-                    cancelButtonColor: '#374151', 
-                    confirmButtonText: 'Sí, Sortear Ahora', 
-                    cancelButtonText: 'Cancelar', 
-                    background: '#111', 
-                    color: '#fff'
+                    text: 'Se seleccionarán los ganadores definitivos. Esta acción es única e irreversible para hoy.', 
+                    icon: 'warning', showCancelButton: true, confirmButtonColor: '#f59e0b', cancelButtonColor: '#374151', 
+                    confirmButtonText: 'Sí, Sortear Ahora', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
                         ejecutarSorteoJusto(t);
                     }
                 });
             } 
-            else if (estado === 'sorteado') {
+            else if (accion === 'cerrar') {
                 Swal.fire({
-                    title: '¿Cerrar Turno?', text: 'Ya no se podrán verificar ni descargar pases en el portal de alumnos.', icon: 'warning',
-                    showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Cerrar Turno', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+                    title: '¿Cerrar Turno?', text: 'Ya no se podrán verificar pases ni realizar sorteos.', icon: 'warning',
+                    showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Cerrar Definitivo', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
                         db.ref(`sistema/config/${t}_estado`).set('cerrado');
-                        notificarFlash("TURNO CERRADO", "error", "Bloqueado permanentemente");
+                        notificarFlash("TURNO CERRADO", "error", "Bloqueado");
                     }
                 });
             }
         }
 
-        // --- ALGORITMO DE SORTEO JUSTO BLINDADO --- //
+        // --- ALGORITMO BLINDADO (UN SOLO SORTEO POR DÍA) --- //
         async function ejecutarSorteoJusto(turno) {
             notificarFlash("CALCULANDO...", "warning", "Ejecutando sorteo único");
             const fechaID = getFechaID();
             
-            // VERIFICACIÓN DE SEGURIDAD EXTRA EN SERVIDOR: Comprobar si ya se sorteó
+            // Doble validación en base de datos para impedir doble sorteo por actualización
             const snapCheck = await db.ref(`sistema/config/${turno}_estado`).once('value');
             if (snapCheck.val() === 'sorteado') {
-                return Swal.fire({title: 'Acción Bloqueada', text: 'El sorteo para este turno ya fue realizado y no se puede repetir.', icon: 'error', background: '#111', color: '#fff'});
+                return Swal.fire({title: 'Bloqueado', text: 'El sorteo ya fue ejecutado previamente.', icon: 'error', background: '#111', color: '#fff'});
             }
 
             const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
@@ -781,14 +806,13 @@
             });
             
             updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
-            updates[`sistema/config/${turno}_estado`] = 'sorteado';
+            updates[`sistema/config/${turno}_estado`] = 'sorteado'; // ESTADO BLINDADO
             
             await db.ref().update(updates);
             
-            // VENTANA AUTOMÁTICA DE DESCARGA DE LISTA
             Swal.fire({
                 title: '¡Sorteo Único Finalizado!',
-                text: `Se asignaron ${ganadores.length} cupos exitosamente. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista de ganadores ahora?`,
+                text: `Se asignaron ${ganadores.length} cupos de manera justa. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista de ganadores ahora?`,
                 icon: 'success',
                 showCancelButton: true,
                 confirmButtonColor: '#10b981',
