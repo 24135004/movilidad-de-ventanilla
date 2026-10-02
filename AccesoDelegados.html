@@ -43,6 +43,14 @@
         .badge-off { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
         .badge-on { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
 
+        /* NUEVOS ESTILOS PARA CRONÓMETRO Y BOTONES RESPONSIVOS */
+        .timer-display { font-family: 'Courier New', Courier, monospace; font-size: 26px; font-weight: 900; color: #facc15; text-shadow: 0 0 10px rgba(250, 204, 21, 0.5); margin: 8px 0; display: none; }
+        .action-btn { width: 100%; padding: 12px; border-radius: 10px; font-weight: 900; font-size: 11px; text-transform: uppercase; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: 6px; }
+        .action-btn:active { transform: scale(0.96); }
+        .btn-abrir { background: #059669; color: white; border: 1px solid #10b981; }
+        .btn-sortear { background: #d97706; color: white; border: 1px solid #f59e0b; }
+        .btn-cerrar { background: #b91c1c; color: white; border: 1px solid #ef4444; }
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
@@ -77,7 +85,7 @@
         <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
     </div>
 
-    <!-- MODAL AJUSTES BUS CON LIMITES DE ESCANEO -->
+    <!-- MODAL AJUSTES BUS CON LIMITES DE ESCANEO (INTACTO) -->
     <div id="modal-ajustes" class="modal-overlay">
         <div class="glass p-6 w-[90%] max-w-sm relative max-h-[90vh] overflow-y-auto">
             <button onclick="cerrarAjustes()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -137,7 +145,7 @@
         </div>
     </div>
 
-    <!-- MODAL CONTROL DELEGADOS (SOLO MAESTRO) -->
+    <!-- MODAL CONTROL DELEGADOS (INTACTO) -->
     <div id="modal-control-delegados" class="modal-overlay">
         <div class="glass p-6 w-[95%] max-w-sm relative text-center max-h-[95vh] overflow-y-auto">
             <button onclick="cerrarControlDelegados()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -257,13 +265,16 @@
                         <div id="badge-tarde1" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-sun text-2xl text-yellow-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (2:15)</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-bold">MANUAL</span></p>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-2">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-bold">MANUAL</span></p>
                         
-                        <!-- BOTONES INDEPENDIENTES DEBAJO DE CADA TURNO -->
+                        <!-- NUEVO: CRONÓMETRO -->
+                        <div id="timer-tarde1" class="timer-display">10:00</div>
+
+                        <!-- BOTONES MEJORADOS Y GRANDES -->
                         <div class="space-y-1.5 mt-2">
-                            <button onclick="cambiarEstadoTurno('tarde1', 'recepcionando')" id="btn-abrir-tarde1" class="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🟢 Abrir</button>
-                            <button onclick="cambiarEstadoTurno('tarde1', 'sortear')" id="btn-sortear-tarde1" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-1.5 rounded font-black text-[8px] uppercase transition shadow">🎲 Sortear</button>
-                            <button onclick="cambiarEstadoTurno('tarde1', 'cerrar')" id="btn-cerrar-tarde1" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🔴 Cerrar</button>
+                            <button onclick="cambiarEstadoTurno('tarde1', 'recepcionando')" id="btn-abrir-tarde1" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
+                            <button onclick="cambiarEstadoTurno('tarde1', 'sortear')" id="btn-sortear-tarde1" class="action-btn btn-sortear hidden"><i class="fa-solid fa-dice"></i> Forzar Sorteo</button>
+                            <button onclick="cambiarEstadoTurno('tarde1', 'cerrar')" id="btn-cerrar-tarde1" class="action-btn btn-cerrar hidden"><i class="fa-solid fa-lock"></i> Cerrar Bus</button>
                         </div>
                     </div>
 
@@ -272,13 +283,16 @@
                         <div id="badge-tarde2" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-cloud-sun text-2xl text-orange-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (6:00)</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-bold">MANUAL</span></p>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-2">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-bold">MANUAL</span></p>
                         
-                        <!-- BOTONES INDEPENDIENTES DEBAJO DE CADA TURNO -->
+                        <!-- NUEVO: CRONÓMETRO -->
+                        <div id="timer-tarde2" class="timer-display">10:00</div>
+
+                        <!-- BOTONES MEJORADOS Y GRANDES -->
                         <div class="space-y-1.5 mt-2">
-                            <button onclick="cambiarEstadoTurno('tarde2', 'recepcionando')" id="btn-abrir-tarde2" class="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🟢 Abrir</button>
-                            <button onclick="cambiarEstadoTurno('tarde2', 'sortear')" id="btn-sortear-tarde2" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-1.5 rounded font-black text-[8px] uppercase transition shadow">🎲 Sortear</button>
-                            <button onclick="cambiarEstadoTurno('tarde2', 'cerrar')" id="btn-cerrar-tarde2" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🔴 Cerrar</button>
+                            <button onclick="cambiarEstadoTurno('tarde2', 'recepcionando')" id="btn-abrir-tarde2" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
+                            <button onclick="cambiarEstadoTurno('tarde2', 'sortear')" id="btn-sortear-tarde2" class="action-btn btn-sortear hidden"><i class="fa-solid fa-dice"></i> Forzar Sorteo</button>
+                            <button onclick="cambiarEstadoTurno('tarde2', 'cerrar')" id="btn-cerrar-tarde2" class="action-btn btn-cerrar hidden"><i class="fa-solid fa-lock"></i> Cerrar Bus</button>
                         </div>
                     </div>
 
@@ -287,13 +301,16 @@
                         <div id="badge-noche" class="badge-status badge-off">🔴 DESACTIVADO</div>
                         <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
                         <h4 class="text-sm font-black uppercase tracking-tighter">Noche (10:15)</h4>
-                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-3">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-bold">MANUAL</span></p>
+                        <p class="text-[9px] text-gray-400 uppercase mt-1 mb-2">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-bold">MANUAL</span></p>
                         
-                        <!-- BOTONES INDEPENDIENTES DEBAJO DE CADA TURNO -->
+                        <!-- NUEVO: CRONÓMETRO -->
+                        <div id="timer-noche" class="timer-display">10:00</div>
+
+                        <!-- BOTONES MEJORADOS Y GRANDES -->
                         <div class="space-y-1.5 mt-2">
-                            <button onclick="cambiarEstadoTurno('noche', 'recepcionando')" id="btn-abrir-noche" class="w-full bg-green-600 hover:bg-green-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🟢 Abrir</button>
-                            <button onclick="cambiarEstadoTurno('noche', 'sortear')" id="btn-sortear-noche" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-1.5 rounded font-black text-[8px] uppercase transition shadow">🎲 Sortear</button>
-                            <button onclick="cambiarEstadoTurno('noche', 'cerrar')" id="btn-cerrar-noche" class="w-full bg-red-600 hover:bg-red-500 text-white py-1.5 rounded font-black text-[8px] uppercase transition shadow">🔴 Cerrar</button>
+                            <button onclick="cambiarEstadoTurno('noche', 'recepcionando')" id="btn-abrir-noche" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
+                            <button onclick="cambiarEstadoTurno('noche', 'sortear')" id="btn-sortear-noche" class="action-btn btn-sortear hidden"><i class="fa-solid fa-dice"></i> Forzar Sorteo</button>
+                            <button onclick="cambiarEstadoTurno('noche', 'cerrar')" id="btn-cerrar-noche" class="action-btn btn-cerrar hidden"><i class="fa-solid fa-lock"></i> Cerrar Bus</button>
                         </div>
                     </div>
                 </div>
@@ -407,6 +424,7 @@
         let isScannerCooldown = false; 
         
         let listenersSolicitudes = {};
+        let cronometros = {}; // <-- NUEVO: Para guardar los intervalos del reloj
 
         function getFechaID() { return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0]; }
 
@@ -421,6 +439,7 @@
             }
         };
 
+        // LOGIN INTACTO DE TU CÓDIGO ORIGINAL
         async function intentarLogin() {
             const dni = document.getElementById('userDni').value.trim();
             const pass = document.getElementById('userPass').value.trim();
@@ -478,6 +497,7 @@
             location.reload(); 
         }
 
+        // FUNCIONES DE DELEGADOS INTACTAS
         function abrirControlDelegados() { document.getElementById('modal-control-delegados').style.display = 'flex'; }
         function cerrarControlDelegados() { document.getElementById('modal-control-delegados').style.display = 'none'; }
         
@@ -573,6 +593,7 @@
             });
         }
 
+        // FUNCIONES DE AJUSTES INTACTAS
         function toggleTimeConfig(turno) {
             const isChecked = document.getElementById(`cfg-${turno}-prog`).checked;
             document.getElementById(`box-hora-${turno}`).style.display = isChecked ? 'block' : 'none';
@@ -628,7 +649,6 @@
             cerrarAjustes();
         }
 
-        // EVALUACIÓN BLINDADA: Solo abre recepción si el estado es estricta y verdaderamente 'cerrado' (nunca si ya fue sorteado)
         function evaluarTurnosAutomaticos() {
             const now = new Date(Date.now() + serverTimeOffset);
             const currentMins = now.getHours() * 60 + now.getMinutes();
@@ -643,39 +663,75 @@
             });
         }
 
+        // NUEVA LÓGICA DE CRONÓMETROS DEL PANEL
+        function iniciarCronometroPanel(turno, inicioTimestamp) {
+            detenerCronometro(turno);
+            const timerEl = document.getElementById(`timer-${turno}`);
+            timerEl.style.display = 'block';
+            timerEl.style.color = "#facc15";
+
+            cronometros[turno] = setInterval(() => {
+                const now = new Date(Date.now() + serverTimeOffset).getTime();
+                let diff = (inicioTimestamp + 600000) - now; // 10 mins = 600,000 ms
+
+                if (diff <= 0) {
+                    detenerCronometro(turno);
+                    timerEl.innerText = "00:00";
+                    timerEl.style.color = "#ef4444";
+                    
+                    // EJECUCIÓN AUTOMÁTICA DEL SORTEO CUANDO LLEGA A 0
+                    if (configGlobal[`${turno}_estado`] === 'recepcionando') {
+                        ejecutarSorteoJusto(turno);
+                    }
+                } else {
+                    let m = Math.floor(diff / 60000).toString().padStart(2, '0');
+                    let s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                    timerEl.innerText = `${m}:${s}`;
+                }
+            }, 1000);
+        }
+
+        function detenerCronometro(turno) {
+            if (cronometros[turno]) { clearInterval(cronometros[turno]); delete cronometros[turno]; }
+        }
+
+        // ACTUALIZACIÓN DE UI CON VISIBILIDAD DE BOTONES Y CRONÓMETRO
         function actualizarUI_Tarjetas() {
             document.getElementById('btn-ajustes-bus').classList.remove('hidden');
             
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
-                document.getElementById(`card-${t}`).style.display = misPermisos.includes(t) ? 'block' : 'none';
+                document.getElementById(`card-${t}`).style.display = misPermisos.includes(t) ? 'flex' : 'none';
                 
                 const card = document.getElementById(`card-${t}`);
                 const badge = document.getElementById(`badge-${t}`);
                 const lbl = document.getElementById(`lbl-hora-${t}`);
+                const timerEl = document.getElementById(`timer-${t}`);
                 
                 const btnAbrir = document.getElementById(`btn-abrir-${t}`);
                 const btnSortear = document.getElementById(`btn-sortear-${t}`);
                 const btnCerrar = document.getElementById(`btn-cerrar-${t}`);
                 
                 let estado = configGlobal[`${t}_estado`] || 'cerrado';
+                let inicioRec = configGlobal[`${t}_inicio_recepcion`] || 0;
                 
                 lbl.innerText = configGlobal[`prog_${t}`] ? (configGlobal[`hora_${t}`] || 'Sin definir') : 'MODO MANUAL';
                 
-                // Limpiar listeners antiguos de solicitudes si ya no está recepcionando
                 if (estado !== 'recepcionando' && listenersSolicitudes[t]) {
                     db.ref(`sistema/solicitudes/${getFechaID()}/${t}`).off('value', listenersSolicitudes[t]);
                     listenersSolicitudes[t] = null;
                 }
                 
-                // CONTROL VISUAL DE LOS BOTONES INDEPENDIENTES Y ESTADOS
                 if (estado === 'recepcionando') {
                     card.classList.add('active'); 
                     badge.className = 'badge-status badge-on'; 
                     badge.innerText = '🟡 RECEPCIONANDO...';
                     
                     btnAbrir.style.display = 'none';
-                    btnSortear.style.display = 'block';
-                    btnCerrar.style.display = 'block';
+                    btnSortear.style.display = 'flex';
+                    btnCerrar.style.display = 'flex';
+                    
+                    // Inicia cronómetro del Panel
+                    iniciarCronometroPanel(t, inicioRec);
                     
                     if(!listenersSolicitudes[t]) {
                         listenersSolicitudes[t] = snap => {
@@ -690,36 +746,43 @@
                     badge.className = 'badge-status badge-on bg-cyan-500/20 text-cyan-400 border-cyan-500'; 
                     badge.innerText = '🔵 SORTEO FINALIZADO';
                     
-                    // Bloquea completamente la opción de volver a sortear o abrir
                     btnAbrir.style.display = 'none';
                     btnSortear.style.display = 'none';
-                    btnCerrar.style.display = 'block';
+                    btnCerrar.style.display = 'flex';
                     
-                } else { // 'cerrado'
+                    detenerCronometro(t);
+                    timerEl.style.display = 'block';
+                    timerEl.innerText = "00:00";
+                    timerEl.style.color = "#00E5FF";
+                    
+                } else { // cerrado
                     card.classList.remove('active'); 
                     badge.className = 'badge-status badge-off'; 
-                    badge.innerText = '🔴 DESACTIVADO';
+                    badge.innerText = '🔴 CERRADO';
                     
-                    btnAbrir.style.display = 'block';
+                    btnAbrir.style.display = 'flex';
                     btnSortear.style.display = 'none';
                     btnCerrar.style.display = 'none';
+
+                    detenerCronometro(t);
+                    timerEl.style.display = 'none';
                 }
             });
         }
 
-        // CONTROLADOR DE LOS BOTONES INDEPENDIENTES DEBAJO DE CADA TARJETA
+        // BOTONES DE CONTROL DE TURNO
         function cambiarEstadoTurno(t, accion) {
             let estadoActual = configGlobal[`${t}_estado`] || 'cerrado';
 
             if (accion === 'recepcionando') {
                 Swal.fire({
-                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana para recibir solicitudes de los alumnos.', icon: 'question',
+                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana para recibir solicitudes por 10 minutos.', icon: 'question',
                     showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
                         db.ref(`sistema/config/${t}_estado`).set('recepcionando');
                         db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
-                        notificarFlash("RECEPCIÓN INICIADA", "success", "Ventana abierta");
+                        notificarFlash("RECEPCIÓN INICIADA", "success", "Cronómetro iniciado");
                     }
                 });
             } 
@@ -728,8 +791,8 @@
                     return Swal.fire({title: 'Ya Sorteado', text: 'El sorteo para este turno ya se realizó y no se puede repetir.', icon: 'error', background: '#111', color: '#fff'});
                 }
                 Swal.fire({
-                    title: '¿Ejecutar Sorteo Justo?', 
-                    text: 'Se seleccionarán los ganadores definitivos. Esta acción es única e irreversible para hoy.', 
+                    title: '¿Forzar Sorteo Ahora?', 
+                    text: 'El cronómetro se detendrá y se elegirán a los ganadores inmediatamente.', 
                     icon: 'warning', showCancelButton: true, confirmButtonColor: '#f59e0b', cancelButtonColor: '#374151', 
                     confirmButtonText: 'Sí, Sortear Ahora', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
@@ -751,12 +814,11 @@
             }
         }
 
-        // --- ALGORITMO BLINDADO (UN SOLO SORTEO POR DÍA) --- //
+        // ALGORITMO BLINDADO (UN SOLO SORTEO POR DÍA) INTACTO
         async function ejecutarSorteoJusto(turno) {
             notificarFlash("CALCULANDO...", "warning", "Ejecutando sorteo único");
             const fechaID = getFechaID();
             
-            // Doble validación en base de datos para impedir doble sorteo por actualización
             const snapCheck = await db.ref(`sistema/config/${turno}_estado`).once('value');
             if (snapCheck.val() === 'sorteado') {
                 return Swal.fire({title: 'Bloqueado', text: 'El sorteo ya fue ejecutado previamente.', icon: 'error', background: '#111', color: '#fff'});
@@ -865,15 +927,10 @@
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
             setInterval(evaluarTurnosAutomaticos, 15000);
 
+            // NUEVA LISTA MAESTRA PERSISTENTE Y CONFIABLE (Nunca se borra al presionar F5)
             db.ref('alumnos').on('value', snap => {
                 directorioAlumnos = snap.val() || {};
-                if(listaGlobalAlumnos.length > 0) {
-                    listaGlobalAlumnos.forEach(s => { 
-                        s.codigo = directorioAlumnos[s.dni] ? (directorioAlumnos[s.dni].Codigo || directorioAlumnos[s.dni].codigo) : 'S/C'; 
-                        s.facultad = directorioAlumnos[s.dni] ? (directorioAlumnos[s.dni].Facultad || directorioAlumnos[s.dni].facultad || 'No Registrada') : 'No Registrada';
-                    });
-                    renderMasterList(listaGlobalAlumnos);
-                }
+                actualizarListaMaestraEnVivo();
             });
 
             db.ref('sistema/config').on('value', snap => {
@@ -888,8 +945,23 @@
             });
 
             db.ref('sistema').on('value', snap => {
-                const fechaHoy = getFechaID();
-                const data = snap.val() || {};
+                actualizarListaMaestraEnVivo(snap.val());
+            });
+        }
+
+        // FUNCION INDEPENDIENTE PARA PROTEGER LA LECTURA AL REFRESCAR LA PÁGINA
+        function actualizarListaMaestraEnVivo(sistemaDataSnap = null) {
+            const fechaHoy = getFechaID();
+            
+            // Si no pasamos datos, hacemos una lectura rápida nosotros
+            if(!sistemaDataSnap) {
+                db.ref('sistema').once('value').then(snap => mapData(snap.val()));
+            } else {
+                mapData(sistemaDataSnap);
+            }
+
+            function mapData(data) {
+                if(!data) return;
                 const viajes = data.viajes ? data.viajes[fechaHoy] : {};
                 const asistencias = (data.asistencias && data.asistencias[fechaHoy]) ? data.asistencias[fechaHoy] : {};
                 
@@ -935,7 +1007,7 @@
                 document.getElementById('contador-mi').innerText = Object.values(asistencias).filter(a => a.delegado === delegadoActivo).length;
 
                 renderMasterList(combined); renderHistorial(historyData);
-            });
+            }
         }
 
         async function onScanSuccess(text) {
