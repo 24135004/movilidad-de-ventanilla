@@ -67,7 +67,7 @@
     <div id="blocking-overlay" style="border: 15px solid #ef4444;">
         <i id="block-icon" class="fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce"></i>
         <h2 id="block-title" class="text-3xl font-black text-white uppercase tracking-tighter">ACCESO DENEGADO</h2>
-        <div class="bg-black/50 border border-white/10 p-6 rounded-2xl max-w-sm mt-4 mb-8">
+        <div class="bg-black/50 border border-white/10 p-6 rounded-2xl max-w-sm mt-4 mb-8" id="block-reason-container">
             <p id="block-reason" class="text-gray-300 text-xs font-bold uppercase tracking-widest leading-relaxed">Su sesión caducó o el delegado cerró el turno.</p>
         </div>
         <a href="ticket.html" class="bg-cyan-400 text-black font-black px-10 py-4 rounded-2xl text-xs uppercase tracking-widest shadow-xl hover:bg-white transition">Regresar al Portal</a>
@@ -83,7 +83,7 @@
                     <span class="text-[9px] text-cyan-400 font-bold">Ruta Ventanilla</span>
                 </div>
             </div>
-            <!-- SE CAMBIÓ A 5 MINUTOS -->
+            <!-- LÍMITE DE SEGURIDAD -->
             <div class="text-[9px] font-black bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg border border-red-500 uppercase flex items-center gap-2">
                 <i class="fa-solid fa-circle text-[6px] animate-ping"></i> LÍMITE: 5 MIN
             </div>
@@ -91,7 +91,7 @@
 
         <main class="flex-grow flex flex-col items-center justify-center px-6 pb-12 relative z-20">
             
-            <!-- PASO 1 : FIRMA DIGITAL (TECLADO MANTENIDO PERO OCULTO PARA MOSTRAR SOLO BOTÓN) -->
+            <!-- PASO 1 : FIRMA DIGITAL / CONFIRMACIÓN -->
             <div id="step-1" class="w-full max-w-sm animate-fade-up">
                 <div class="glass-panel p-8 shadow-2xl">
                     <div class="text-center mb-8">
@@ -107,7 +107,7 @@
                         </div>
                     </div>
 
-                    <!-- TECLADO NUMÉRICO ORIGINAL (OCULTO PARA MOSTRAR SOLO EL BOTÓN) -->
+                    <!-- TECLADO NUMÉRICO ORIGINAL (Mantenido oculto por si se requiere) -->
                     <div id="teclado-original" class="hidden grid-cols-3 gap-4 mb-8">
                         <button onclick="Core.pressKey('1')" class="keypad-btn">1</button>
                         <button onclick="Core.pressKey('2')" class="keypad-btn">2</button>
@@ -239,7 +239,7 @@
         const Core = {
             init: function() { 
                 
-                // --- INICIO: FILTRO DE SEGURIDAD ESTRICTO --- //
+                // --- INICIO: FILTRO DE SEGURIDAD ESTRICTO INTACTO --- //
                 const isValid = sessionStorage.getItem('valid_session');
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const sessionDni = sessionStorage.getItem('alumno_dni');
@@ -293,49 +293,70 @@
                 return new Date(Date.now() + serverTimeOffset);
             },
 
+            // PANTALLAS DE BLOQUEO MEJORADAS CON MENSAJES DETALLADOS
             showBlockScreen: function(tipo, cuposMax = 0) {
                 const overlay = document.getElementById('blocking-overlay');
                 const title = document.getElementById('block-title');
                 const icon = document.getElementById('block-icon');
                 const reason = document.getElementById('block-reason');
+                const reasonContainer = document.getElementById('block-reason-container');
                 
-                if (tipo === 'lleno') {
-                    // Mantenido por si acaso
-                    overlay.style.border = '15px solid #00E5FF'; 
-                    icon.className = 'fa-solid fa-bus text-7xl text-cyan-400 mb-6 animate-bounce';
-                    title.innerText = "CAPACIDAD MÁXIMA";
-                    title.className = "text-3xl font-black text-cyan-400 uppercase tracking-tighter";
-                    reason.innerHTML = `Estimado estudiante, los <b>${cuposMax} cupos</b> habilitados por el panel de delegados para este turno han sido completados en su totalidad.<br><br><span style="color:#00E5FF;">El sistema no emitirá más tickets por el momento.</span>`;
+                // Fondo y borde neutro por defecto, se cambia según el estado
+                overlay.style.border = 'none';
+                reasonContainer.className = "bg-black/50 border border-white/10 p-6 rounded-2xl max-w-sm mt-4 mb-8 text-left";
+
+                if (tipo === 'lleno' || tipo === 'no_ganador') {
+                    // PANTALLA ROJA DETALLADA: NO GANÓ EL SORTEO
+                    overlay.style.borderTop = '15px solid #ef4444'; 
+                    icon.className = 'fa-solid fa-ticket-simple text-7xl text-red-500 mb-6 animate-pulse';
+                    title.innerText = "CUPOS LLENOS";
+                    title.className = "text-4xl font-black text-red-500 uppercase tracking-tighter";
+                    reason.innerHTML = `
+                        <div class="bg-red-500/10 p-4 rounded-xl border border-red-500/30 mb-4 text-center">
+                            <span style="color:#ef4444; font-size:13px; font-weight:900;">Lo sentimos, los cupos se han llenado.</span>
+                        </div>
+                        <p class="text-gray-300 text-[11px] leading-relaxed mb-4 text-center">
+                            El algoritmo no logró asignarte un asiento en este sorteo debido a la alta demanda de estudiantes.
+                        </p>
+                        <div class="text-center">
+                            <span class="text-white bg-red-600 px-4 py-2 rounded-lg text-[9px] font-black shadow-lg uppercase tracking-widest inline-block border border-red-400">
+                                HAS SIDO PUESTO EN PRIORIDAD PARA EL PRÓXIMO TURNO
+                            </span>
+                        </div>
+                    `;
                 } else if (tipo === 'ya_solicitado') {
-                    overlay.style.border = '15px solid #facc15'; 
+                    // PANTALLA AMARILLA: YA ESTÁ PARTICIPANDO
+                    overlay.style.borderTop = '15px solid #facc15'; 
                     icon.className = 'fa-solid fa-clock-rotate-left text-7xl text-yellow-400 mb-6 animate-pulse';
                     title.innerText = "SOLICITUD EN PROCESO";
                     title.className = "text-3xl font-black text-yellow-400 uppercase tracking-tighter";
-                    reason.innerHTML = `Ya hemos registrado tu participación para este turno. <br><br><span style="color:#facc15;">Por favor, regresa al portal principal y espera a que el cronómetro llegue a cero para consultar tus resultados.</span>`;
-                } else if (tipo === 'no_ganador') {
-                    overlay.style.border = '15px solid #ef4444'; 
-                    icon.className = 'fa-solid fa-face-frown text-7xl text-red-600 mb-6 animate-bounce';
-                    title.innerText = "NO SALISTE SORTEADO";
-                    title.className = "text-3xl font-black text-red-500 uppercase tracking-tighter";
-                    reason.innerHTML = `Lo sentimos, la demanda para este turno superó la capacidad y el algoritmo no te seleccionó en esta ocasión.<br><br><span style="color:#ef4444;">¡Tu prioridad en el sistema ha aumentado para la próxima vez!</span>`;
+                    reason.innerHTML = `
+                        <div class="text-center">
+                            Ya hemos registrado tu participación para este turno.<br><br>
+                            <span style="color:#facc15;">Por favor, regresa al portal principal y espera a que el cronómetro llegue a cero para consultar tus resultados.</span>
+                        </div>
+                    `;
                 } else if (tipo === 'cerrado') {
-                    overlay.style.border = '15px solid #ef4444'; 
+                    // PANTALLA ROJA: TURNO CERRADO
+                    overlay.style.borderTop = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
                     title.innerText = "TURNO CERRADO";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
-                    reason.innerText = "El delegado a cargo ha desactivado la emisión de tickets para este turno.";
+                    reason.innerHTML = "<div class='text-center'>El delegado a cargo ha desactivado la emisión de tickets para este turno.</div>";
                 } else {
-                    overlay.style.border = '15px solid #ef4444'; 
+                    // PANTALLA ROJA: SESIÓN EXPIRADA
+                    overlay.style.borderTop = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-pulse';
                     title.innerText = "SESIÓN EXPIRADA";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
-                    reason.innerText = "Por motivos de seguridad, el tiempo de visualización límite (5 Minutos) ha concluido. Por favor, vuelva a ingresar desde el portal principal si lo requiere.";
+                    reason.innerHTML = "<div class='text-center'>Por motivos de seguridad, el tiempo de visualización límite (5 Minutos) ha concluido. Por favor, vuelva a ingresar desde el portal principal si lo requiere.</div>";
                 }
 
                 document.getElementById('scanning-overlay').style.display = 'none';
                 overlay.style.display = 'flex';
             },
 
+            // SINCRONIZACIÓN EN VIVO DE LOS BOTONES
             reaccionarAlDelegado: function() {
                 if (!turnoDataLoaded) return; 
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
@@ -350,11 +371,13 @@
                     if (overlay.style.display === 'flex' && title.innerText === "TURNO CERRADO") {
                         overlay.style.display = 'none';
                     }
+                    
                     // CAMBIO DINÁMICO DEL BOTÓN SEGÚN EL ESTADO
                     if (window.estadoTurno.estado === 'recepcionando') {
                         btnAction.innerText = "ENVIAR SOLICITUD DE CUPO";
                         btnAction.className = "bg-yellow-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(250,204,21,0.4)]";
                     } else if (window.estadoTurno.estado === 'sorteado') {
+                        // SI YA SE SORTEÓ, EL BOTÓN INVITA A VERIFICAR
                         btnAction.innerText = "VERIFICAR RESULTADO";
                         btnAction.className = "bg-cyan-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,229,255,0.4)]";
                     }
@@ -426,7 +449,7 @@
                         return;
                     }
 
-                    // ====== RAMIFICACIÓN DE ESTADOS (SORTEO) ====== //
+                    // ====== RAMIFICACIÓN DE ESTADOS SINCRONIZADA ====== //
                     if (window.estadoTurno.estado === 'recepcionando') {
                         msg.innerText = "VERIFICANDO SOLICITUDES PREVIAS...";
                         const solSnap = await db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).once('value');
@@ -455,6 +478,7 @@
                         });
 
                     } else if (window.estadoTurno.estado === 'sorteado') {
+                        // SI YA SE SORTEÓ, VERIFICA SI ESTÁ EN LA LISTA GANADORA
                         msg.innerText = "BUSCANDO TU DNI EN LOS GANADORES...";
                         const refViajeTurno = db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}`);
                         const snapReg = await refViajeTurno.child(`registros/${typedDni}`).once('value');
@@ -464,7 +488,7 @@
                             this.renderFinal(alu, typedDni, snapReg.val());
                         } else {
                             overlay.style.display = 'none';
-                            this.showBlockScreen('no_ganador');
+                            this.showBlockScreen('no_ganador'); // LLAMA A LA PANTALLA ROJA DETALLADA
                         }
 
                     } else {
