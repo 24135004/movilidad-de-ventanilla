@@ -664,6 +664,7 @@
             timerEl.style.color = "#facc15";
 
             cronometros[turno] = setInterval(() => {
+                // AQUÍ ESTABA EL ERROR: Si no leía inicio_recepcion, quedaba trabado
                 if (!inicioTimestamp || inicioTimestamp === 0) {
                     timerEl.innerText = "Sincronizando...";
                     timerEl.style.fontSize = "16px";
@@ -865,7 +866,7 @@
             });
             
             updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
-            updates[`sistema/config/${turno}_estado`] = 'sorteado'; // ESTADO BLINDADO
+            updates[`sistema/config/${turno}_estado`] = 'sorteado'; 
             
             await db.ref().update(updates);
             
@@ -924,6 +925,7 @@
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
             setInterval(evaluarTurnosAutomaticos, 15000);
 
+            // Evitamos que F5 borre la lista (directorioAlumnos siempre carga)
             db.ref('alumnos').on('value', snap => {
                 directorioAlumnos = snap.val() || {};
                 actualizarListaMaestraEnVivo();
@@ -933,9 +935,10 @@
                 const d = snap.val() || {};
                 configGlobal.cupos = d.cupos_maximos || 40; 
                 
-                configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado'; configGlobal.limite_tarde1 = d.limite_tarde1 || '';
-                configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado'; configGlobal.limite_tarde2 = d.limite_tarde2 || '';
-                configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_estado = d.noche_estado || 'cerrado'; configGlobal.limite_noche = d.limite_noche || '';
+                // AQUÍ ESTABA EL ERROR: Le faltaba leer inicio_recepcion de Firebase
+                configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado'; configGlobal.limite_tarde1 = d.limite_tarde1 || ''; configGlobal.tarde1_inicio_recepcion = d.tarde1_inicio_recepcion || 0;
+                configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado'; configGlobal.limite_tarde2 = d.limite_tarde2 || ''; configGlobal.tarde2_inicio_recepcion = d.tarde2_inicio_recepcion || 0;
+                configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_estado = d.noche_estado || 'cerrado'; configGlobal.limite_noche = d.limite_noche || ''; configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
                 
                 actualizarUI_Tarjetas();
             });
