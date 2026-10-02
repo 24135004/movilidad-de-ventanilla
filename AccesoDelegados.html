@@ -271,7 +271,7 @@
                         <h4 class="text-lg font-black uppercase tracking-tighter">Tarde (2:15)</h4>
                         <p class="text-[10px] text-gray-400 uppercase mt-1 mb-2 tracking-widest font-bold">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-black">MANUAL</span></p>
                         
-                        <div id="timer-tarde1" class="timer-display">10:00</div>
+                        <div id="timer-tarde1" class="timer-display">02:00</div>
 
                         <div class="flex flex-col gap-2 mt-4">
                             <button onclick="cambiarEstadoTurno('tarde1', 'recepcionando')" id="btn-abrir-tarde1" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
@@ -287,7 +287,7 @@
                         <h4 class="text-lg font-black uppercase tracking-tighter">Tarde (6:00)</h4>
                         <p class="text-[10px] text-gray-400 uppercase mt-1 mb-2 tracking-widest font-bold">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-black">MANUAL</span></p>
                         
-                        <div id="timer-tarde2" class="timer-display">10:00</div>
+                        <div id="timer-tarde2" class="timer-display">02:00</div>
 
                         <div class="flex flex-col gap-2 mt-4">
                             <button onclick="cambiarEstadoTurno('tarde2', 'recepcionando')" id="btn-abrir-tarde2" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
@@ -303,7 +303,7 @@
                         <h4 class="text-lg font-black uppercase tracking-tighter">Noche (10:15)</h4>
                         <p class="text-[10px] text-gray-400 uppercase mt-1 mb-2 tracking-widest font-bold">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-black">MANUAL</span></p>
                         
-                        <div id="timer-noche" class="timer-display">10:00</div>
+                        <div id="timer-noche" class="timer-display">02:00</div>
 
                         <div class="flex flex-col gap-2 mt-4">
                             <button onclick="cambiarEstadoTurno('noche', 'recepcionando')" id="btn-abrir-noche" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
@@ -422,7 +422,21 @@
         let listenersSolicitudes = {};
         let cronometros = {}; 
 
-        function getFechaID() { return new Date(Date.now() + serverTimeOffset).toISOString().split('T')[0]; }
+        // FECHA EXACTA DE PERÚ
+        function getFechaID() { 
+            const now = new Date(Date.now() + serverTimeOffset);
+            const formatter = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' });
+            const p = formatter.formatToParts(now);
+            return `${p.find(x => x.type === 'year').value}-${p.find(x => x.type === 'month').value}-${p.find(x => x.type === 'day').value}`;
+        }
+
+        // HORA EXACTA DE PERÚ (En minutos totales)
+        function getPeruTimeMins() {
+            const now = new Date(Date.now() + serverTimeOffset);
+            const formatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' });
+            const timeStr = formatter.format(now);
+            return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10);
+        }
 
         window.onload = function() {
             if (delegadoActivo !== "" && tokenActivo !== "") {
@@ -642,11 +656,12 @@
             cerrarAjustes();
         }
 
+        // EVALUACIÓN DE APERTURAS Y LIMPIEZAS AUTOMÁTICAS
         function evaluarTurnosAutomaticos() {
-            const now = new Date(Date.now() + serverTimeOffset);
-            const currentMins = now.getHours() * 60 + now.getMinutes();
+            const currentMins = getPeruTimeMins();
             const checkTime = (timeStr) => { if(!timeStr) return 9999; return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10); };
 
+            // EVALUACIÓN DE APERTURAS
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 let estadoActual = configGlobal[`${t}_estado`] || 'cerrado';
                 if (configGlobal[`prog_${t}`] && configGlobal[`hora_${t}`] && currentMins >= checkTime(configGlobal[`hora_${t}`]) && estadoActual === 'cerrado') {
@@ -654,8 +669,30 @@
                     db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
                 }
             });
+
+            // LIMPIEZA AUTOMÁTICA (4:00 PM, 8:00 PM, 11:58 PM)
+            if (currentMins >= 960 && currentMins < 1200 && configGlobal.tarde1_estado === 'sorteado') limpiarTurno('tarde1');
+            if (currentMins >= 1200 && currentMins < 1438 && configGlobal.tarde2_estado === 'sorteado') limpiarTurno('tarde2');
+            if (currentMins >= 1438 && configGlobal.noche_estado === 'sorteado') limpiarTurno('noche');
+
+            // RESETEO DE MEDIA NOCHE PARA EL DÍA SIGUIENTE
+            if (currentMins === 0 || currentMins === 1) {
+                if (configGlobal.tarde1_estado === 'finalizado') db.ref('sistema/config/tarde1_estado').set('cerrado');
+                if (configGlobal.tarde2_estado === 'finalizado') db.ref('sistema/config/tarde2_estado').set('cerrado');
+                if (configGlobal.noche_estado === 'finalizado') db.ref('sistema/config/noche_estado').set('cerrado');
+            }
         }
 
+        // Función que limpia la lista activa pero el historial queda a salvo
+        function limpiarTurno(turno) {
+            const fechaID = getFechaID();
+            db.ref(`sistema/viajes/${fechaID}/${turno}`).remove();
+            db.ref(`sistema/solicitudes/${fechaID}/${turno}`).remove();
+            db.ref(`sistema/config/${turno}_estado`).set('finalizado');
+            console.log(`Turno ${turno} limpiado de la vista, historial guardado permanentemente.`);
+        }
+
+        // CRONÓMETRO DE 2 MINUTOS
         function iniciarCronometroPanel(turno, inicioTimestamp) {
             detenerCronometro(turno);
             const timerEl = document.getElementById(`timer-${turno}`);
@@ -670,7 +707,7 @@
                 }
 
                 const now = new Date(Date.now() + serverTimeOffset).getTime();
-                let diff = (inicioTimestamp + 600000) - now; 
+                let diff = (inicioTimestamp + 120000) - now; // 120000 = 2 Minutos
 
                 if (diff <= 0) {
                     detenerCronometro(turno);
@@ -754,12 +791,12 @@
                     timerEl.innerText = "00:00";
                     timerEl.style.color = "#00E5FF";
                     
-                } else { // cerrado
+                } else { // cerrado O finalizado
                     card.classList.remove('active'); 
                     badge.className = 'badge-status badge-off'; 
-                    badge.innerText = '🔴 CERRADO';
+                    badge.innerText = estado === 'finalizado' ? '🔴 FINALIZADO' : '🔴 CERRADO';
                     
-                    btnAbrir.style.display = 'flex';
+                    btnAbrir.style.display = estado === 'finalizado' ? 'none' : 'flex';
                     btnSortear.style.display = 'none';
                     btnCerrar.style.display = 'none';
 
@@ -774,7 +811,7 @@
 
             if (accion === 'recepcionando') {
                 Swal.fire({
-                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana para recibir solicitudes por 10 minutos.', icon: 'question',
+                    title: '¿Abrir Recepción?', text: 'Se abrirá la ventana para recibir solicitudes por 2 minutos.', icon: 'question',
                     showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
@@ -812,25 +849,20 @@
             }
         }
 
-        let isDrawing = false; // Candado de seguridad para evitar loop
+        let isDrawing = false; 
 
+        // SORTEO JUSTO CON HISTORIAL PERMANENTE
         async function ejecutarSorteoJusto(turno) {
-            if (isDrawing) return; // Si ya está sorteando, detiene el loop
+            if (isDrawing) return; 
             isDrawing = true;
             
             try {
                 const fechaID = getFechaID();
                 
-                // Verificación doble en Firebase para que no se ejecute dos veces
                 const snapCheck = await db.ref(`sistema/config/${turno}_estado`).once('value');
-                if (snapCheck.val() === 'sorteado') {
-                    isDrawing = false;
-                    return; 
-                }
+                if (snapCheck.val() === 'sorteado') { isDrawing = false; return; }
 
-                // BLOQUEO INMEDIATO: Le decimos a Firebase que ya terminó antes de calcular
                 await db.ref(`sistema/config/${turno}_estado`).set('sorteado');
-
                 notificarFlash("CALCULANDO...", "warning", "Ejecutando sorteo único");
 
                 const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
@@ -843,46 +875,53 @@
                 const solicitudes = snapSol.val();
                 const dnisParticipantes = Object.keys(solicitudes);
                 
-                const snapHist = await db.ref('historial_viajes').once('value');
+                // LEER HISTORIAL DE SENTADOS PERMANENTE
+                const snapHist = await db.ref('historial_sentados_permanente').once('value');
                 const historial = snapHist.val() || {};
                 
                 let arrayCompetencia = dnisParticipantes.map(dni => {
                     return {
                         dni: dni,
                         data: solicitudes[dni],
-                        viajesRealizados: historial[dni] || 0,
+                        vecesSentado: historial[dni] || 0,
                         factorSuerte: Math.random() 
                     };
                 });
                 
+                // ORDENAR: Menos veces sentado primero
                 arrayCompetencia.sort((a, b) => {
-                    if(a.viajesRealizados === b.viajesRealizados) {
+                    if(a.vecesSentado === b.vecesSentado) {
                         return a.factorSuerte - b.factorSuerte;
                     }
-                    return a.viajesRealizados - b.viajesRealizados;
+                    return a.vecesSentado - b.vecesSentado;
                 });
                 
                 const cuposDisponibles = configGlobal.cupos || 40;
-                const ganadores = arrayCompetencia.slice(0, cuposDisponibles);
                 
                 let updates = {};
-                ganadores.forEach((g, index) => {
+                
+                // TODOS LOS SOLICITANTES RECIBEN TICKET
+                arrayCompetencia.forEach((g, index) => {
                     let numeroDeAsiento = index + 1;
                     updates[`sistema/viajes/${fechaID}/${turno}/registros/${g.dni}`] = {
                         nombre: g.data.nombre,
                         orden: numeroDeAsiento,
                         hora: g.data.hora
                     };
-                    updates[`historial_viajes/${g.dni}`] = g.viajesRealizados + 1;
+                    
+                    // SÓLO SI LE TOCÓ ASIENTO SE LE SUMA AL HISTORIAL
+                    if (numeroDeAsiento <= cuposDisponibles) {
+                        updates[`historial_sentados_permanente/${g.dni}`] = g.vecesSentado + 1;
+                    }
                 });
                 
-                updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
+                updates[`sistema/viajes/${fechaID}/${turno}/contador`] = arrayCompetencia.length;
                 
                 await db.ref().update(updates);
                 
                 Swal.fire({
                     title: '¡Sorteo Único Finalizado!',
-                    text: `Se asignaron ${ganadores.length} cupos de manera justa. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista de ganadores ahora?`,
+                    text: `Se asignaron asientos y pases de pie de manera justa. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista ahora?`,
                     icon: 'success',
                     showCancelButton: true,
                     confirmButtonColor: '#10b981',
@@ -900,7 +939,7 @@
                 console.error(error);
                 notificarFlash("ERROR EN SORTEO", "error", "Revisa la consola");
             } finally {
-                isDrawing = false; // Liberar candado
+                isDrawing = false; 
             }
         }
 
@@ -1110,6 +1149,10 @@
         }
 
         async function reiniciarFirebase() {
+            if (delegadoActivo !== "71886034") {
+                return Swal.fire('Permiso Denegado', 'Solo el administrador principal (DNI 71886034) puede hacer un reinicio total de la base de datos.', 'error');
+            }
+
             Swal.fire({ 
                 title: '¿REINICIO TOTAL?', 
                 text: '¡Peligro! Esto borrará TODOS los tickets, escaneos y SOLICITUDES de hoy en los 3 turnos.', 
@@ -1138,7 +1181,7 @@
                         notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); 
                         setTimeout(() => location.reload(), 1500);
                     } catch(error) {
-                        Swal.fire('Permiso Denegado', 'Solo el administrador principal puede hacer un reinicio total de la base de datos.', 'error');
+                        Swal.fire('Error Firebase', 'Tu cuenta no tiene permisos directos. Revisa las reglas en Firebase Console.', 'error');
                     }
                 }
             });
