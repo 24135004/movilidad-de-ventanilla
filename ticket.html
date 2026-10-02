@@ -278,7 +278,7 @@
 
                 this.listenFirebase(); 
                 
-                // REEMPLAZO IMPORTANTE: Actualiza cada segundo para el cronómetro
+                // Actualiza cada segundo para el cronómetro
                 setInterval(() => this.checkSchedules(), 1000); 
             },
 
@@ -296,18 +296,16 @@
             checkSchedules: function() {
                 if (!this.config) return;
 
-                // -- MODIFICACIÓN: VALIDAMOS SI ESTÁ EN RECEPCIÓN O YA SORTEADO --
                 this.currentTarde1Active = (this.config.tarde1_estado === 'recepcionando' || this.config.tarde1_estado === 'sorteado');
                 this.currentTarde2Active = (this.config.tarde2_estado === 'recepcionando' || this.config.tarde2_estado === 'sorteado');
                 this.currentNocheActive = (this.config.noche_estado === 'recepcionando' || this.config.noche_estado === 'sorteado');
 
-                // -- LLAMADA A LA NUEVA FUNCIÓN DE UI CON CRONÓMETRO --
                 this.updateCardUI('tarde1', 'badge-m', 'card-m', 'time-badge-m');
                 this.updateCardUI('tarde2', 'badge-t', 'card-t', 'time-badge-t');
                 this.updateCardUI('noche', 'badge-n', 'card-n', 'time-badge-n');
             },
 
-            // -- NUEVA FUNCIÓN AGREGADA PARA CONTROLAR EL RELOJ Y LOS ESTADOS --
+            // FUNCIÓN ACTUALIZADA Y SINCRONIZADA
             updateCardUI: function(turno, bid, cid, tid) {
                 const b = document.getElementById(bid), c = document.getElementById(cid), t = document.getElementById(tid);
                 if(!b || !c || !t) return;
@@ -320,10 +318,19 @@
                     c.classList.remove('locked'); c.style.pointerEvents = "auto";
                     
                     let timeDiff = (inicioRecepcion + 600000) - currentTime; // 10 min = 600,000 ms
-                    if (timeDiff > 0) {
+                    
+                    // FILTRO DE SINCRONIZACIÓN (Ignora la hora vieja para no romper la pantalla)
+                    if (timeDiff < -120000) { 
+                        t.innerText = "SINCRONIZANDO...";
+                        t.className = "time-badge recepcionando";
+                        
+                        b.innerText = "🟡 PREPARANDO...";
+                        b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
+                    } 
+                    else if (timeDiff > 0) {
                         let m = Math.floor(timeDiff / 60000).toString().padStart(2, '0');
                         let s = Math.floor((timeDiff % 60000) / 1000).toString().padStart(2, '0');
-                        t.innerText = `SOLICITUDES: ${m}:${s}`;
+                        t.innerText = `TIEMPO: ${m}:${s}`;
                         t.className = "time-badge recepcionando";
                         
                         b.innerText = "🟡 PARTICIPAR";
@@ -331,13 +338,14 @@
                     } else {
                         t.innerText = "ESPERANDO RESULTADOS...";
                         t.className = "time-badge";
-                        b.innerText = "⌛ CERRANDO...";
+                        
+                        b.innerText = "⌛ PROCESANDO...";
                         b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-orange-500/20 text-orange-400 border border-orange-500";
                     }
                 } else if (estado === 'sorteado') {
                     c.classList.remove('locked'); c.style.pointerEvents = "auto";
                     
-                    t.innerText = "RESULTADOS DISPONIBLES";
+                    t.innerText = "VERIFICAR RESULTADO";
                     t.className = "time-badge sorteado";
                     
                     b.innerText = "🔵 SORTEO FINALIZADO";
@@ -353,7 +361,6 @@
                 }
             },
 
-            // FUNCIÓN ORIGINAL MANTENIDA EXACTAMENTE IGUAL
             upUI: function(bid, cid, act) {
                 const b = document.getElementById(bid), c = document.getElementById(cid);
                 if(!b || !c) return;
@@ -426,7 +433,6 @@
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
             },
 
-            // FUNCIÓN QUE VERIFICA Y TE ENVÍA A LA OTRA PÁGINA (PASA DATOS POR SESSIONSTORAGE)
             goToTurno: function(pageUrl, turnoId) {
                 let isActive = false;
                 if (turnoId === 'tarde1') isActive = this.currentTarde1Active;
@@ -448,7 +454,6 @@
                 }
             },
 
-            // FUNCIONES ORIGINALES QUE SE QUEDAN INTACTAS (AUNQUE AHORA LA LÓGICA ESTÉ EN LA OTRA PÁGINA)
             requestTicket: function(turno) {
                 if (turno === 'tarde' && !this.currentTarde1Active) return Swal.fire('Acceso Denegado', 'El delegado ha cerrado este turno.', 'error');
                 if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El delegado ha cerrado este turno.', 'error');
