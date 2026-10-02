@@ -656,7 +656,6 @@
             });
         }
 
-        // LÓGICA DE CRONÓMETROS CORREGIDA (AHORA SÍ LLEGA A 0 Y HACE SORTEO AUTOMÁTICO)
         function iniciarCronometroPanel(turno, inicioTimestamp) {
             detenerCronometro(turno);
             const timerEl = document.getElementById(`timer-${turno}`);
@@ -664,7 +663,6 @@
             timerEl.style.color = "#facc15";
 
             cronometros[turno] = setInterval(() => {
-                // AQUÍ ESTABA EL ERROR: Si no leía inicio_recepcion, quedaba trabado
                 if (!inicioTimestamp || inicioTimestamp === 0) {
                     timerEl.innerText = "Sincronizando...";
                     timerEl.style.fontSize = "16px";
@@ -672,15 +670,16 @@
                 }
 
                 const now = new Date(Date.now() + serverTimeOffset).getTime();
-                let diff = (inicioTimestamp + 600000) - now; // 10 mins = 600,000 ms
+                let diff = (inicioTimestamp + 600000) - now; 
 
                 if (diff <= 0) {
                     detenerCronometro(turno);
                     timerEl.innerText = "00:00";
                     timerEl.style.color = "#ef4444";
                     
-                    // EJECUCIÓN AUTOMÁTICA DEL SORTEO CUANDO LLEGA A 0
                     if (configGlobal[`${turno}_estado`] === 'recepcionando') {
+                        // Bloqueo local INMEDIATO para evitar loop
+                        configGlobal[`${turno}_estado`] = 'procesando'; 
                         ejecutarSorteoJusto(turno);
                     }
                 } else {
@@ -813,78 +812,96 @@
             }
         }
 
-        async function ejecutarSorteoJusto(turno) {
-            notificarFlash("CALCULANDO...", "warning", "Ejecutando sorteo único");
-            const fechaID = getFechaID();
-            
-            const snapCheck = await db.ref(`sistema/config/${turno}_estado`).once('value');
-            if (snapCheck.val() === 'sorteado') {
-                return; // Ya se sorteó, evita loops si se llama varias veces al mismo tiempo
-            }
+        let isDrawing = false; // Candado de seguridad para evitar loop
 
-            const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
-            if(!snapSol.exists()) {
-                Swal.fire({title: 'Sin solicitudes', text: 'Nadie solicitó cupo en este turno.', icon: 'info', background: '#111', color: '#fff'});
-                db.ref(`sistema/config/${turno}_estado`).set('sorteado');
-                return;
+        async function ejecutarSorteoJusto(turno) {
+            if (isDrawing) return; // Si ya está sorteando, detiene el loop
+            isDrawing = true;
+            
+            try {
+                const fechaID = getFechaID();
+                
+                // Verificación doble en Firebase para que no se ejecute dos veces
+                const snapCheck = await db.ref(`sistema/config/${turno}_estado`).once('value');
+                if (snapCheck.val() === 'sorteado') {
+                    isDrawing = false;
+                    return; 
+                }
+
+                // BLOQUEO INMEDIATO: Le decimos a Firebase que ya terminó antes de calcular
+                await db.ref(`sistema/config/${turno}_estado`).set('sorteado');
+
+                notificarFlash("CALCULANDO...", "warning", "Ejecutando sorteo único");
+
+                const snapSol = await db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value');
+                if(!snapSol.exists()) {
+                    Swal.fire({title: 'Sin solicitudes', text: 'Nadie solicitó cupo en este turno.', icon: 'info', background: '#111', color: '#fff'});
+                    isDrawing = false;
+                    return;
+                }
+                
+                const solicitudes = snapSol.val();
+                const dnisParticipantes = Object.keys(solicitudes);
+                
+                const snapHist = await db.ref('historial_viajes').once('value');
+                const historial = snapHist.val() || {};
+                
+                let arrayCompetencia = dnisParticipantes.map(dni => {
+                    return {
+                        dni: dni,
+                        data: solicitudes[dni],
+                        viajesRealizados: historial[dni] || 0,
+                        factorSuerte: Math.random() 
+                    };
+                });
+                
+                arrayCompetencia.sort((a, b) => {
+                    if(a.viajesRealizados === b.viajesRealizados) {
+                        return a.factorSuerte - b.factorSuerte;
+                    }
+                    return a.viajesRealizados - b.viajesRealizados;
+                });
+                
+                const cuposDisponibles = configGlobal.cupos || 40;
+                const ganadores = arrayCompetencia.slice(0, cuposDisponibles);
+                
+                let updates = {};
+                ganadores.forEach((g, index) => {
+                    let numeroDeAsiento = index + 1;
+                    updates[`sistema/viajes/${fechaID}/${turno}/registros/${g.dni}`] = {
+                        nombre: g.data.nombre,
+                        orden: numeroDeAsiento,
+                        hora: g.data.hora
+                    };
+                    updates[`historial_viajes/${g.dni}`] = g.viajesRealizados + 1;
+                });
+                
+                updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
+                
+                await db.ref().update(updates);
+                
+                Swal.fire({
+                    title: '¡Sorteo Único Finalizado!',
+                    text: `Se asignaron ${ganadores.length} cupos de manera justa. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista de ganadores ahora?`,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonColor: '#10b981',
+                    cancelButtonColor: '#374151',
+                    confirmButtonText: 'Sí, Descargar Lista',
+                    cancelButtonText: 'No, Ver Luego',
+                    background: '#111', color: '#fff'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        generarReporteAutomatizado();
+                    }
+                });
+
+            } catch(error) {
+                console.error(error);
+                notificarFlash("ERROR EN SORTEO", "error", "Revisa la consola");
+            } finally {
+                isDrawing = false; // Liberar candado
             }
-            
-            const solicitudes = snapSol.val();
-            const dnisParticipantes = Object.keys(solicitudes);
-            
-            const snapHist = await db.ref('historial_viajes').once('value');
-            const historial = snapHist.val() || {};
-            
-            let arrayCompetencia = dnisParticipantes.map(dni => {
-                return {
-                    dni: dni,
-                    data: solicitudes[dni],
-                    viajesRealizados: historial[dni] || 0,
-                    factorSuerte: Math.random() 
-                };
-            });
-            
-            arrayCompetencia.sort((a, b) => {
-                if(a.viajesRealizados === b.viajesRealizados) {
-                    return a.factorSuerte - b.factorSuerte;
-                }
-                return a.viajesRealizados - b.viajesRealizados;
-            });
-            
-            const cuposDisponibles = configGlobal.cupos || 40;
-            const ganadores = arrayCompetencia.slice(0, cuposDisponibles);
-            
-            let updates = {};
-            ganadores.forEach((g, index) => {
-                let numeroDeAsiento = index + 1;
-                updates[`sistema/viajes/${fechaID}/${turno}/registros/${g.dni}`] = {
-                    nombre: g.data.nombre,
-                    orden: numeroDeAsiento,
-                    hora: g.data.hora
-                };
-                updates[`historial_viajes/${g.dni}`] = g.viajesRealizados + 1;
-            });
-            
-            updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
-            updates[`sistema/config/${turno}_estado`] = 'sorteado'; 
-            
-            await db.ref().update(updates);
-            
-            Swal.fire({
-                title: '¡Sorteo Único Finalizado!',
-                text: `Se asignaron ${ganadores.length} cupos de manera justa. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista de ganadores ahora?`,
-                icon: 'success',
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#374151',
-                confirmButtonText: 'Sí, Descargar Lista',
-                cancelButtonText: 'No, Ver Luego',
-                background: '#111', color: '#fff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    generarReporteAutomatizado();
-                }
-            });
         }
 
         function iniciarSistema() {
@@ -935,7 +952,6 @@
                 const d = snap.val() || {};
                 configGlobal.cupos = d.cupos_maximos || 40; 
                 
-                // AQUÍ ESTABA EL ERROR: Le faltaba leer inicio_recepcion de Firebase
                 configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado'; configGlobal.limite_tarde1 = d.limite_tarde1 || ''; configGlobal.tarde1_inicio_recepcion = d.tarde1_inicio_recepcion || 0;
                 configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado'; configGlobal.limite_tarde2 = d.limite_tarde2 || ''; configGlobal.tarde2_inicio_recepcion = d.tarde2_inicio_recepcion || 0;
                 configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_estado = d.noche_estado || 'cerrado'; configGlobal.limite_noche = d.limite_noche || ''; configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
@@ -1094,14 +1110,36 @@
         }
 
         async function reiniciarFirebase() {
-            Swal.fire({ title: '¿REINICIO TOTAL?', text: '¡Peligro! Esto borrará TODOS los tickets, escaneos y SOLICITUDES de hoy en los 3 turnos.', icon: 'error', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'RESETEAR SISTEMA', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+            Swal.fire({ 
+                title: '¿REINICIO TOTAL?', 
+                text: '¡Peligro! Esto borrará TODOS los tickets, escaneos y SOLICITUDES de hoy en los 3 turnos.', 
+                icon: 'error', 
+                showCancelButton: true, 
+                confirmButtonColor: '#ef4444', 
+                cancelButtonColor: '#374151', 
+                confirmButtonText: 'RESETEAR SISTEMA', 
+                cancelButtonText: 'Cancelar', 
+                background: '#111', color: '#fff'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    const fecha = getFechaID(); 
-                    await db.ref(`sistema/viajes/${fecha}`).remove(); 
-                    await db.ref(`sistema/asistencias/${fecha}`).remove();
-                    await db.ref(`sistema/solicitudes/${fecha}`).remove();
-                    notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); setTimeout(() => location.reload(), 1500);
+                    try {
+                        const fecha = getFechaID(); 
+                        await db.ref(`sistema/viajes/${fecha}`).remove(); 
+                        await db.ref(`sistema/asistencias/${fecha}`).remove();
+                        await db.ref(`sistema/solicitudes/${fecha}`).remove();
+                        
+                        // Cerrar los turnos activos en Firebase para que inicie limpio
+                        await db.ref('sistema/config').update({
+                            tarde1_estado: 'cerrado', tarde1_inicio_recepcion: 0,
+                            tarde2_estado: 'cerrado', tarde2_inicio_recepcion: 0,
+                            noche_estado: 'cerrado', noche_inicio_recepcion: 0
+                        });
+
+                        notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); 
+                        setTimeout(() => location.reload(), 1500);
+                    } catch(error) {
+                        Swal.fire('Permiso Denegado', 'Solo el administrador principal puede hacer un reinicio total de la base de datos.', 'error');
+                    }
                 }
             });
         }
