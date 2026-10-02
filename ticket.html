@@ -170,9 +170,9 @@
                     </div>
                 </div>
 
-                <!-- TARJETAS DE TURNOS (TEXTOS GIGANTES Y DIFERENCIADOS) -->
+                <!-- TARJETAS DE TURNOS -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <!-- TARDE 2:15 PM (AHORA SINCRONIZADO Y REDIRIGE) -->
+                    <!-- TARDE 2:15 PM -->
                     <div id="card-m" class="card-panorama" style="background-image: url('DSC07555-768x432.jpg');" onclick="Core.goToTurno('turnotarde.html', 'tarde1')">
                         <span id="badge-m" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white flex flex-col items-center leading-none mt-2">
@@ -183,7 +183,7 @@
                         <p class="delegate-msg text-cyan-400">Sincronizado con Panel de Delegado</p>
                     </div>
 
-                    <!-- TARDE 6:00 PM (AHORA SINCRONIZADO Y REDIRIGE) -->
+                    <!-- TARDE 6:00 PM -->
                     <div id="card-t" class="card-panorama" style="background-image: url('DSC07588-768x432.jpg');" onclick="Core.goToTurno('turnotarde.html', 'tarde2')">
                         <span id="badge-t" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 uppercase">Evaluando...</span>
                         <h3 class="shift-title text-white flex flex-col items-center leading-none mt-2">
@@ -195,7 +195,7 @@
                     </div>
                 </div>
 
-                <!-- NOCHE 10:15 PM (AHORA SINCRONIZADO Y REDIRIGE) -->
+                <!-- NOCHE 10:15 PM -->
                 <div id="card-n" class="card-panorama w-full" style="background-image: url('DSC07629-768x432.jpg');" onclick="Core.goToTurno('turnonoche.html', 'noche')">
                     <span id="badge-n" class="relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-2 uppercase">Evaluando...</span>
                     <h3 class="shift-title text-white text-5xl flex flex-col items-center leading-none mt-2">
@@ -209,33 +209,6 @@
                 <div id="globe-box-2"></div>
             </div>
 
-            <!-- PASO 3 : TICKET GENERADO (MANTENIDO INTACTO SEGÚN SOLICITUD) -->
-            <div id="step-3" class="hidden-section animate-fade-up text-center">
-                <div class="ticket-tech">
-                    <div class="tech-header"><h2>MOVILIDAD UNAC</h2><p class="text-[10px] text-cyan-400 tracking-widest mt-1">RUTA VENTANILLA</p></div>
-                    <div class="p-8">
-                        <p id="t-fecha" class="text-sm font-black text-gray-500 uppercase mb-6"></p>
-                        <div class="bg-gray-100 border-4 border-dashed border-gray-300 rounded-[50px] py-10 mb-8 relative">
-                            <p class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">NÚMERO DE ASIENTO</p>
-                            <div id="seat-area" class="asiento-display">--</div>
-                        </div>
-                        <div id="qrcode-vip" class="flex justify-center mb-8 border-4 border-black p-4 rounded-3xl w-max mx-auto"></div>
-                        <div class="data-grid space-y-3 text-left">
-                            <div class="flex flex-col border-b border-gray-300 pb-2">
-                                <span class="text-[9px] text-gray-500">PASAJERO:</span> 
-                                <span id="t-nom" class="font-bold text-[12px] uppercase"></span>
-                            </div>
-                            <div class="flex justify-between border-b border-gray-300 pb-2">
-                                <div class="flex flex-col"><span class="text-[9px] text-gray-500">DNI:</span> <span id="t-dni" class="font-bold text-[13px]"></span></div>
-                                <div class="flex flex-col text-right"><span class="text-[9px] text-gray-500">CÓDIGO:</span> <span id="t-cod" class="font-bold text-[13px]"></span></div>
-                            </div>
-                            <div class="turno-box shadow-lg"><span>TURNO ASIGNADO</span> <span id="t-turno-val" class="text-white"></span></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <button onclick="location.reload()" class="mt-8 bg-white/10 text-white font-black px-8 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-red-600 transition">Cerrar Sesión Segura</button>
-            </div>
         </main>
 
         <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
@@ -278,7 +251,7 @@
 
                 this.listenFirebase(); 
                 
-                // Actualiza cada segundo para el cronómetro
+                // Actualiza cada segundo para que el cronómetro baje en vivo
                 setInterval(() => this.checkSchedules(), 1000); 
             },
 
@@ -305,7 +278,7 @@
                 this.updateCardUI('noche', 'badge-n', 'card-n', 'time-badge-n');
             },
 
-            // FUNCIÓN ACTUALIZADA Y SINCRONIZADA
+            // FUNCIÓN MÁGICA: LEE EL TIEMPO EXACTO Y LO SINCRONIZA CON EL PANEL
             updateCardUI: function(turno, bid, cid, tid) {
                 const b = document.getElementById(bid), c = document.getElementById(cid), t = document.getElementById(tid);
                 if(!b || !c || !t) return;
@@ -317,17 +290,17 @@
                 if (estado === 'recepcionando') {
                     c.classList.remove('locked'); c.style.pointerEvents = "auto";
                     
-                    let timeDiff = (inicioRecepcion + 600000) - currentTime; // 10 min = 600,000 ms
-                    
-                    // FILTRO DE SINCRONIZACIÓN (Ignora la hora vieja para no romper la pantalla)
-                    if (timeDiff < -120000) { 
+                    if (inicioRecepcion === 0) {
                         t.innerText = "SINCRONIZANDO...";
                         t.className = "time-badge recepcionando";
-                        
                         b.innerText = "🟡 PREPARANDO...";
                         b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
-                    } 
-                    else if (timeDiff > 0) {
+                        return;
+                    }
+
+                    let timeDiff = (inicioRecepcion + 600000) - currentTime; // 10 min = 600,000 ms
+                    
+                    if (timeDiff > 0) {
                         let m = Math.floor(timeDiff / 60000).toString().padStart(2, '0');
                         let s = Math.floor((timeDiff % 60000) / 1000).toString().padStart(2, '0');
                         t.innerText = `TIEMPO: ${m}:${s}`;
@@ -336,6 +309,7 @@
                         b.innerText = "🟡 PARTICIPAR";
                         b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
                     } else {
+                        // YA PASARON LOS 10 MIN, MUESTRA QUE SE ESTÁ CALCULANDO EL SORTEO
                         t.innerText = "ESPERANDO RESULTADOS...";
                         t.className = "time-badge";
                         
@@ -353,28 +327,14 @@
                 } else {
                     c.classList.add('locked'); c.style.pointerEvents = "none";
                     
-                    t.innerText = this.config[`prog_${turno}`] ? "PROGRAMADO: " + (this.config[`hora_${turno}`] || '--:--') : "ACTIVACIÓN MANUAL";
+                    let prog = this.config[`prog_${turno}`];
+                    let horaProg = this.config[`hora_${turno}`];
+                    
+                    t.innerText = prog && horaProg ? "PROGRAMADO: " + horaProg : "ACTIVACIÓN MANUAL";
                     t.className = "time-badge";
                     
                     b.innerText = "🔴 CERRADO";
                     b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-red-900/50 text-red-400 border border-red-500";
-                }
-            },
-
-            upUI: function(bid, cid, act) {
-                const b = document.getElementById(bid), c = document.getElementById(cid);
-                if(!b || !c) return;
-                
-                if (act) {
-                    b.innerText = "🟢 DISPONIBLE";
-                    b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-green-500/20 text-green-400 border border-green-500 animate-pulse";
-                    c.classList.remove('locked');
-                    c.style.pointerEvents = "auto";
-                } else {
-                    b.innerText = "🔴 CERRADO";
-                    b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-red-900/50 text-red-400 border border-red-500";
-                    c.classList.add('locked');
-                    c.style.pointerEvents = "none";
                 }
             },
 
@@ -452,68 +412,6 @@
                 } else {
                     Swal.fire({icon: 'error', title: 'Turno Cerrado', text: 'El delegado ha cerrado este turno.', background: '#111', color: '#fff'});
                 }
-            },
-
-            requestTicket: function(turno) {
-                if (turno === 'tarde' && !this.currentTarde1Active) return Swal.fire('Acceso Denegado', 'El delegado ha cerrado este turno.', 'error');
-                if (turno === 'noche' && !this.currentNocheActive) return Swal.fire('Cerrado', 'El delegado ha cerrado este turno.', 'error');
-
-                const fecha = this.getRealTime().toISOString().split('T')[0]; 
-                const ruta = `sistema/viajes/${fecha}/${turno}`;
-                
-                document.getElementById('scanning-overlay').style.display = 'flex';
-                document.getElementById('loader-msg').innerText = "GENERANDO TICKET OFICIAL...";
-                
-                db.ref(`${ruta}/registros/${this.alumno.dni}`).once('value').then(snap => {
-                    if(snap.exists()) return this.renderTicket(turno, snap.val());
-                    
-                    db.ref(`${ruta}/contador`).transaction(c => (c || 0) + 1, (err, comm, snapC) => {
-                        if(err) {
-                            document.getElementById('scanning-overlay').style.display = 'none';
-                            return Swal.fire('Error', 'Transacción denegada por seguridad de Firebase.', 'error');
-                        }
-
-                        if(comm){
-                            const data = { orden: snapC.val(), nombre: this.alumno.Estudiante || "Estudiante", hora: new Date().toLocaleTimeString() };
-                            db.ref(`${ruta}/registros/${this.alumno.dni}`).set(data)
-                            .then(() => {
-                                this.renderTicket(turno, data);
-                            }).catch(e => {
-                                document.getElementById('scanning-overlay').style.display = 'none';
-                                Swal.fire('Error', 'No se pudo guardar el ticket.', 'error');
-                            });
-                        }
-                    });
-                });
-            },
-
-            renderTicket: function(turno, data) {
-                document.getElementById('t-nom').innerText = data.nombre;
-                document.getElementById('t-dni').innerText = this.alumno.dni;
-                document.getElementById('t-cod').innerText = this.alumno.Codigo || this.alumno.codigo || "S/C";
-                document.getElementById('t-turno-val').innerText = turno.toUpperCase();
-                
-                const fOpc = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-                document.getElementById('t-fecha').innerText = this.getRealTime().toLocaleDateString('es-PE', fOpc).toUpperCase();
-                
-                const area = document.getElementById('seat-area');
-                if (data.orden <= (this.config.cupos_maximos || 40)) {
-                    area.innerText = data.orden.toString().padStart(2,'0');
-                    area.style.color = "#000";
-                } else {
-                    area.innerText = "PARADO";
-                    area.style.color = "#e11d48";
-                    area.style.fontSize = "70px";
-                }
-
-                document.getElementById('qrcode-vip').innerHTML = "";
-                const turnoLetra = turno.charAt(0).toUpperCase(); 
-                const qrText = `UNAC-V-${this.alumno.dni}-${turnoLetra}-${data.orden}`;
-                new QRCode(document.getElementById("qrcode-vip"), { text: qrText, width: 220, height: 220, colorDark: "#000000", colorLight: "#ffffff", correctLevel : QRCode.CorrectLevel.H });
-                
-                document.getElementById('scanning-overlay').style.display = 'none';
-                document.getElementById('step-2').classList.add('hidden-section');
-                document.getElementById('step-3').classList.remove('hidden-section');
             },
 
             initThree: function(id) {
