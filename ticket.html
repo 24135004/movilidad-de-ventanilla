@@ -255,8 +255,11 @@
                 setInterval(() => this.checkSchedules(), 1000); 
             },
 
+            // FUNCIÓN ACTUALIZADA A HORA EXACTA DE LIMA/PERÚ PARA EVITAR BUGS DE NOCHE
             getRealTime: function() {
-                return new Date(Date.now() + serverTimeOffset);
+                const now = new Date(Date.now() + serverTimeOffset);
+                const limaStr = now.toLocaleString("en-US", { timeZone: "America/Lima" });
+                return new Date(limaStr);
             },
 
             listenFirebase: function() {
@@ -278,14 +281,15 @@
                 this.updateCardUI('noche', 'badge-n', 'card-n', 'time-badge-n');
             },
 
-            // FUNCIÓN MÁGICA: LEE EL TIEMPO EXACTO Y LO SINCRONIZA CON EL PANEL
             updateCardUI: function(turno, bid, cid, tid) {
                 const b = document.getElementById(bid), c = document.getElementById(cid), t = document.getElementById(tid);
                 if(!b || !c || !t) return;
 
                 let estado = this.config[`${turno}_estado`] || 'cerrado';
                 let inicioRecepcion = this.config[`${turno}_inicio_recepcion`] || 0;
-                const currentTime = this.getRealTime().getTime();
+                
+                // Obtenemos el tiempo exacto actual
+                const currentTime = Date.now() + serverTimeOffset;
 
                 if (estado === 'recepcionando') {
                     c.classList.remove('locked'); c.style.pointerEvents = "auto";
@@ -298,7 +302,8 @@
                         return;
                     }
 
-                    let timeDiff = (inicioRecepcion + 600000) - currentTime; // 10 min = 600,000 ms
+                    // CRONÓMETRO AJUSTADO A 2 MINUTOS (120,000 ms)
+                    let timeDiff = (inicioRecepcion + 120000) - currentTime; 
                     
                     if (timeDiff > 0) {
                         let m = Math.floor(timeDiff / 60000).toString().padStart(2, '0');
@@ -309,7 +314,6 @@
                         b.innerText = "🟡 PARTICIPAR";
                         b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
                     } else {
-                        // YA PASARON LOS 10 MIN, MUESTRA QUE SE ESTÁ CALCULANDO EL SORTEO
                         t.innerText = "ESPERANDO RESULTADOS...";
                         t.className = "time-badge";
                         
@@ -330,10 +334,17 @@
                     let prog = this.config[`prog_${turno}`];
                     let horaProg = this.config[`hora_${turno}`];
                     
-                    t.innerText = prog && horaProg ? "PROGRAMADO: " + horaProg : "ACTIVACIÓN MANUAL";
-                    t.className = "time-badge";
+                    // Si el estado es "finalizado" (limpieza automática), mostramos que ya terminó.
+                    if (estado === 'finalizado') {
+                        t.innerText = "LIMPIEZA DEL DÍA";
+                        t.className = "time-badge";
+                        b.innerText = "🔴 FINALIZADO";
+                    } else {
+                        t.innerText = prog && horaProg ? "PROGRAMADO: " + horaProg : "ACTIVACIÓN MANUAL";
+                        t.className = "time-badge";
+                        b.innerText = "🔴 CERRADO";
+                    }
                     
-                    b.innerText = "🔴 CERRADO";
                     b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-red-900/50 text-red-400 border border-red-500";
                 }
             },
