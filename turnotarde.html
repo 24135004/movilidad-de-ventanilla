@@ -270,8 +270,20 @@
                 setInterval(() => this.checkSecurityTime(), 1000);
             },
 
+            // FUNCIÓN ACTUALIZADA A HORA EXACTA DE LIMA/PERÚ PARA EVITAR BUGS DE NOCHE
             getRealTime: function() {
-                return new Date(Date.now() + serverTimeOffset);
+                const now = new Date(Date.now() + serverTimeOffset);
+                const limaStr = now.toLocaleString("en-US", { timeZone: "America/Lima" });
+                return new Date(limaStr);
+            },
+
+            // ID DE FECHA EXACTA DE LIMA
+            getFechaID: function() {
+                const now = this.getRealTime();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
             },
 
             // PANTALLAS DE BLOQUEO MEJORADAS
@@ -304,7 +316,7 @@
                             </span>
                         </div>
                     `;
-                } else if (tipo === 'cerrado') {
+                } else if (tipo === 'cerrado' || tipo === 'finalizado') {
                     overlay.style.borderTop = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
                     title.innerText = "TURNO CERRADO";
@@ -331,8 +343,8 @@
                 const title = document.getElementById('block-title');
                 const btnAction = document.getElementById('btn-submit-action');
 
-                if (window.estadoTurno.estado === 'cerrado') {
-                    this.showBlockScreen('cerrado');
+                if (window.estadoTurno.estado === 'cerrado' || window.estadoTurno.estado === 'finalizado') {
+                    this.showBlockScreen(window.estadoTurno.estado);
                 } else {
                     if (overlay.style.display === 'flex' && title.innerText === "TURNO CERRADO") {
                         overlay.style.display = 'none';
@@ -340,7 +352,7 @@
                     
                     if (window.estadoTurno.estado === 'recepcionando') {
                         // Verifica si ya mandó solicitud para ponerlo a esperar
-                        const fechaID = this.getRealTime().toISOString().split('T')[0];
+                        const fechaID = this.getFechaID();
                         db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).once('value').then(solSnap => {
                             if (solSnap.exists()) {
                                 btnAction.innerText = "ESPERANDO SORTEO...";
@@ -393,7 +405,7 @@
                 msg.innerText = "PROCESANDO SU RESULTADO...";
 
                 try {
-                    const fechaID = this.getRealTime().toISOString().split('T')[0];
+                    const fechaID = this.getFechaID();
                     const snapReg = await db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}/registros/${typedDni}`).once('value');
                     
                     if(snapReg.exists()){
@@ -439,7 +451,7 @@
                 overlay.style.display = 'flex';
                 
                 try {
-                    const fechaID = this.getRealTime().toISOString().split('T')[0];
+                    const fechaID = this.getFechaID();
 
                     msg.innerText = "VERIFICANDO PADRÓN OFICIAL...";
                     const aluSnap = await db.ref('alumnos/' + typedDni).once('value');
