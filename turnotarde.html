@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UNAC | Pase Digital Tarde</title>
     
-    <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <!-- FIREBASE COMPAT -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
@@ -23,26 +21,20 @@
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
         
-        /* FONDO ESTILO PRINCIPAL */
         .main-wrapper { 
             position: relative; z-index: 10; 
             background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920'); 
             background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; width: 100%; display: flex; flex-direction: column; 
         }
 
-        /* HUD DE CARGA AVANZADO */
         #scanning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(25px); }
         .hud-box { width: 320px; height: 320px; border: 2px solid rgba(0, 229, 255, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
         @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
 
-        /* PANTALLA DE BLOQUEO */
         #blocking-overlay { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 10000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(20px); transition: all 0.3s ease; }
 
-        /* TECLADO DE FIRMA ESTILO GLASSMORPHISM */
         .glass-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(15px); border-radius: 40px; }
-        .keypad-btn { background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; color: white; font-size: 24px; font-weight: 800; padding: 22px 0; transition: 0.2s; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .keypad-btn:active { background: var(--accent); color: black; transform: scale(0.92); border-color: var(--accent); }
         .input-display { width: 100%; background: rgba(0,0,0,0.7); border: 1px solid rgba(0, 229, 255, 0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 32px; font-weight: 900; color: #fff; outline: none; letter-spacing: 10px; }
 
         .hidden-section { display: none !important; }
@@ -51,7 +43,6 @@
 </head>
 <body>
 
-    <!-- HUD DE CARGA -->
     <div id="scanning-overlay">
         <div class="hud-box">
             <div class="hud-line"></div>
@@ -63,7 +54,6 @@
         <p class="text-[9px] text-gray-500 font-bold uppercase mt-6 tracking-[6px]">SISTEMA SEGURIDAD BIOMÉTRICA UNAC</p>
     </div>
 
-    <!-- PANTALLA DE BLOQUEO DE SEGURIDAD DINÁMICA -->
     <div id="blocking-overlay" style="border: 15px solid #ef4444;">
         <i id="block-icon" class="fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce"></i>
         <h2 id="block-title" class="text-3xl font-black text-white uppercase tracking-tighter">ACCESO DENEGADO</h2>
@@ -74,7 +64,6 @@
     </div>
 
     <div class="main-wrapper">
-        <!-- HEADER -->
         <header class="w-full max-w-5xl mx-auto p-6 flex justify-between items-center relative z-20 animate-fade-up">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-bus text-black text-lg"></i></div>
@@ -83,7 +72,6 @@
                     <span class="text-[9px] text-cyan-400 font-bold">Ruta Ventanilla</span>
                 </div>
             </div>
-            <!-- LÍMITE DE SEGURIDAD -->
             <div class="text-[9px] font-black bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg border border-red-500 uppercase flex items-center gap-2">
                 <i class="fa-solid fa-circle text-[6px] animate-ping"></i> LÍMITE: 5 MIN
             </div>
@@ -91,7 +79,6 @@
 
         <main class="flex-grow flex flex-col items-center justify-center px-6 pb-12 relative z-20">
             
-            <!-- PASO 1 : FIRMA DIGITAL / CONFIRMACIÓN -->
             <div id="step-1" class="w-full max-w-sm animate-fade-up">
                 <div class="glass-panel p-8 shadow-2xl">
                     <div class="text-center mb-8">
@@ -100,40 +87,20 @@
                     </div>
 
                     <div class="mb-8 relative">
-                        <!-- REGLAS ESTRICTAS CONTRA AUTOCOMPLETADO Y TECLADO VIRTUAL -->
                         <input type="text" id="dniDisplay" class="input-display" placeholder="••••••••" readonly autocomplete="off" inputmode="none" onfocus="this.blur()">
                         <div class="absolute -top-3 right-4 bg-green-500 text-black text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg flex items-center gap-1">
                             <i class="fa-solid fa-check"></i> Autenticado
                         </div>
                     </div>
 
-                    <!-- TECLADO NUMÉRICO ORIGINAL (Mantenido oculto por si se requiere) -->
-                    <div id="teclado-original" class="hidden grid-cols-3 gap-4 mb-8">
-                        <button onclick="Core.pressKey('1')" class="keypad-btn">1</button>
-                        <button onclick="Core.pressKey('2')" class="keypad-btn">2</button>
-                        <button onclick="Core.pressKey('3')" class="keypad-btn">3</button>
-                        <button onclick="Core.pressKey('4')" class="keypad-btn">4</button>
-                        <button onclick="Core.pressKey('5')" class="keypad-btn">5</button>
-                        <button onclick="Core.pressKey('6')" class="keypad-btn">6</button>
-                        <button onclick="Core.pressKey('7')" class="keypad-btn">7</button>
-                        <button onclick="Core.pressKey('8')" class="keypad-btn">8</button>
-                        <button onclick="Core.pressKey('9')" class="keypad-btn">9</button>
-                        <button onclick="Core.pressKey('clear')" class="keypad-btn text-red-500"><i class="fa-solid fa-xmark"></i></button>
-                        <button onclick="Core.pressKey('0')" class="keypad-btn">0</button>
-                        <button onclick="Core.pressKey('backspace')" class="keypad-btn text-cyan-400"><i class="fa-solid fa-delete-left"></i></button>
-                    </div>
-
-                    <!-- BOTÓN PRINCIPAL ADAPTADO AL ESTADO DE SORTEO -->
+                    <!-- ESTE BOTÓN AHORA SE ADAPTA MÁGICAMENTE A LO QUE PASE EN EL PANEL -->
                     <button id="btn-submit-action" onclick="Core.submitDni()" class="bg-cyan-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,229,255,0.4)]">CARGANDO...</button>
                 </div>
             </div>
 
-            <!-- PASO 2 : TICKET GENERADO (INTACTO SEGÚN ORIGINAL) -->
             <div id="step-3" class="hidden-section w-full animate-fade-up text-center">
                 
                 <div class="relative bg-white pb-6 rounded-[40px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 max-w-sm mx-auto">
-                    
-                    <!-- CABECERA DEL TICKET -->
                     <div class="bg-[#050505] text-white p-6 text-center border-b-[6px] border-cyan-400 rounded-t-[40px] relative">
                         <h2 class="text-xl font-black uppercase tracking-widest font-['Montserrat']">Movilidad UNAC</h2>
                         <p class="text-[9px] text-cyan-400 tracking-[3px] mt-1 font-bold">PASE DIGITAL AUTORIZADO</p>
@@ -142,10 +109,8 @@
                     </div>
 
                     <div class="px-8 pt-6">
-                        <!-- FECHA -->
                         <p id="t-fecha" class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4"></p>
                         
-                        <!-- ESTADO DE ASIENTO Y NÚMERO (DINÁMICO) -->
                         <div id="seat-icon-container" class="bg-green-100 border-2 border-green-500 text-green-700 px-6 py-4 rounded-2xl flex items-center justify-center gap-4 shadow-lg shadow-green-500/20 mb-6 mx-auto w-full max-w-[250px]">
                             <i id="seat-icon" class="fa-solid fa-chair text-4xl"></i>
                             <div class="flex flex-col text-left">
@@ -154,12 +119,10 @@
                             </div>
                         </div>
 
-                        <!-- CÓDIGO QR -->
                         <div class="flex justify-center mb-6">
                             <div id="qrcode-vip" class="p-3 bg-white border-2 border-gray-200 rounded-3xl shadow-sm"></div>
                         </div>
                         
-                        <!-- DATOS COMPLETA -->
                         <div class="bg-gray-50 border border-gray-200 rounded-[25px] p-5 mb-5 text-left shadow-inner">
                             <div class="border-b border-gray-200 pb-2 mb-2">
                                 <p class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Estudiante Autorizado</p>
@@ -187,7 +150,6 @@
                             </div>
                         </div>
 
-                        <!-- INSTRUCCIÓN OBLIGATORIA DETALLADA -->
                         <div class="bg-cyan-50 border-l-4 border-cyan-400 p-4 rounded-r-xl text-left shadow-sm">
                             <div class="flex gap-3 items-start">
                                 <i class="fa-solid fa-triangle-exclamation text-cyan-600 mt-0.5 text-lg"></i>
@@ -203,7 +165,6 @@
                 <button onclick="window.location.href='ticket.html'" class="mt-8 bg-white/5 border border-white/10 text-white font-black px-10 py-4 rounded-xl uppercase tracking-widest text-[10px] hover:bg-cyan-400 hover:text-black transition shadow-lg">Finalizar y Salir</button>
             </div>
 
-            <!-- GLOBO 3D -->
             <div id="globe-area" class="mt-4"></div>
         </main>
     </div>
@@ -221,13 +182,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let typedDni = ""; // Se mantiene variable original
+        let typedDni = ""; 
         let serverTimeOffset = 0;
-        
         let turnoDataLoaded = false;
         window.estadoTurno = { estado: 'cerrado', cupos: 40 };
 
-        // Lee el turno seleccionado en la pantalla anterior
         let turnoActivoID = sessionStorage.getItem('turno_activo') || 'tarde2'; 
         let nombreDisplayTurno = "TARDE";
         let letraQR = "T";
@@ -238,33 +197,26 @@
 
         const Core = {
             init: function() { 
-                
-                // --- INICIO: FILTRO DE SEGURIDAD ESTRICTO INTACTO --- //
                 const isValid = sessionStorage.getItem('valid_session');
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const sessionDni = sessionStorage.getItem('alumno_dni');
 
-                // 1. Verificar si viene del filtro ticket.html
                 if (isValid !== 'true' || !authTime || !sessionDni) {
                     window.location.replace('ticket.html');
                     return;
                 }
 
-                // 2. DETECCIÓN DE RECARGA (ANTI F5 / ATRÁS)
                 if (window.performance && typeof window.performance.getEntriesByType === "function") {
                     const navEntries = performance.getEntriesByType("navigation");
                     if (navEntries.length > 0 && (navEntries[0].type === "reload" || navEntries[0].type === "back_forward")) {
-                        // Si actualizó la página o volvió, destruimos la sesión por seguridad
                         sessionStorage.removeItem('valid_session');
                         window.location.replace('ticket.html');
                         return;
                     }
                 }
-                // --- FIN: FILTRO DE SEGURIDAD ESTRICTO --- //
 
                 document.getElementById('title-turno').innerText = nombreDisplayTurno;
 
-                // AUTO-COMPLETAR EL DNI DIRECTAMENTE
                 typedDni = sessionDni;
                 document.getElementById('dniDisplay').value = typedDni;
 
@@ -272,7 +224,6 @@
                     serverTimeOffset = snap.val() || 0;
                 });
 
-                // Conecta al panel del Delegado en tiempo real
                 db.ref('sistema/config').on('value', snap => {
                     const data = snap.val() || {};
                     window.estadoTurno = {
@@ -284,8 +235,6 @@
                 });
 
                 this.initThree(); 
-                
-                // Cronómetro de seguridad de 5 minutos
                 setInterval(() => this.checkSecurityTime(), 1000);
             },
 
@@ -293,7 +242,6 @@
                 return new Date(Date.now() + serverTimeOffset);
             },
 
-            // PANTALLAS DE BLOQUEO MEJORADAS CON MENSAJES DETALLADOS
             showBlockScreen: function(tipo, cuposMax = 0) {
                 const overlay = document.getElementById('blocking-overlay');
                 const title = document.getElementById('block-title');
@@ -301,12 +249,10 @@
                 const reason = document.getElementById('block-reason');
                 const reasonContainer = document.getElementById('block-reason-container');
                 
-                // Fondo y borde neutro por defecto, se cambia según el estado
                 overlay.style.border = 'none';
                 reasonContainer.className = "bg-black/50 border border-white/10 p-6 rounded-2xl max-w-sm mt-4 mb-8 text-left";
 
                 if (tipo === 'lleno' || tipo === 'no_ganador') {
-                    // PANTALLA ROJA DETALLADA: NO GANÓ EL SORTEO
                     overlay.style.borderTop = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-ticket-simple text-7xl text-red-500 mb-6 animate-pulse';
                     title.innerText = "CUPOS LLENOS";
@@ -324,27 +270,13 @@
                             </span>
                         </div>
                     `;
-                } else if (tipo === 'ya_solicitado') {
-                    // PANTALLA AMARILLA: YA ESTÁ PARTICIPANDO
-                    overlay.style.borderTop = '15px solid #facc15'; 
-                    icon.className = 'fa-solid fa-clock-rotate-left text-7xl text-yellow-400 mb-6 animate-pulse';
-                    title.innerText = "SOLICITUD EN PROCESO";
-                    title.className = "text-3xl font-black text-yellow-400 uppercase tracking-tighter";
-                    reason.innerHTML = `
-                        <div class="text-center">
-                            Ya hemos registrado tu participación para este turno.<br><br>
-                            <span style="color:#facc15;">Por favor, regresa al portal principal y espera a que el cronómetro llegue a cero para consultar tus resultados.</span>
-                        </div>
-                    `;
                 } else if (tipo === 'cerrado') {
-                    // PANTALLA ROJA: TURNO CERRADO
                     overlay.style.borderTop = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
                     title.innerText = "TURNO CERRADO";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
                     reason.innerHTML = "<div class='text-center'>El delegado a cargo ha desactivado la emisión de tickets para este turno.</div>";
                 } else {
-                    // PANTALLA ROJA: SESIÓN EXPIRADA
                     overlay.style.borderTop = '15px solid #ef4444'; 
                     icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-pulse';
                     title.innerText = "SESIÓN EXPIRADA";
@@ -356,7 +288,7 @@
                 overlay.style.display = 'flex';
             },
 
-            // SINCRONIZACIÓN EN VIVO DE LOS BOTONES
+            // ✨ ESTA FUNCIÓN HACE LA MAGIA DE LA SINCRONIZACIÓN EN VIVO
             reaccionarAlDelegado: function() {
                 if (!turnoDataLoaded) return; 
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
@@ -372,14 +304,32 @@
                         overlay.style.display = 'none';
                     }
                     
-                    // CAMBIO DINÁMICO DEL BOTÓN SEGÚN EL ESTADO
                     if (window.estadoTurno.estado === 'recepcionando') {
-                        btnAction.innerText = "ENVIAR SOLICITUD DE CUPO";
-                        btnAction.className = "bg-yellow-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(250,204,21,0.4)]";
+                        // Si ya presionó el botón y está esperando, no lo tocamos
+                        if (btnAction.innerText === "ESPERANDO SORTEO...") return;
+                        
+                        const fechaID = this.getRealTime().toISOString().split('T')[0];
+                        db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).once('value').then(solSnap => {
+                            if (solSnap.exists()) {
+                                btnAction.innerText = "ESPERANDO SORTEO...";
+                                btnAction.disabled = true;
+                                btnAction.className = "bg-orange-500 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(249,115,22,0.4)] animate-pulse";
+                            } else {
+                                btnAction.innerText = "ENVIAR SOLICITUD DE CUPO";
+                                btnAction.disabled = false;
+                                btnAction.className = "bg-yellow-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(250,204,21,0.4)]";
+                            }
+                        });
                     } else if (window.estadoTurno.estado === 'sorteado') {
-                        // SI YA SE SORTEÓ, EL BOTÓN INVITA A VERIFICAR
-                        btnAction.innerText = "VERIFICAR RESULTADO";
-                        btnAction.className = "bg-cyan-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,229,255,0.4)]";
+                        // AQUÍ OCURRE LA MAGIA. SI ESTABA ESPERANDO EL SORTEO, LE MOSTRAMOS SU TICKET AUTOMÁTICAMENTE
+                        if (btnAction.innerText === "ESPERANDO SORTEO...") {
+                            btnAction.innerText = "VERIFICANDO RESULTADO...";
+                            this.submitDni();
+                        } else {
+                            btnAction.innerText = "VERIFICAR RESULTADO";
+                            btnAction.disabled = false;
+                            btnAction.className = "bg-cyan-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,229,255,0.4)]";
+                        }
                     }
                 }
             },
@@ -389,39 +339,26 @@
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
 
-                // Si pasaron 300,000 ms (5 Minutos), rompe la sesión
                 if (isValid !== 'true' || !authTime || (currentTime - parseInt(authTime) > 300000)) {
                     sessionStorage.removeItem('valid_session'); 
                     this.showBlockScreen('caducado');
                 }
             },
 
-            // SE MANTIENE FUNCIÓN DEL TECLADO POR SI ACASO (Aunque el HTML esté oculto)
-            pressKey: function(v) {
-                if(v === 'clear') typedDni = "";
-                else if(v === 'backspace') typedDni = typedDni.slice(0, -1);
-                else if(typedDni.length < 8) typedDni += v;
-                document.getElementById('dniDisplay').value = typedDni;
-            },
-
             submitDni: async function() {
                 if(typedDni.length !== 8) return Swal.fire({title: 'Error', text: 'Ingrese su DNI completo de 8 dígitos.', icon: 'warning', background: '#111', color: '#fff'});
                 
-                // --- FILTRO DE IDENTIDAD CRUZADA --- //
                 const sessionDni = sessionStorage.getItem('alumno_dni');
                 if (typedDni !== sessionDni) {
                     return Swal.fire({
                         title: 'ALERTA DE SEGURIDAD',
-                        text: 'El DNI ingresado no coincide con el perfil autenticado en la pantalla anterior. Acción bloqueada.',
-                        icon: 'error',
-                        confirmButtonText: 'Regresar',
-                        background: '#111', color: '#fff'
+                        text: 'El DNI ingresado no coincide con el perfil autenticado. Acción bloqueada.',
+                        icon: 'error', confirmButtonText: 'Regresar', background: '#111', color: '#fff'
                     }).then(() => {
                         sessionStorage.removeItem('valid_session');
                         window.location.replace('ticket.html');
                     });
                 }
-                // ----------------------------------- //
 
                 if(!turnoDataLoaded) return;
                 
@@ -449,13 +386,16 @@
                         return;
                     }
 
-                    // ====== RAMIFICACIÓN DE ESTADOS SINCRONIZADA ====== //
                     if (window.estadoTurno.estado === 'recepcionando') {
                         msg.innerText = "VERIFICANDO SOLICITUDES PREVIAS...";
                         const solSnap = await db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).once('value');
                         if (solSnap.exists()) {
                             overlay.style.display = 'none';
-                            this.showBlockScreen('ya_solicitado');
+                            const btnAction = document.getElementById('btn-submit-action');
+                            btnAction.innerText = "ESPERANDO SORTEO...";
+                            btnAction.disabled = true;
+                            btnAction.className = "bg-orange-500 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(249,115,22,0.4)] animate-pulse";
+                            Swal.fire({title: 'Solicitud Activa', text: 'Ya estás en la lista de espera. Aguarda en esta pantalla.', icon: 'info', background: '#111', color: '#fff'});
                             return;
                         }
 
@@ -470,15 +410,17 @@
                         overlay.style.display = 'none';
                         Swal.fire({
                             title: '¡SOLICITUD ENVIADA!',
-                            html: 'Has entrado al sorteo.<br><br><b>Por favor, regresa al portal</b> y espera a que finalice el contador para verificar tus resultados.',
-                            icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#facc15', confirmButtonText: 'VOLVER AL INICIO',
+                            text: 'Quédate en esta pantalla. Tu resultado se mostrará automáticamente cuando el contador llegue a cero y el delegado realice el sorteo.',
+                            icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF', confirmButtonText: 'ENTENDIDO',
                             allowOutsideClick: false
                         }).then(() => {
-                            window.location.replace('ticket.html');
+                            const btnAction = document.getElementById('btn-submit-action');
+                            btnAction.innerText = "ESPERANDO SORTEO...";
+                            btnAction.disabled = true;
+                            btnAction.className = "bg-orange-500 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(249,115,22,0.4)] animate-pulse";
                         });
 
                     } else if (window.estadoTurno.estado === 'sorteado') {
-                        // SI YA SE SORTEÓ, VERIFICA SI ESTÁ EN LA LISTA GANADORA
                         msg.innerText = "BUSCANDO TU DNI EN LOS GANADORES...";
                         const refViajeTurno = db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}`);
                         const snapReg = await refViajeTurno.child(`registros/${typedDni}`).once('value');
@@ -488,7 +430,7 @@
                             this.renderFinal(alu, typedDni, snapReg.val());
                         } else {
                             overlay.style.display = 'none';
-                            this.showBlockScreen('no_ganador'); // LLAMA A LA PANTALLA ROJA DETALLADA
+                            this.showBlockScreen('no_ganador'); 
                         }
 
                     } else {
@@ -499,14 +441,12 @@
                 } catch (e) {
                     overlay.style.display = 'none';
                     console.error(e);
-                    Swal.fire('Error', 'Hubo un problema de conexión al procesar la solicitud.', 'error');
+                    Swal.fire({title:'Error', text:'Hubo un problema de conexión al procesar la solicitud.', icon:'error', background: '#111', color: '#fff'});
                 }
             },
 
             renderFinal: function(alu, dni, ticket) {
-                // RESETEA EL CRONÓMETRO: Inicia exactamente 5 minutos desde que ve el ticket
                 sessionStorage.setItem('auth_timestamp', Date.now());
-
                 const fechaFormat = this.getRealTime().toLocaleDateString('es-PE', { weekday:'long', year:'numeric', month:'long', day:'numeric' }).toUpperCase();
                 
                 document.getElementById('t-fecha').innerText = fechaFormat;
@@ -522,12 +462,7 @@
                 document.getElementById('qrcode-vip').innerHTML = "";
                 const qrText = `UNAC-V-${dni}-${letraQR}-${ticket.orden}`; 
                 new QRCode(document.getElementById("qrcode-vip"), { 
-                    text: qrText, 
-                    width: 170, 
-                    height: 170,
-                    colorDark : "#050505",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
+                    text: qrText, width: 170, height: 170, colorDark : "#050505", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H
                 });
 
                 setTimeout(() => {
@@ -545,7 +480,6 @@
                 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
                 renderer.setSize(container.clientWidth, container.clientHeight);
                 container.appendChild(renderer.domElement);
-                // GLOBO ACTUALIZADO AL COLOR CIAN
                 const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(20, 1), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.15 }));
                 scene.add(sphere); camera.position.z = 50;
                 function animate() { requestAnimationFrame(animate); sphere.rotation.y += 0.005; renderer.render(scene, camera); }
