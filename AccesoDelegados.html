@@ -85,7 +85,7 @@
         <p id="flash-subtext" class="text-sm mt-2 font-bold opacity-80 uppercase tracking-widest"></p>
     </div>
 
-    <!-- MODAL AJUSTES BUS CON LIMITES DE ESCANEO (INTACTO) -->
+    <!-- MODAL AJUSTES BUS CON LIMITES DE ESCANEO -->
     <div id="modal-ajustes" class="modal-overlay">
         <div class="glass p-6 w-[90%] max-w-sm relative max-h-[90vh] overflow-y-auto">
             <button onclick="cerrarAjustes()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -145,7 +145,7 @@
         </div>
     </div>
 
-    <!-- MODAL CONTROL DELEGADOS (INTACTO) -->
+    <!-- MODAL CONTROL DELEGADOS -->
     <div id="modal-control-delegados" class="modal-overlay">
         <div class="glass p-6 w-[95%] max-w-sm relative text-center max-h-[95vh] overflow-y-auto">
             <button onclick="cerrarControlDelegados()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -214,7 +214,8 @@
     </div>
 
     <div id="main-app" class="flex flex-col items-center w-full">
-        <header class="w-full max-w-lg p-6 flex justify-between items-center border-b border-white/10">
+        <!-- HEADER EXPANDIDO PARA LAPTOP/TABLET -->
+        <header class="w-full max-w-5xl mx-auto p-6 flex justify-between items-center border-b border-white/10">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center shadow-lg"><i class="fa-solid fa-user-shield text-black text-lg"></i></div>
                 <div class="flex flex-col text-left leading-none uppercase">
@@ -244,34 +245,37 @@
             </div>
         </div>
 
-        <div id="scanner-container" class="w-full max-w-lg px-4 py-4 hidden">
-            <div id="master-control-btn" class="hidden w-full mb-4">
+        <!-- CONTENEDOR PRINCIPAL EXPANDIDO -->
+        <div id="scanner-container" class="w-full max-w-5xl mx-auto px-4 py-6 hidden">
+            
+            <div id="master-control-btn" class="hidden w-full max-w-2xl mx-auto mb-6">
                 <button onclick="abrirControlDelegados()" class="w-full bg-purple-900/50 text-purple-400 border border-purple-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-purple-800 hover:text-white transition shadow-lg">
                     <i class="fa-solid fa-users-gear"></i> Gestionar Permisos y Accesos
                 </button>
             </div>
 
             <div class="mb-6">
-                <div class="flex justify-between items-center mb-3">
+                <div class="flex justify-between items-center mb-4 max-w-5xl mx-auto">
                     <span class="text-[11px] font-black uppercase text-gray-400 tracking-widest">Control de Turnos</span>
                     <button onclick="abrirAjustes()" id="btn-ajustes-bus" class="text-[10px] bg-white/10 px-3 py-1.5 rounded-lg text-white hover:bg-cyan-400 hover:text-black font-black uppercase transition hidden">
                         <i class="fa-solid fa-gear"></i> Configurar Bus
                     </button>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- GRID DE TARJETAS CORREGIDO PARA PC Y MÓVIL -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                     <!-- TARDE 1 (2:15 PM) -->
                     <div id="card-tarde1" class="turno-card hidden">
                         <div id="badge-tarde1" class="badge-status badge-off">🔴 DESACTIVADO</div>
-                        <i class="fa-solid fa-sun text-2xl text-yellow-400 mb-2 mt-2 block"></i>
-                        <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (2:15)</h4>
+                        <i class="fa-solid fa-sun text-3xl text-yellow-400 mb-2 mt-3 block"></i>
+                        <h4 class="text-base font-black uppercase tracking-tighter">Tarde (2:15)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-2">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-bold">MANUAL</span></p>
                         
                         <!-- NUEVO: CRONÓMETRO -->
                         <div id="timer-tarde1" class="timer-display">10:00</div>
 
-                        <!-- BOTONES MEJORADOS Y GRANDES -->
-                        <div class="space-y-1.5 mt-2">
+                        <!-- BOTONES -->
+                        <div class="space-y-2 mt-3">
                             <button onclick="cambiarEstadoTurno('tarde1', 'recepcionando')" id="btn-abrir-tarde1" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
                             <button onclick="cambiarEstadoTurno('tarde1', 'sortear')" id="btn-sortear-tarde1" class="action-btn btn-sortear hidden"><i class="fa-solid fa-dice"></i> Forzar Sorteo</button>
                             <button onclick="cambiarEstadoTurno('tarde1', 'cerrar')" id="btn-cerrar-tarde1" class="action-btn btn-cerrar hidden"><i class="fa-solid fa-lock"></i> Cerrar Bus</button>
@@ -281,15 +285,15 @@
                     <!-- TARDE 2 (6:00 PM) -->
                     <div id="card-tarde2" class="turno-card hidden">
                         <div id="badge-tarde2" class="badge-status badge-off">🔴 DESACTIVADO</div>
-                        <i class="fa-solid fa-cloud-sun text-2xl text-orange-400 mb-2 mt-2 block"></i>
-                        <h4 class="text-sm font-black uppercase tracking-tighter">Tarde (6:00)</h4>
+                        <i class="fa-solid fa-cloud-sun text-3xl text-orange-400 mb-2 mt-3 block"></i>
+                        <h4 class="text-base font-black uppercase tracking-tighter">Tarde (6:00)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-2">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-bold">MANUAL</span></p>
                         
                         <!-- NUEVO: CRONÓMETRO -->
                         <div id="timer-tarde2" class="timer-display">10:00</div>
 
-                        <!-- BOTONES MEJORADOS Y GRANDES -->
-                        <div class="space-y-1.5 mt-2">
+                        <!-- BOTONES -->
+                        <div class="space-y-2 mt-3">
                             <button onclick="cambiarEstadoTurno('tarde2', 'recepcionando')" id="btn-abrir-tarde2" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
                             <button onclick="cambiarEstadoTurno('tarde2', 'sortear')" id="btn-sortear-tarde2" class="action-btn btn-sortear hidden"><i class="fa-solid fa-dice"></i> Forzar Sorteo</button>
                             <button onclick="cambiarEstadoTurno('tarde2', 'cerrar')" id="btn-cerrar-tarde2" class="action-btn btn-cerrar hidden"><i class="fa-solid fa-lock"></i> Cerrar Bus</button>
@@ -299,15 +303,15 @@
                     <!-- NOCHE (10:15 PM) -->
                     <div id="card-noche" class="turno-card hidden">
                         <div id="badge-noche" class="badge-status badge-off">🔴 DESACTIVADO</div>
-                        <i class="fa-solid fa-moon text-2xl text-purple-400 mb-2 mt-2 block"></i>
-                        <h4 class="text-sm font-black uppercase tracking-tighter">Noche (10:15)</h4>
+                        <i class="fa-solid fa-moon text-3xl text-purple-400 mb-2 mt-3 block"></i>
+                        <h4 class="text-base font-black uppercase tracking-tighter">Noche (10:15)</h4>
                         <p class="text-[9px] text-gray-400 uppercase mt-1 mb-2">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-bold">MANUAL</span></p>
                         
                         <!-- NUEVO: CRONÓMETRO -->
                         <div id="timer-noche" class="timer-display">10:00</div>
 
-                        <!-- BOTONES MEJORADOS Y GRANDES -->
-                        <div class="space-y-1.5 mt-2">
+                        <!-- BOTONES -->
+                        <div class="space-y-2 mt-3">
                             <button onclick="cambiarEstadoTurno('noche', 'recepcionando')" id="btn-abrir-noche" class="action-btn btn-abrir"><i class="fa-solid fa-door-open"></i> Abrir Turno</button>
                             <button onclick="cambiarEstadoTurno('noche', 'sortear')" id="btn-sortear-noche" class="action-btn btn-sortear hidden"><i class="fa-solid fa-dice"></i> Forzar Sorteo</button>
                             <button onclick="cambiarEstadoTurno('noche', 'cerrar')" id="btn-cerrar-noche" class="action-btn btn-cerrar hidden"><i class="fa-solid fa-lock"></i> Cerrar Bus</button>
@@ -315,7 +319,8 @@
                     </div>
                 </div>
 
-                <div class="mt-4 p-3 glass relative">
+                <!-- BARRA DE OCUPACIÓN CENTRADA -->
+                <div class="mt-6 p-4 glass relative max-w-2xl mx-auto">
                     <div class="flex justify-between text-[10px] font-black uppercase tracking-widest mb-1">
                         <span class="text-cyan-400">Ocupación del Bus</span>
                         <span id="txt-cupos" class="font-bold">0 / 40</span>
@@ -324,14 +329,15 @@
                 </div>
             </div>
 
-            <div class="flex justify-between items-center mb-3">
+            <!-- ESCÁNER Y ESTADÍSTICAS (CENTRADO PARA NO DEFORMAR LA CÁMARA) -->
+            <div class="flex justify-between items-center mb-4 max-w-2xl mx-auto mt-8 border-t border-white/10 pt-6">
                 <h2 class="text-sm font-black uppercase text-gray-400 tracking-widest">Escáner de Abordaje</h2>
                 <button onclick="toggleLista(true)" class="bg-cyan-400 text-black text-[10px] font-black px-4 py-2 rounded-lg uppercase shadow-lg">
                     <i class="fa-solid fa-users mr-1"></i> Lista Maestra
                 </button>
             </div>
 
-            <div class="glass p-2 mb-6 border-2 border-cyan-400/30 relative">
+            <div class="glass p-2 mb-6 border-2 border-cyan-400/30 relative max-w-2xl mx-auto">
                 <div id="scanner-cooldown-overlay" class="absolute inset-0 bg-black/80 z-50 hidden flex-col items-center justify-center rounded-xl backdrop-blur-sm">
                     <i class="fa-solid fa-shield-halved text-4xl text-cyan-400 mb-2 animate-bounce"></i>
                     <p class="text-[10px] font-black uppercase tracking-widest text-white">Procesando código...</p>
@@ -339,25 +345,25 @@
                 <div id="reader"></div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 mb-6 text-center">
-                <div class="glass p-3 border-b-2 border-cyan-400">
-                    <span class="text-[8px] text-gray-400 uppercase font-black block">Mis Escaneos</span>
+            <div class="grid grid-cols-2 gap-4 mb-6 text-center max-w-2xl mx-auto">
+                <div class="glass p-4 border-b-2 border-cyan-400">
+                    <span class="text-[8px] text-gray-400 uppercase font-black block mb-1">Mis Escaneos</span>
                     <span id="contador-mi" class="text-3xl font-black text-cyan-400">0</span>
                 </div>
-                <div class="glass p-3 border-b-2 border-green-500">
-                    <span class="text-[8px] text-gray-400 uppercase font-black block">Total Abordados</span>
+                <div class="glass p-4 border-b-2 border-green-500">
+                    <span class="text-[8px] text-gray-400 uppercase font-black block mb-1">Total Abordados</span>
                     <span id="contador-glo" class="text-3xl font-black text-green-500">0</span>
                 </div>
             </div>
 
-            <div class="glass p-4 mb-6">
+            <div class="glass p-4 mb-6 max-w-2xl mx-auto">
                 <span class="text-[10px] font-black uppercase text-cyan-400 italic mb-3 block">Últimos Abordados en Vivo</span>
                 <div id="historial-reciente" class="max-h-[140px] overflow-y-auto rounded-lg">
                     <p class="text-center text-[10px] text-gray-600 py-4 italic">Esperando escaneos...</p>
                 </div>
             </div>
 
-            <div class="border-t border-white/10 pt-4 grid grid-cols-2 gap-3 mb-10">
+            <div class="border-t border-white/10 pt-6 grid grid-cols-2 gap-4 mb-10 max-w-2xl mx-auto">
                 <button onclick="borrarEscaneos()" class="w-full bg-blue-900/50 text-blue-400 border border-blue-800 font-black py-3 rounded-xl uppercase text-[9px] hover:bg-blue-800 transition"><i class="fa-solid fa-eraser"></i> Borrar Historial</button>
                 <button onclick="reiniciarFirebase()" class="w-full bg-red-900/50 text-red-500 border border-red-800 font-black py-3 rounded-xl uppercase text-[9px] hover:bg-red-800 transition"><i class="fa-solid fa-trash-can"></i> Reset Sistema</button>
             </div>
