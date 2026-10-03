@@ -81,7 +81,7 @@
                     <span class="text-[9px] text-cyan-400 font-bold">Ruta Ventanilla</span>
                 </div>
             </div>
-            <!-- LÍMITE DE SEGURIDAD (AMPLIADO A 15 MIN PARA SOPORTAR LA ESPERA DEL SORTEO) -->
+            <!-- LÍMITE DE SEGURIDAD -->
             <div class="text-[9px] font-black bg-red-600/20 text-red-500 px-3 py-1.5 rounded-lg border border-red-500 uppercase flex items-center gap-2">
                 <i class="fa-solid fa-circle text-[6px] animate-ping"></i> LÍMITE: 15 MIN
             </div>
@@ -266,27 +266,26 @@
 
                 this.initThree(); 
                 
-                // Cronómetro de seguridad
+                // Cronómetro de seguridad de 15 Min
                 setInterval(() => this.checkSecurityTime(), 1000);
             },
 
-            // FUNCIÓN ACTUALIZADA A HORA EXACTA DE LIMA/PERÚ PARA EVITAR BUGS DE NOCHE
+            // FUNCIÓN ACTUALIZADA A HORA EXACTA DE LIMA/PERÚ
             getRealTime: function() {
                 const now = new Date(Date.now() + serverTimeOffset);
                 const limaStr = now.toLocaleString("en-US", { timeZone: "America/Lima" });
                 return new Date(limaStr);
             },
 
-            // ID DE FECHA EXACTA DE LIMA
+            // ID DE FECHA EXACTA DE LIMA (ESTO ARREGLA EL BUG DE CUPOS LLENOS AL SER IDÉNTICO AL PANEL)
             getFechaID: function() {
-                const now = this.getRealTime();
-                const year = now.getFullYear();
-                const month = String(now.getMonth() + 1).padStart(2, '0');
-                const day = String(now.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
+                const now = new Date(Date.now() + serverTimeOffset);
+                const formatter = new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' });
+                const p = formatter.formatToParts(now);
+                return `${p.find(x => x.type === 'year').value}-${p.find(x => x.type === 'month').value}-${p.find(x => x.type === 'day').value}`;
             },
 
-            // PANTALLAS DE BLOQUEO MEJORADAS
+            // PANTALLAS DE BLOQUEO ORIGINALES MEJORADAS
             showBlockScreen: function(tipo) {
                 const overlay = document.getElementById('blocking-overlay');
                 const title = document.getElementById('block-title');
@@ -351,13 +350,12 @@
                     }
                     
                     if (window.estadoTurno.estado === 'recepcionando') {
-                        // Verifica si ya mandó solicitud para ponerlo a esperar
+                        // Verifica si ya mandó solicitud para expulsarlo a ticket.html (Anti-Saturación)
                         const fechaID = this.getFechaID();
                         db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).once('value').then(solSnap => {
                             if (solSnap.exists()) {
-                                btnAction.innerText = "ESPERANDO SORTEO...";
-                                btnAction.disabled = true;
-                                btnAction.className = "bg-orange-500 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(249,115,22,0.4)] animate-pulse";
+                                // YA PIDIÓ TICKET -> LO ENVIAMOS AL INICIO PARA NO SATURAR FIREBASE
+                                window.location.replace('ticket.html');
                             } else {
                                 btnAction.innerText = "ENVIAR SOLICITUD DE CUPO";
                                 btnAction.disabled = false;
@@ -365,22 +363,15 @@
                             }
                         });
                     } else if (window.estadoTurno.estado === 'sorteado') {
-                        // SI YA ESTABA ESPERANDO, LO VERIFICA AUTOMÁTICAMENTE PERO CON RETRASO ALEATORIO (ANTI-COLAPSO)
-                        if (btnAction.innerText === "ESPERANDO SORTEO...") {
-                            btnAction.innerText = "VERIFICANDO RESULTADOS...";
-                            btnAction.className = "bg-cyan-600 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(0,229,255,0.4)] animate-pulse";
-                            
-                            // MAGIA ANTI-CUELLO DE BOTELLA: Espera entre 0.5 a 3 segundos de forma aleatoria para cada alumno
-                            const randomDelay = Math.floor(Math.random() * 2500) + 500; 
-                            setTimeout(() => {
-                                this.verificarGanadorAutomatico();
-                            }, randomDelay);
-                            
-                        } else {
-                            btnAction.innerText = "VERIFICAR RESULTADO";
-                            btnAction.disabled = false;
-                            btnAction.className = "bg-cyan-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,229,255,0.4)]";
-                        }
+                        // SI YA SE SORTEÓ Y EL ALUMNO LOGRA ENTRAR, REVISA RESULTADO CON RETRASO ALEATORIO (ANTI-COLAPSO)
+                        btnAction.innerText = "VERIFICANDO RESULTADOS...";
+                        btnAction.className = "bg-cyan-600 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(0,229,255,0.4)] animate-pulse";
+                        
+                        // MAGIA ANTI-CUELLO DE BOTELLA: Espera entre 0.5 a 3 segundos de forma aleatoria para cada alumno
+                        const randomDelay = Math.floor(Math.random() * 2500) + 500; 
+                        setTimeout(() => {
+                            this.verificarGanadorAutomatico();
+                        }, randomDelay);
                     }
                 }
             },
@@ -390,7 +381,7 @@
                 const authTime = sessionStorage.getItem('auth_timestamp');
                 const currentTime = Date.now();
 
-                // Ampliado a 15 Minutos (900,000 ms) para que el alumno pueda esperar el sorteo con calma
+                // 15 Minutos (900,000 ms) para mantener la ventana de seguridad
                 if (isValid !== 'true' || !authTime || (currentTime - parseInt(authTime) > 900000)) {
                     sessionStorage.removeItem('valid_session'); 
                     this.showBlockScreen('caducado');
@@ -422,7 +413,7 @@
                 }
             },
 
-            // ENVIAR SOLICITUD ORIGINAL (Se llama solo si aún está "Recepcionando")
+            // ENVIAR SOLICITUD ORIGINAL CON EXPULSIÓN ANTI-SATURACIÓN INTEGRADA
             submitDni: async function() {
                 if (window.estadoTurno.estado === 'sorteado') {
                     // Si el alumno entra tarde y ya se sorteó, verifica directamente
@@ -479,16 +470,15 @@
                     });
                     
                     overlay.style.display = 'none';
+                    
+                    // NUEVO FLUJO: ALERTA DE ÉXITO + EXPULSIÓN A TICKET.HTML (Código 2)
                     Swal.fire({
                         title: '¡SOLICITUD ENVIADA!',
-                        html: 'Has entrado al proceso oficial.<br><br><b>Quédate en esta pantalla.</b> Tu resultado se mostrará automáticamente cuando el contador llegue a cero y el delegado realice el sorteo.',
-                        icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#facc15', confirmButtonText: 'ESPERAR SORTEO',
+                        html: '<div class="text-left text-sm leading-relaxed text-gray-300">Has entrado al sorteo oficial.<br><br><span class="text-cyan-400 font-bold uppercase text-[11px]"><i class="fa-solid fa-shield-halved"></i> Medida Anti-Saturación:</span><br>Serás redirigido a la pantalla principal para mantener el sistema estable.<br><br><b>Vuelve a ingresar a tu turno cuando el cronómetro termine para ver tu resultado.</b></div>',
+                        icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF', confirmButtonText: 'ENTENDIDO, VOLVER AL INICIO',
                         allowOutsideClick: false
                     }).then(() => {
-                        const btnAction = document.getElementById('btn-submit-action');
-                        btnAction.innerText = "ESPERANDO SORTEO...";
-                        btnAction.disabled = true;
-                        btnAction.className = "bg-orange-500 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed shadow-[0_0_20px_rgba(249,115,22,0.4)] animate-pulse";
+                        window.location.replace('ticket.html');
                     });
 
                 } catch (e) {
