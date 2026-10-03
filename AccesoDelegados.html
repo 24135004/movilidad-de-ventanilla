@@ -71,7 +71,7 @@
         .badge-stand { background: #f59e0b; color: white; padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 900; letter-spacing: 1px; }
 
         /* REPORTE FOTO OPTIMIZADO PARA HTML2CANVAS */
-        #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: #ffffff !important; color: #000000 !important; width: 1100px; padding: 40px; font-family: 'Inter', sans-serif; display: block; box-sizing: border-box; }
+        #reporte-foto-container { position: absolute; left: -9999px; top: 0; background: #ffffff !important; color: #000000 !important; width: 1200px; padding: 40px; font-family: 'Inter', sans-serif; display: block; box-sizing: border-box; }
         .progress-bar { background: rgba(255,255,255,0.1); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; margin-top: 5px; }
         .progress-fill { background: var(--accent); height: 100%; width: 0%; transition: 0.5s; }
         .hidden-config { display: none; }
@@ -372,14 +372,17 @@
             <h1 style="margin: 0; font-size: 28px; text-transform: uppercase; font-weight: 900; color: #000000; letter-spacing: 1px;">🚌 Lista Oficial UNAC - Padrón de Abordaje</h1>
             <p id="reporte-fecha" style="margin: 8px 0 0 0; color: #444444; font-size: 16px; font-weight: 800; text-transform: uppercase;"></p>
         </div>
+        <!-- TABLA ARREGLADA CON LAS 7 COLUMNAS -->
         <table style="width: 100%; border-collapse: collapse; font-size: 13px; font-weight: 700; color: #000000; border: 2px solid #000000;">
             <thead>
                 <tr style="background: #e2e8f0; text-align: left; text-transform: uppercase; color: #000000; border-bottom: 2px solid #000000;">
                     <th style="padding: 10px; border: 1px solid #94a3b8; width: 5%; text-align: center;">N°</th>
-                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 15%; text-align: center;">DNI</th>
-                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 45%;">Estudiante</th>
-                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 15%; text-align: center;">Turno</th>
-                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 20%; text-align: center;">Estado</th>
+                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 12%; text-align: center;">DNI</th>
+                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 12%; text-align: center;">CÓDIGO</th>
+                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 30%;">ESTUDIANTE</th>
+                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 17%; text-align: center;">FACULTAD</th>
+                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 12%; text-align: center;">TURNO</th>
+                    <th style="padding: 10px; border: 1px solid #94a3b8; width: 12%; text-align: center;">ESTADO</th>
                 </tr>
             </thead>
             <tbody id="reporte-tbody"></tbody>
@@ -1116,6 +1119,7 @@
             const fechaString = new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             document.getElementById('reporte-fecha').innerText = fechaString;
             
+            // AQUI ESTA LA MAGIA: 7 Cabeceras en el HTML (arriba) = 7 Datos en el JS (aquí abajo).
             document.getElementById('reporte-tbody').innerHTML = listaGlobalAlumnos.map((s, index) => {
                 const dniOculto = (s.dni && s.dni.length >= 8) ? s.dni.substring(0, 3) + "*****" : "********";
                 return `
@@ -1124,7 +1128,7 @@
                     <td style="padding: 10px; border: 1px solid #94a3b8; text-align: center; letter-spacing: 2px; color: #000000; font-weight: 800;">${dniOculto}</td>
                     <td style="padding: 10px; border: 1px solid #94a3b8; text-align: center; color: #000000; font-weight: 800;">${s.codigo}</td>
                     <td style="padding: 10px; border: 1px solid #94a3b8; color: #000000; font-weight: 800;">${s.nombre}</td>
-                    <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 10px; text-transform: uppercase; color: #000000; font-weight: 800;">${s.facultad}</td>
+                    <td style="padding: 10px; border: 1px solid #94a3b8; font-size: 10px; text-transform: uppercase; color: #000000; font-weight: 800; text-align: center;">${s.facultad}</td>
                     <td style="padding: 10px; border: 1px solid #94a3b8; text-align: center; color: #000000; font-weight: 900;">${s.turno}</td>
                     <td style="padding: 10px; border: 1px solid #94a3b8; text-align: center; font-weight: 900; color: ${s.verificado ? '#047857' : '#b91c1c'}">${s.verificado ? "ABORDÓ" : "FALTA"}</td>
                 </tr>`
