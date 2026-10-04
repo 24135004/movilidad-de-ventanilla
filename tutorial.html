@@ -1,1 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial - Tickets UNAC</title>
+    <style>
+        /* Estilos básicos para que se vea profesional y centrado */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f7f6; /* Fondo claro */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 5px;
+            color: #004085;
+        }
+        p {
+            margin-bottom: 20px;
+            color: #555;
+        }
+        .video-container {
+            width: 80%;
+            max-width: 800px;
+            background: #000;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            overflow: hidden; /* Mantiene los bordes redondeados */
+        }
+        video {
+            width: 100%;
+            display: block;
+        }
+        /* Botón opcional para omitir el tutorial */
+        .btn-omitir {
+            margin-top: 25px;
+            padding: 10px 25px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-omitir:hover {
+            background-color: #5a6268;
+        }
+    </style>
+</head>
+<body>
 
+    <h1>Tutorial de Usuario</h1>
+    <p>Por favor, mira el video. Al finalizar, serás redirigido automáticamente al sistema de tickets.</p>
+
+    <div class="video-container">
+        <!-- El atributo 'controls' muestra la barra de progreso/volumen. 
+             El atributo 'autoplay' intenta iniciar el video solo. -->
+        <video id="miTutorial" controls autoplay>
+            <source src="Tickets_UNAC__Ruta_Ventanilla.mp4" type="video/mp4">
+            Tu navegador no soporta la etiqueta de video.
+        </video>
+    </div>
+
+    <!-- Botón por si el usuario tiene prisa o el video falla -->
+    <a href="ticket.html" class="btn-omitir">Saltar e ir a Tickets</a>
+
+    <script>
+        // Seleccionamos el video mediante su ID
+        const video = document.getElementById('miTutorial');
+
+        // Escuchamos el evento 'ended', que se dispara cuando el video llega al final
+        video.addEventListener('ended', function() {
+            // Redirección automática a ticket.html
+            window.location.href = 'ticket.html';
+        });
+    </script>
+
+</body>
+</html>
