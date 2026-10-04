@@ -2,83 +2,121 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tutorial - Tickets UNAC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tutorial | UNAC Movilidad</title>
+    
+    <!-- LIBRERÍAS EXTERNAS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
     <style>
-        /* Estilos básicos para que se vea profesional y centrado */
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
+        /* VARIABLES DE COLOR Y ESTILOS BASE */
+        :root { --accent: #00E5FF; --dark: #050505; }
+        body, html { 
+            margin: 0; padding: 0; min-height: 100vh; 
+            background-color: var(--dark); 
+            font-family: 'Inter', sans-serif; 
+            color: #ffffff; 
+            overflow-x: hidden; 
+            user-select: none; 
+        }
+        
+        /* ANIMACIÓN DE ENTRADA */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+
+        /* FONDO PRINCIPAL IDÉNTICO AL SISTEMA */
+        .main-wrapper { 
+            position: relative; 
+            z-index: 10; 
+            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920'); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed; 
+            min-height: 100vh; 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f4f7f6; /* Fondo claro */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
         }
-        h1 {
-            margin-bottom: 5px;
-            color: #004085;
-        }
-        p {
-            margin-bottom: 20px;
-            color: #555;
-        }
+
+        /* ESTILO PERSONALIZADO PARA EL CONTENEDOR DEL VIDEO */
         .video-container {
-            width: 80%;
-            max-width: 800px;
+            position: relative;
+            width: 100%;
+            border-radius: 25px;
+            overflow: hidden;
+            border: 2px solid rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
             background: #000;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            overflow: hidden; /* Mantiene los bordes redondeados */
         }
+        
         video {
             width: 100%;
             display: block;
-        }
-        /* Botón opcional para omitir el tutorial */
-        .btn-omitir {
-            margin-top: 25px;
-            padding: 10px 25px;
-            background-color: #6c757d;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        .btn-omitir:hover {
-            background-color: #5a6268;
+            outline: none;
         }
     </style>
 </head>
 <body>
 
-    <h1>Tutorial de Usuario</h1>
-    <p>Por favor, mira el video. Al finalizar, serás redirigido automáticamente al sistema de tickets.</p>
+    <div class="main-wrapper flex flex-col justify-between">
+        
+        <!-- CONTENIDO PRINCIPAL CENTRADO -->
+        <main class="max-w-4xl mx-auto px-6 py-12 w-full flex-grow z-20 flex flex-col items-center justify-center animate-fade-up">
+            
+            <!-- TARJETA CONTENEDORA -->
+            <div class="bg-white/5 border border-white/10 p-8 md:p-12 rounded-[35px] backdrop-blur-sm w-full text-center shadow-2xl border-t-4 border-t-cyan-400">
+                
+                <!-- TÍTULOS -->
+                <div class="flex items-center justify-center gap-4 mb-4">
+                    <i class="fa-solid fa-circle-play text-cyan-400 text-3xl md:text-4xl animate-pulse"></i>
+                    <h1 class="text-4xl md:text-5xl font-black uppercase italic tracking-tighter leading-none font-['Montserrat']">
+                        Tutorial de <span class="text-cyan-400">Uso</span>
+                    </h1>
+                </div>
+                
+                <p class="text-gray-400 text-[10px] md:text-xs uppercase tracking-[3px] mb-8 font-bold max-w-lg mx-auto">
+                    Por favor, visualice el video para entender el proceso. <span class="text-cyan-400">Al finalizar, será redirigido automáticamente.</span>
+                </p>
 
-    <div class="video-container">
-        <!-- El atributo 'controls' muestra la barra de progreso/volumen. 
-             El atributo 'autoplay' intenta iniciar el video solo. -->
-        <video id="miTutorial" controls autoplay>
-            <source src="Tickets_UNAC__Ruta_Ventanilla.mp4" type="video/mp4">
-            Tu navegador no soporta la etiqueta de video.
-        </video>
+                <!-- VIDEO -->
+                <div class="video-container mb-8">
+                    <!-- Nota: El autoplay a veces es bloqueado por navegadores si tiene volumen. 
+                         Si el usuario no lo ve iniciar solo, tendrá que darle Play. -->
+                    <video id="miTutorial" controls autoplay>
+                        <source src="Tickets_UNAC__Ruta_Ventanilla.mp4" type="video/mp4">
+                        Tu navegador no soporta la reproducción de este video.
+                    </video>
+                </div>
+
+                <!-- BOTÓN PARA SALTAR (ESTILO CYBER) -->
+                <a href="ticket.html" class="inline-flex items-center justify-center gap-3 bg-cyan-400/10 border-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400 hover:text-black transition-all duration-300 px-8 py-4 rounded-xl text-[11px] font-black uppercase tracking-[2px] shadow-lg">
+                    Saltar e ir a Tickets <i class="fa-solid fa-forward-step text-lg"></i>
+                </a>
+
+            </div>
+        </main>
+
+        <!-- FOOTER (Para mantener el estilo de la página) -->
+        <footer class="w-full py-8 flex flex-col items-center border-t border-white/5 bg-black/40 relative z-20">
+            <span class="text-center text-[10px] font-bold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026-B UNAC - Movilidad Universitaria.</span>
+        </footer>
+
     </div>
 
-    <!-- Botón por si el usuario tiene prisa o el video falla -->
-    <a href="ticket.html" class="btn-omitir">Saltar e ir a Tickets</a>
-
+    <!-- SCRIPT PARA DETECTAR EL FINAL DEL VIDEO -->
     <script>
-        // Seleccionamos el video mediante su ID
-        const video = document.getElementById('miTutorial');
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('miTutorial');
 
-        // Escuchamos el evento 'ended', que se dispara cuando el video llega al final
-        video.addEventListener('ended', function() {
-            // Redirección automática a ticket.html
-            window.location.href = 'ticket.html';
+            // Detecta cuando el video llega al final
+            video.addEventListener('ended', function() {
+                // Redirige al sistema de tickets
+                window.location.href = 'ticket.html';
+            });
         });
     </script>
 
