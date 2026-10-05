@@ -909,7 +909,17 @@
                 
                 await db.ref().update(updates);
                 
-                Swal.fire({
+                
+                
+                await db.ref().update(updates);
+                
+                
+                /*
+                 * Recarga inmediata de los resultados sorteados.
+                 * El delegado no necesita presionar F5.
+                 */
+                await actualizarListaMaestraEnVivo();
+Swal.fire({
                     title: '¡Sorteo Único Finalizado!',
                     text: `Se asignaron asientos y pases de pie de manera justa. El turno ha quedado bloqueado contra nuevos sorteos. ¿Desea descargar la lista ahora?`,
                     icon: 'success',
@@ -971,91 +981,279 @@
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
             setInterval(evaluarTurnosAutomaticos, 15000);
 
-            // Evitamos que F5 borre la lista (directorioAlumnos siempre carga)
-            db.ref('alumnos').on('value', snap => {
-                directorioAlumnos = snap.val() || {};
-                actualizarListaMaestraEnVivo();
-            });
+            /*
+             * LISTA OFICIAL EN VIVO
+             *
+             * Se leen directamente los datos del día:
+             *   - viajes/FECHA  -> resultados del sorteo
+             *   - asistencias/FECHA -> abordajes
+             *
+             * No se intenta leer alumnos completo. Solo se consulta
+             * alumnos/DNI para los tickets que realmente existen.
+             */
+            iniciarListenersListaHoy();
 
             db.ref('sistema/config').on('value', snap => {
                 const d = snap.val() || {};
-                configGlobal.cupos = d.cupos_maximos || 40; 
-                
-                configGlobal.prog_tarde1 = d.prog_tarde1 || false; configGlobal.hora_tarde1 = d.hora_tarde1 || ''; configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado'; configGlobal.limite_tarde1 = d.limite_tarde1 || ''; configGlobal.tarde1_inicio_recepcion = d.tarde1_inicio_recepcion || 0;
-                configGlobal.prog_tarde2 = d.prog_tarde2 || false; configGlobal.hora_tarde2 = d.hora_tarde2 || ''; configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado'; configGlobal.limite_tarde2 = d.limite_tarde2 || ''; configGlobal.tarde2_inicio_recepcion = d.tarde2_inicio_recepcion || 0;
-                configGlobal.prog_noche = d.prog_noche || false; configGlobal.hora_noche = d.hora_noche || ''; configGlobal.noche_estado = d.noche_estado || 'cerrado'; configGlobal.limite_noche = d.limite_noche || ''; configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
-                
-                actualizarUI_Tarjetas();
-            });
 
-            db.ref('sistema').on('value', snap => {
-                actualizarListaMaestraEnVivo(snap.val());
+                configGlobal.cupos = Number(d.cupos_maximos) || 40;
+
+                configGlobal.prog_tarde1 = d.prog_tarde1 || false;
+                configGlobal.hora_tarde1 = d.hora_tarde1 || '';
+                configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado';
+                configGlobal.limite_tarde1 = d.limite_tarde1 || '';
+                configGlobal.tarde1_inicio_recepcion = d.tarde1_inicio_recepcion || 0;
+
+                configGlobal.prog_tarde2 = d.prog_tarde2 || false;
+                configGlobal.hora_tarde2 = d.hora_tarde2 || '';
+                configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado';
+                configGlobal.limite_tarde2 = d.limite_tarde2 || '';
+                configGlobal.tarde2_inicio_recepcion = d.tarde2_inicio_recepcion || 0;
+
+                configGlobal.prog_noche = d.prog_noche || false;
+                configGlobal.hora_noche = d.hora_noche || '';
+                configGlobal.noche_estado = d.noche_estado || 'cerrado';
+                configGlobal.limite_noche = d.limite_noche || '';
+                configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
+
+                actualizarUI_Tarjetas();
+
+                // Actualizar ocupación cuando cambie la capacidad del bus.
+                actualizarListaMaestraEnVivo();
             });
         }
 
-        function actualizarListaMaestraEnVivo(sistemaDataSnap = null) {
+        let refrescoListaEnCurso = false;
+        let refrescoListaPendiente = false;
+        let fechaListenerLista = null;
+
+        function iniciarListenersListaHoy() {
             const fechaHoy = getFechaID();
-            
-            if(!sistemaDataSnap) {
-                db.ref('sistema').once('value').then(snap => mapData(snap.val()));
-            } else {
-                mapData(sistemaDataSnap);
+
+            if (fechaListenerLista === fechaHoy) {
+                actualizarListaMaestraEnVivo();
+                return;
             }
 
-            function mapData(data) {
-                if(!data) return;
-                const viajes = data.viajes ? data.viajes[fechaHoy] : {};
-                const asistencias = (data.asistencias && data.asistencias[fechaHoy]) ? data.asistencias[fechaHoy] : {};
-                
-                let combined = []; let historyData = []; let ticketsTurnoActivo = 0;
+            fechaListenerLista = fechaHoy;
+
+            /*
+             * Cuando el sorteo escribe registros, este listener detecta
+             * el cambio y vuelve a construir la lista.
+             */
+            db.ref(`sistema/viajes/${fechaHoy}`).on('value', () => {
+                actualizarListaMaestraEnVivo();
+            });
+
+            /*
+             * Cuando un delegado escanea un ticket, se actualizan
+             * los contadores sin perder la lista sorteada.
+             */
+            db.ref(`sistema/asistencias/${fechaHoy}`).on('value', () => {
+                actualizarListaMaestraEnVivo();
+            });
+
+            actualizarListaMaestraEnVivo();
+        }
+
+        async function actualizarListaMaestraEnVivo() {
+            if (refrescoListaEnCurso) {
+                refrescoListaPendiente = true;
+                return;
+            }
+
+            refrescoListaEnCurso = true;
+
+            try {
+                const fechaHoy = getFechaID();
+
+                /*
+                 * IMPORTANTE:
+                 * No se hace db.ref('sistema').once('value').
+                 * Las Rules pueden permitir hijos específicos sin
+                 * permitir la lectura del nodo padre.
+                 */
+                const [snapViajes, snapAsistencias] = await Promise.all([
+                    db.ref(`sistema/viajes/${fechaHoy}`).once('value'),
+                    db.ref(`sistema/asistencias/${fechaHoy}`).once('value')
+                ]);
+
+                const viajes = snapViajes.val() || {};
+                const asistencias = snapAsistencias.val() || {};
+
+                const combined = [];
+                const historyData = [];
+                const dnisConTicket = new Set();
+
+                /*
+                 * Primero recogemos los registros guardados por el sorteo.
+                 * El contador NO decide la existencia de la lista.
+                 */
+                ['tarde1', 'tarde2', 'noche'].forEach(turno => {
+                    const registros = (viajes[turno] && viajes[turno].registros)
+                        ? viajes[turno].registros
+                        : {};
+
+                    Object.keys(registros).forEach(dni => dnisConTicket.add(dni));
+                });
+
+                /*
+                 * Cantidad real de tickets sorteados.
+                 */
+                const ticketsTurnoActivo = dnisConTicket.size;
+
+                /*
+                 * Solo consultamos los alumnos que aparecen en los
+                 * registros sorteados.
+                 */
+                await Promise.all(
+                    [...dnisConTicket].map(async dni => {
+                        try {
+                            const snapAlumno = await db.ref(`alumnos/${dni}`).once('value');
+                            directorioAlumnos[dni] = snapAlumno.val() || {};
+                        } catch (error) {
+                            console.warn(`No se pudo cargar alumnos/${dni}`, error);
+                        }
+                    })
+                );
+
+                const ordenTurno = {
+                    tarde1: 1,
+                    tarde2: 2,
+                    noche: 3
+                };
 
                 ['tarde1', 'tarde2', 'noche'].forEach(turno => {
-                    const tReg = viajes[turno] ? viajes[turno].registros : null;
-                    if (tReg) {
-                        let cantidad = Object.keys(tReg).length;
-                        
-                        // SIEMPRE SUMAMOS LOS TICKETS AL CONTADOR, INCLUSO SI SE PONE EN ESTADO CERRADO
-                        ticketsTurnoActivo += cantidad; 
+                    const registros = (viajes[turno] && viajes[turno].registros)
+                        ? viajes[turno].registros
+                        : {};
 
-                        Object.keys(tReg).forEach(dni => {
-                            const verificado = asistencias[dni] ? true : false;
-                            
-                            const codFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Codigo || directorioAlumnos[dni].codigo) : 'S/C';
-                            const facFinal = directorioAlumnos[dni] ? (directorioAlumnos[dni].Facultad || directorioAlumnos[dni].facultad || 'No Registrada') : 'No Registrada';
-                            let nombreTurno = turno === 'tarde1' ? "TARDE (2:15)" : (turno === 'tarde2' ? "TARDE (6:00)" : "NOCHE (10:15)");
-                            
-                            combined.push({ 
-                                dni: dni, 
-                                codigo: codFinal, 
-                                facultad: facFinal,
-                                nombre: tReg[dni].nombre, 
-                                hora: tReg[dni].hora, 
-                                orden: tReg[dni].orden || 999, 
-                                turno: nombreTurno, 
-                                verificado: verificado 
-                            });
-                            if(verificado) { historyData.push({ nombre: tReg[dni].nombre, hora: asistencias[dni].hora, delegado: asistencias[dni].delegado }); }
+                    Object.keys(registros).forEach(dni => {
+                        const ticket = registros[dni] || {};
+                        const alumno = directorioAlumnos[dni] || {};
+                        const asistencia = asistencias[dni] || null;
+
+                        const nombreTurno =
+                            turno === 'tarde1'
+                                ? 'TARDE (2:15)'
+                                : turno === 'tarde2'
+                                    ? 'TARDE (6:00)'
+                                    : 'NOCHE (10:15)';
+
+                        combined.push({
+                            dni: dni,
+                            codigo:
+                                alumno.Codigo ||
+                                alumno.codigo ||
+                                alumno.CODIGO ||
+                                alumno.codigo_estudiante ||
+                                'S/C',
+                            facultad:
+                                alumno.Facultad ||
+                                alumno.facultad ||
+                                alumno.FACULTAD ||
+                                alumno.facultad_nombre ||
+                                'No Registrada',
+                            nombre:
+                                ticket.nombre ||
+                                alumno.nombre ||
+                                'SIN NOMBRE',
+                            hora: ticket.hora || '',
+                            orden: Number(ticket.orden) || 999,
+                            turno: nombreTurno,
+                            turnoKey: turno,
+                            verificado: !!asistencia
                         });
-                    }
+
+                        if (asistencia) {
+                            historyData.push({
+                                nombre:
+                                    ticket.nombre ||
+                                    alumno.nombre ||
+                                    'SIN NOMBRE',
+                                hora: asistencia.hora || '',
+                                delegado: asistencia.delegado || ''
+                            });
+                        }
+                    });
                 });
 
-                // ORDENAR INTELIGENTEMENTE: PRIMERO POR TURNO, LUEGO POR ASIENTO (Para el reporte y la lista)
+                /*
+                 * Orden del resultado:
+                 * turno -> orden asignado por el sorteo.
+                 */
                 combined.sort((a, b) => {
-                    if(a.turno !== b.turno) return a.turno.localeCompare(b.turno);
+                    if (ordenTurno[a.turnoKey] !== ordenTurno[b.turnoKey]) {
+                        return ordenTurno[a.turnoKey] - ordenTurno[b.turnoKey];
+                    }
                     return a.orden - b.orden;
                 });
-                
+
                 listaGlobalAlumnos = combined;
 
-                document.getElementById('txt-cupos').innerText = `${ticketsTurnoActivo} / ${configGlobal.cupos}`;
-                let porcentaje = (ticketsTurnoActivo / configGlobal.cupos) * 100;
-                document.getElementById('barra-cupos').style.width = `${Math.min(porcentaje, 100)}%`;
-                document.getElementById('barra-cupos').style.background = porcentaje >= 100 ? "#ef4444" : "#00E5FF";
+                /*
+                 * OCUPACIÓN DEL BUS
+                 * Usa registros reales, no contador.
+                 */
+                const cuposMaximos = Number(configGlobal.cupos) || 40;
 
-                document.getElementById('contador-glo').innerText = Object.keys(asistencias).length;
-                document.getElementById('contador-mi').innerText = Object.values(asistencias).filter(a => a.delegado === delegadoActivo).length;
+                document.getElementById('txt-cupos').innerText =
+                    `${ticketsTurnoActivo} / ${cuposMaximos}`;
 
-                renderMasterList(combined); renderHistorial(historyData);
+                const porcentaje = cuposMaximos > 0
+                    ? (ticketsTurnoActivo / cuposMaximos) * 100
+                    : 0;
+
+                document.getElementById('barra-cupos').style.width =
+                    `${Math.min(porcentaje, 100)}%`;
+
+                document.getElementById('barra-cupos').style.background =
+                    porcentaje >= 100 ? '#ef4444' : '#00E5FF';
+
+                /*
+                 * CONTADORES DE ABORDAJE
+                 */
+                document.getElementById('contador-glo').innerText =
+                    Object.keys(asistencias).length;
+
+                document.getElementById('contador-mi').innerText =
+                    Object.values(asistencias)
+                        .filter(a => a && a.delegado === delegadoActivo)
+                        .length;
+
+                /*
+                 * Render inmediato de la lista.
+                 */
+                renderMasterList(combined);
+                renderHistorial(historyData);
+
+            } catch (error) {
+                console.error('Error sincronizando lista oficial:', error);
+
+                /*
+                 * No reemplazar una lista válida por un mensaje de error
+                 * si hubo una caída momentánea de conexión.
+                 */
+                if (listaGlobalAlumnos.length === 0) {
+                    document.getElementById('contenedor-lista-maestra').innerHTML = `
+                        <div class="text-center py-10">
+                            <i class="fa-solid fa-triangle-exclamation text-3xl text-yellow-500 mb-3"></i>
+                            <p class="text-sm text-red-400 font-black uppercase">
+                                No se pudo sincronizar la lista
+                            </p>
+                            <p class="text-[9px] text-gray-500 mt-1">
+                                Reintentando automáticamente...
+                            </p>
+                        </div>`;
+                }
+
+            } finally {
+                refrescoListaEnCurso = false;
+
+                if (refrescoListaPendiente) {
+                    refrescoListaPendiente = false;
+                    actualizarListaMaestraEnVivo();
+                }
             }
         }
 
@@ -1192,26 +1390,106 @@
         }
 
         function renderMasterList(students) {
-            document.getElementById('contenedor-lista-maestra').innerHTML = students.length === 0 ? "<p class='text-center text-gray-500 py-10'>No hay tickets.</p>" : 
-            students.map(s => `
-                <div class="p-4 rounded-xl student-card ${s.verificado ? 'status-green' : 'status-red'} flex flex-col md:flex-row justify-between md:items-center glass">
-                    <div class="flex-grow">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="${s.orden <= configGlobal.cupos ? 'badge-seat' : 'badge-stand'}">${s.orden <= configGlobal.cupos ? 'ASIENTO' : 'PARADO'}</span>
-                            <p class="text-[11px] font-black uppercase text-white">${s.nombre}</p>
+            const contenedor = document.getElementById('contenedor-lista-maestra');
+
+            if (!students || students.length === 0) {
+                contenedor.innerHTML = `
+                    <div class="text-center py-10">
+                        <i class="fa-solid fa-clipboard-list text-4xl text-gray-700 mb-3"></i>
+                        <p class="text-center text-gray-500 font-bold">
+                            No hay tickets sorteados.
+                        </p>
+                        <p class="text-center text-[10px] text-gray-600 mt-1 uppercase">
+                            La lista aparecerá automáticamente después del sorteo.
+                        </p>
+                    </div>`;
+                return;
+            }
+
+            const cupos = Number(configGlobal.cupos) || 40;
+
+            const asientos = students.filter(
+                s => Number(s.orden) <= cupos
+            ).length;
+
+            const parados = students.length - asientos;
+
+            contenedor.innerHTML = `
+                <div class="sticky top-0 z-10 mb-4 p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/20 backdrop-blur">
+                    <div class="flex justify-between items-center gap-3">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-cyan-400 block">
+                                Lista oficial sorteada
+                            </span>
+                            <span class="text-[9px] text-gray-400 uppercase">
+                                ${students.length} tickets · ${asientos} asientos · ${parados} de pie
+                            </span>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="text-[9px] font-mono text-gray-300 bg-black/50 border border-white/10 px-2 py-1 rounded">DNI: ${s.dni}</span>
-                            <span class="text-[9px] font-mono text-gray-300 bg-black/50 border border-white/10 px-2 py-1 rounded">CÓDIGO: ${s.codigo}</span>
-                            <span class="text-[9px] font-bold text-cyan-400 flex items-center ml-1">TICKET: ${s.hora}</span>
-                            <span class="text-[9px] font-bold text-blue-400 flex items-center">${s.turno}</span>
-                        </div>
-                    </div>
-                    <div class="text-right mt-3 md:mt-0 md:pl-2 border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0">
-                        <span class="text-[11px] font-black ${s.verificado ? 'text-green-500' : 'text-red-500'} uppercase">${s.verificado ? 'ABORDÓ' : 'FALTA'}</span>
+
+                        <span class="text-[15px] font-black text-white">
+                            ${students.length}
+                        </span>
                     </div>
                 </div>
-            `).join('');
+
+                ${students.map((s, index) => {
+                    const tieneAsiento = Number(s.orden) <= cupos;
+
+                    return `
+                        <div class="p-4 rounded-xl student-card ${s.verificado ? 'status-green' : 'status-red'} flex flex-col md:flex-row justify-between md:items-center glass">
+
+                            <div class="flex-grow">
+
+                                <div class="flex items-center gap-2 mb-2">
+
+                                    <span class="${tieneAsiento ? 'badge-seat' : 'badge-stand'}">
+                                        ${tieneAsiento ? 'ASIENTO' : 'PARADO'}
+                                    </span>
+
+                                    <span class="text-[10px] text-cyan-400 font-black">
+                                        #${Number(s.orden) || (index + 1)}
+                                    </span>
+
+                                    <p class="text-[11px] font-black uppercase text-white">
+                                        ${s.nombre}
+                                    </p>
+
+                                </div>
+
+                                <div class="flex flex-wrap gap-2">
+
+                                    <span class="text-[9px] font-mono text-gray-300 bg-black/50 border border-white/10 px-2 py-1 rounded">
+                                        DNI: ${s.dni}
+                                    </span>
+
+                                    <span class="text-[9px] font-mono text-gray-300 bg-black/50 border border-white/10 px-2 py-1 rounded">
+                                        CÓDIGO: ${s.codigo}
+                                    </span>
+
+                                    <span class="text-[9px] font-bold text-cyan-400 flex items-center ml-1">
+                                        TICKET: ${s.hora || '--:--'}
+                                    </span>
+
+                                    <span class="text-[9px] font-bold text-blue-400 flex items-center">
+                                        ${s.turno}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                            <div class="text-right mt-3 md:mt-0 md:pl-2 border-t md:border-t-0 md:border-l border-white/10 pt-2 md:pt-0">
+
+                                <span class="text-[11px] font-black ${s.verificado ? 'text-green-500' : 'text-red-500'} uppercase">
+                                    ${s.verificado ? 'ABORDÓ' : 'FALTA'}
+                                </span>
+
+                            </div>
+
+                        </div>
+                    `;
+                }).join('')}
+            `;
         }
 
         function toggleLista(show) { document.getElementById('master-list-view').style.display = show ? 'flex' : 'none'; }
