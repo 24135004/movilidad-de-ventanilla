@@ -887,12 +887,16 @@
                     return a.vecesSentado - b.vecesSentado;
                 });
                 
-                const cuposDisponibles = configGlobal.cupos || 40;
+                const cuposDisponibles = Math.max(0, Number(configGlobal.cupos) || 40);
                 
                 let updates = {};
                 
-                // TODOS LOS SOLICITANTES RECIBEN TICKET
-                arrayCompetencia.forEach((g, index) => {
+                // SOLO LOS CUPOS DISPONIBLES RECIBEN TICKET.
+                // Los solicitantes que quedan fuera del límite NO se guardan
+                // en "registros", por lo que no podrán recuperar un ticket.
+                const cantidadGanadores = Math.min(cuposDisponibles, arrayCompetencia.length);
+                
+                arrayCompetencia.slice(0, cantidadGanadores).forEach((g, index) => {
                     let numeroDeAsiento = index + 1;
                     updates[`sistema/viajes/${fechaID}/${turno}/registros/${g.dni}`] = {
                         nombre: g.data.nombre,
@@ -900,17 +904,12 @@
                         hora: g.data.hora
                     };
                     
-                    // SÓLO SI LE TOCÓ ASIENTO SE LE SUMA AL HISTORIAL
-                    if (numeroDeAsiento <= cuposDisponibles) {
-                        updates[`historial_sentados_permanente/${g.dni}`] = g.vecesSentado + 1;
-                    }
+                    // Solo los que realmente obtuvieron cupo suman historial.
+                    updates[`historial_sentados_permanente/${g.dni}`] = g.vecesSentado + 1;
                 });
                 
-                updates[`sistema/viajes/${fechaID}/${turno}/contador`] = arrayCompetencia.length;
-                
-                await db.ref().update(updates);
-                
-                
+                // El contador representa tickets realmente asignados.
+                updates[`sistema/viajes/${fechaID}/${turno}/contador`] = cantidadGanadores;
                 
                 await db.ref().update(updates);
                 
