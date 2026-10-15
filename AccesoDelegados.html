@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
 
     <style>
         :root { --accent: #00E5FF; --dark: #050505; --red-bg: #ef4444; --green-bg: #10b981; }
@@ -413,6 +414,10 @@
         const delegateProvisioningApp = firebase.apps.find(app => app.name === 'delegateProvisioning')
             || firebase.initializeApp(firebaseConfig, 'delegateProvisioning');
         const delegateProvisioningAuth = delegateProvisioningApp.auth();
+        // La gestión privilegiada de cuentas se hace en servidor con Firebase Admin SDK.
+        // No se guardan credenciales administrativas en este HTML.
+        const adminFunctions = firebase.app().functions('us-central1');
+        const adminManageDelegate = adminFunctions.httpsCallable('adminManageDelegate');
 
         function emailDelegado(dni) { return `${dni}${DELEGATE_EMAIL_DOMAIN}`; }
         function esAdminAutenticado() { return !!auth.currentUser && auth.currentUser.uid === ADMIN_AUTH_UID; }
@@ -644,7 +649,10 @@
             location.reload();
         }
 
-        function abrirControlDelegados() { document.getElementById('modal-control-delegados').style.display = 'flex'; }
+        function abrirControlDelegados() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return Swal.fire('Acceso denegado', 'Solo el administrador principal puede gestionar delegados.', 'error', {background:'#111', color:'#fff'});
+            document.getElementById('modal-control-delegados').style.display = 'flex';
+        }
         function cerrarControlDelegados() { document.getElementById('modal-control-delegados').style.display = 'none'; }
         
         function renderListaDelegados() {
@@ -703,46 +711,50 @@
         }
 
         async function guardarSubUsuario() {
-            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) {
+                return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
+            }
             const dni = document.getElementById('cfg-sub-dni').value.trim();
             const pass = document.getElementById('cfg-sub-pass').value;
-            if(!/^\d{8}$/.test(dni)) return notificarFlash('ERROR DE DATOS', 'error', 'Ingrese un DNI válido de 8 dígitos');
+            if (!/^\d{8}$/.test(dni)) return notificarFlash('ERROR DE DATOS', 'error', 'Ingrese un DNI válido de 8 dígitos');
+            if (dni === ADMIN_DNI) return notificarFlash('OPERACIÓN BLOQUEADA', 'error', 'No puede modificar ni eliminar la cuenta administradora desde la lista de delegados');
+            if (pass && pass.length < 6) return notificarFlash('CONTRASEÑA DÉBIL', 'error', 'Firebase exige al menos 6 caracteres');
 
-            const snap = await db.ref(`sistema/delegados_auth/sub_users/${dni}`).once('value');
-            const perfilExistente = snap.val() || null;
-            let uid = perfilExistente && perfilExistente.uid;
-            let permisos = [];
-            if(document.getElementById('perm-tarde1').checked) permisos.push('tarde1');
-            if(document.getElementById('perm-tarde2').checked) permisos.push('tarde2');
-            if(document.getElementById('perm-noche').checked) permisos.push('noche');
+            const permisos = [];
+            if (document.getElementById('perm-tarde1').checked) permisos.push('tarde1');
+            if (document.getElementById('perm-tarde2').checked) permisos.push('tarde2');
+            if (document.getElementById('perm-noche').checked) permisos.push('noche');
             const activo = document.getElementById('cfg-sub-activo').checked;
+            const perfilExistente = subDelegadosData[dni] || null;
+            if (!perfilExistente && !pass) return notificarFlash('FALTA CONTRASEÑA', 'error', 'Para crear una cuenta nueva, ingrese una contraseña de al menos 6 caracteres');
+            if (perfilExistente && !pass && perfilExistente.uid) {
+                // Guardar permisos/estado sin cambiar contraseña requiere también actualización segura en servidor.
+                // La función callable realiza ambas operaciones y revoca sesiones anteriores.
+            }
 
             try {
-                if (uid && pass) {
-                    return Swal.fire({icon:'info', title:'Clave protegida', text:'La contraseña de una cuenta existente no se modifica desde este formulario. Deje el campo vacío para guardar solo permisos/estado; la clave se gestiona en Firebase Authentication.', background:'#111', color:'#fff'});
-                }
-                if (!uid) {
-                    if (!pass) return notificarFlash('FALTA CONTRASEÑA', 'error', 'Para un delegado pendiente o nuevo, ingrese una contraseña inicial');
-                    if (pass.length < 6) return notificarFlash('CONTRASEÑA DÉBIL', 'error', 'Firebase exige al menos 6 caracteres. Use una contraseña nueva más larga.');
-                    let cred;
-                    try {
-                        cred = await delegateProvisioningAuth.createUserWithEmailAndPassword(emailDelegado(dni), pass);
-                    } catch (e) {
-                        if (e.code !== 'auth/email-already-in-use') throw e;
-                        cred = await delegateProvisioningAuth.signInWithEmailAndPassword(emailDelegado(dni), pass);
-                    }
-                    uid = cred.user.uid;
-                    await delegateProvisioningAuth.signOut();
-                }
-                const perfil = { uid, permisos, activo, authEmail: emailDelegado(dni), password: null };
-                await db.ref(`sistema/delegados_auth/sub_users/${dni}`).update(perfil);
-                await db.ref(`sistema/delegados_auth/uid_access/${uid}`).set({ dni, activo, permisos: mapaPermisos(permisos) });
+                const response = await adminManageDelegate({
+                    action: 'save',
+                    dni,
+                    password: pass || null,
+                    permisos,
+                    activo
+                });
+                const result = response && response.data ? response.data : {};
+                const profile = result.profile;
+                if (profile) subDelegadosData[dni] = profile;
                 document.getElementById('cfg-sub-pass').value = '';
-                notificarFlash('GUARDADO', 'success', 'Delegado y permisos actualizados');
+                document.getElementById('cfg-sub-pass').placeholder = 'Dejar vacío para conservar contraseña';
+                renderListaDelegados();
+                notificarFlash('GUARDADO', 'success', pass ? `Cuenta y contraseña de ${dni} actualizadas` : `Permisos de ${dni} actualizados`);
             } catch (e) {
-                try { await delegateProvisioningAuth.signOut(); } catch (_) {}
                 console.error(e);
-                notificarFlash('ERROR AL GUARDAR', 'error', e.message || 'No se pudo crear/vincular la cuenta');
+                let msg = (e && e.message) || 'No se pudo guardar el delegado';
+                if (e && (e.code === 'functions/not-found' || e.code === 'functions/unavailable')) {
+                    msg = 'Falta desplegar la función segura adminManageDelegate en Firebase Functions. No se intentó cambiar la contraseña desde el navegador.';
+                }
+                notificarFlash('ERROR AL GUARDAR', 'error', msg);
+                Swal.fire({icon:'error', title:'No se pudo guardar', text:msg, background:'#111', color:'#fff'});
             }
         }
 
@@ -759,21 +771,28 @@
         async function eliminarDelegado(dniDirecto = null) {
             if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
             const dni = (typeof dniDirecto === 'string') ? dniDirecto : document.getElementById('cfg-sub-dni').value.trim();
-            if(!dni || dni.length !== 8) return notificarFlash('ERROR', 'error', 'Selecciona un DNI primero');
+            if (!/^\d{8}$/.test(dni)) return notificarFlash('ERROR', 'error', 'Selecciona un DNI válido');
+            if (dni === ADMIN_DNI) return notificarFlash('OPERACIÓN BLOQUEADA', 'error', 'La cuenta administradora no se puede eliminar desde aquí');
             const res = await Swal.fire({
-                title: '¿Revocar acceso?', text: `El DNI ${dni} quedará deshabilitado. No se borrará la cuenta de Authentication ni el historial.`,
-                icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, revocar', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+                title: '¿Eliminar cuenta?',
+                text: `Se eliminará la cuenta Firebase Authentication del DNI ${dni} y su acceso al panel. Los tickets, solicitudes, asistencias e historiales se conservarán.`,
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, eliminar cuenta', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
             });
             if (!res.isConfirmed) return;
             try {
-                const snap = await db.ref(`sistema/delegados_auth/sub_users/${dni}`).once('value');
-                const perfil = snap.val();
-                if (perfil && perfil.uid) await db.ref(`sistema/delegados_auth/uid_access/${perfil.uid}`).update({ activo: false });
-                await db.ref(`sistema/delegados_auth/sub_users/${dni}`).update({ activo: false });
-                await db.ref(`sistema/delegados_auth/sesiones/${dni}`).update({ token: 'EXPULSADO', estado: 'inactivo' });
-                if(document.getElementById('cfg-sub-dni').value.trim() === dni) limpiarFormDelegado();
-                notificarFlash('ACCESO REVOCADO', 'success', `DNI ${dni} deshabilitado; los datos se conservan.`);
-            } catch (e) { notificarFlash('ERROR', 'error', 'No se pudo revocar el acceso'); }
+                await adminManageDelegate({ action: 'delete', dni });
+                delete subDelegadosData[dni];
+                renderListaDelegados();
+                if (document.getElementById('cfg-sub-dni').value.trim() === dni) limpiarFormDelegado();
+                notificarFlash('CUENTA ELIMINADA', 'success', `Se eliminó el acceso Firebase de ${dni}; sus historiales permanecen`);
+            } catch (e) {
+                console.error(e);
+                let msg = (e && e.message) || 'No se pudo eliminar la cuenta';
+                if (e && (e.code === 'functions/not-found' || e.code === 'functions/unavailable')) {
+                    msg = 'Falta desplegar la función segura adminManageDelegate en Firebase Functions.';
+                }
+                Swal.fire({icon:'error', title:'No se pudo eliminar', text:msg, background:'#111', color:'#fff'});
+            }
         }
 
         function toggleTimeConfig(turno) {
@@ -782,6 +801,10 @@
         }
 
         function abrirAjustes() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) {
+                document.getElementById('btn-ajustes-bus').classList.add('hidden');
+                return Swal.fire('Acceso denegado', 'Configurar Bus está reservado al administrador principal.', 'error', {background:'#111', color:'#fff'});
+            }
             document.getElementById('cfg-cupos').value = configGlobal.cupos;
             
             document.getElementById('cfg-box-tarde1').style.display = misPermisos.includes('tarde1') ? 'block' : 'none';
@@ -807,6 +830,10 @@
         function cerrarAjustes() { document.getElementById('modal-ajustes').style.display = 'none'; }
         
         function guardarAjustes() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) {
+                cerrarAjustes();
+                return Swal.fire('Acceso denegado', 'Solo el DNI administrador puede guardar la configuración del bus.', 'error', {background:'#111', color:'#fff'});
+            }
             let updates = {};
             updates.cupos_maximos = parseInt(document.getElementById('cfg-cupos').value) || 40;
             
@@ -895,7 +922,10 @@
         }
 
         function actualizarUI_Tarjetas() {
-            document.getElementById('btn-ajustes-bus').classList.remove('hidden');
+            const btnAjustesBus = document.getElementById('btn-ajustes-bus');
+            const esAdministradorPrincipal = esAdminAutenticado() && delegadoActivo === ADMIN_DNI;
+            btnAjustesBus.classList.toggle('hidden', !esAdministradorPrincipal);
+            btnAjustesBus.disabled = !esAdministradorPrincipal;
             
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 document.getElementById(`card-${t}`).style.display = misPermisos.includes(t) ? 'flex' : 'none';
@@ -1127,7 +1157,7 @@ Swal.fire({
                 }
             });
 
-            if (delegadoActivo === "71886034") {
+            if (esAdminAutenticado() && delegadoActivo === ADMIN_DNI) {
                 misPermisos = ['tarde1', 'tarde2', 'noche'];
                 document.getElementById('master-control-btn').classList.remove('hidden');
                 
