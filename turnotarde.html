@@ -214,7 +214,7 @@
         let nombreDisplayTurno = "TARDE";
         let letraQR = "T";
 
-        if(turnoActivoID === 'tarde1') { nombreDisplayTurno = "TARDE (2:15 PM)"; letraQR = "T1"; }
+        if(turnoActivoID === 'tarde1') { nombreDisplayTurno = "TARDE (2:00 PM)"; letraQR = "T1"; }
         else if(turnoActivoID === 'tarde2') { nombreDisplayTurno = "TARDE (6:00 PM)"; letraQR = "T2"; }
         else if(turnoActivoID === 'noche') { nombreDisplayTurno = "NOCHE (10:15 PM)"; letraQR = "N"; }
 
@@ -350,18 +350,23 @@
                     }
                     
                     if (window.estadoTurno.estado === 'recepcionando') {
-                        // Verifica si ya mandó solicitud para expulsarlo a ticket.html (Anti-Saturación)
+                        // No consultar solicitudes desde el cliente: las reglas reservan su lectura al panel.
+                        // La base impide duplicados con !data.exists(); sessionStorage solo mejora el aviso visual.
                         const fechaID = this.getFechaID();
-                        db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).once('value').then(solSnap => {
-                            if (solSnap.exists()) {
-                                // YA PIDIÓ TICKET -> LO ENVIAMOS AL INICIO PARA NO SATURAR FIREBASE
-                                window.location.replace('ticket.html');
-                            } else {
-                                btnAction.innerText = "ENVIAR SOLICITUD DE CUPO";
-                                btnAction.disabled = false;
-                                btnAction.className = "bg-yellow-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(250,204,21,0.4)]";
-                            }
-                        });
+                        const keySolicitud = `unac_solicitud_${fechaID}_${turnoActivoID}_${typedDni}`;
+                        if (sessionStorage.getItem(keySolicitud) === 'true') {
+                            btnAction.innerText = "SOLICITUD YA ENVIADA";
+                            btnAction.disabled = true;
+                            btnAction.className = "bg-gray-600 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed";
+                        } else {
+                            btnAction.innerText = "ENVIAR SOLICITUD DE CUPO";
+                            btnAction.disabled = false;
+                            btnAction.className = "bg-yellow-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(250,204,21,0.4)]";
+                        }
+                    } else if (window.estadoTurno.estado === 'procesando') {
+                        btnAction.innerText = "SORTEO EN PROCESO...";
+                        btnAction.disabled = true;
+                        btnAction.className = "bg-cyan-600 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed";
                     } else if (window.estadoTurno.estado === 'sorteado') {
                         // SI YA SE SORTEÓ Y EL ALUMNO LOGRA ENTRAR, REVISA RESULTADO CON RETRASO ALEATORIO (ANTI-COLAPSO)
                         btnAction.innerText = "VERIFICANDO RESULTADOS...";
@@ -462,12 +467,14 @@
                     }
 
                     msg.innerText = "ENVIANDO SOLICITUD AL SISTEMA...";
+                    const keySolicitud = `unac_solicitud_${fechaID}_${turnoActivoID}_${typedDni}`;
                     await db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).set({
                         nombre: alu.Estudiante || "Estudiante",
                         codigo: alu.Codigo || alu.codigo || "S/C",
                         facultad: alu.Facultad || alu.facultad || "No Registrada",
                         hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
                     });
+                    sessionStorage.setItem(keySolicitud, 'true');
                     
                     overlay.style.display = 'none';
                     
@@ -484,7 +491,10 @@
                 } catch (e) {
                     overlay.style.display = 'none';
                     console.error(e);
-                    Swal.fire('Error', 'Hubo un problema de conexión.', 'error');
+                    const detalle = (e && (e.code === 'PERMISSION_DENIED' || e.code === 'database/permission-denied'))
+                        ? 'La solicitud no se aceptó. Puede que ya hayas enviado una para este turno o que el delegado haya cerrado la recepción.'
+                        : 'Hubo un problema de conexión. Revisa internet e inténtalo una sola vez.';
+                    Swal.fire('Solicitud no aceptada', detalle, 'warning');
                 }
             },
 
