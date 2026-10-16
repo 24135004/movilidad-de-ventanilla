@@ -1093,6 +1093,87 @@
             }
         }
 
+        function iniciarSistema() {
+            document.getElementById('header-user-dni').innerText = `DNI: ${delegadoActivo}`;
+
+            db.ref(`sistema/delegados_auth/sesiones/${delegadoActivo}/token`).on('value', snap => {
+                const firebaseToken = snap.val();
+                const miTokenLocal = localStorage.getItem('unac_session_token');
+                if (miTokenLocal && miTokenLocal !== "" && firebaseToken !== miTokenLocal) {
+                    Swal.fire({
+                        title: 'Sesión Terminada',
+                        text: firebaseToken === 'EXPULSADO' ? 'El Administrador cerró tu sesión de forma remota.' : 'Alguien inició sesión en otro dispositivo.',
+                        icon: 'warning', background: '#111', color: '#fff', allowOutsideClick: false, confirmButtonText: 'Entendido'
+                    }).then(() => cerrarSesion());
+                }
+            });
+
+            if (esAdminAutenticado() && delegadoActivo === ADMIN_DNI) {
+                misPermisos = ['tarde1', 'tarde2', 'noche'];
+                document.getElementById('master-control-btn').classList.remove('hidden');
+                
+                db.ref('sistema/delegados_auth/sub_users').on('value', snap => {
+                    subDelegadosData = snap.val() || {};
+                    renderListaDelegados();
+                });
+                
+                actualizarUI_Tarjetas();
+            } else {
+                db.ref(`sistema/delegados_auth/sub_users/${delegadoActivo}`).on('value', snap => {
+                    if(!snap.exists() || snap.val().activo === false) { cerrarSesion(); }
+                    else { misPermisos = snap.val().permisos || []; actualizarUI_Tarjetas(); }
+                });
+            }
+
+            const scanner = new Html5QrcodeScanner("reader", { fps: 15, qrbox: 250 });
+            scanner.render(onScanSuccess);
+
+            db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
+            setInterval(evaluarTurnosAutomaticos, 15000);
+
+            /*
+             * LISTA OFICIAL EN VIVO
+             *
+             * Se leen directamente los datos del día:
+             *   - viajes/FECHA  -> resultados del sorteo
+             *   - asistencias/FECHA -> abordajes
+             *
+             * No se intenta leer alumnos completo. Solo se consulta
+             * alumnos/DNI para los tickets que realmente existen.
+             */
+            iniciarListenersListaHoy();
+
+            db.ref('sistema/config').on('value', snap => {
+                const d = snap.val() || {};
+
+                configGlobal.cupos = Number(d.cupos_maximos) || 40;
+
+                configGlobal.prog_tarde1 = d.prog_tarde1 || false;
+                configGlobal.hora_tarde1 = d.hora_tarde1 || '';
+                configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado';
+                configGlobal.limite_tarde1 = d.limite_tarde1 || '';
+                configGlobal.tarde1_inicio_recepcion = d.tarde1_inicio_recepcion || 0;
+
+                configGlobal.prog_tarde2 = d.prog_tarde2 || false;
+                configGlobal.hora_tarde2 = d.hora_tarde2 || '';
+                configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado';
+                configGlobal.limite_tarde2 = d.limite_tarde2 || '';
+                configGlobal.tarde2_inicio_recepcion = d.tarde2_inicio_recepcion || 0;
+
+                configGlobal.prog_noche = d.prog_noche || false;
+                configGlobal.hora_noche = d.hora_noche || '';
+                configGlobal.noche_estado = d.noche_estado || 'cerrado';
+                configGlobal.limite_noche = d.limite_noche || '';
+                configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
+
+                actualizarUI_Tarjetas();
+
+                // Actualizar ocupación cuando cambie la capacidad del bus.
+                actualizarListaMaestraEnVivo();
+            });
+        }
+
+
         let refrescoListaEnCurso = false;
         let refrescoListaPendiente = false;
         let fechaListenerLista = null;
