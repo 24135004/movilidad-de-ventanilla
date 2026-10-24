@@ -471,7 +471,7 @@ html{background:#050505!important}body{background:transparent!important}
             if (rescates[t]) return;
             rescates[t] = setTimeout(() => {
                 rescates[t] = null;
-                if (!isDrawing && configGlobal[`${t}_estado`] === 'procesando' && misPermisos.includes(t))
+                if (!drawing[t] && configGlobal[`${t}_estado`] === 'procesando' && misPermisos.includes(t))
                     db.ref(`sistema/config/${t}_estado`).set('recepcionando').catch(() => {});
             }, 20000);
         }
@@ -1064,12 +1064,12 @@ html{background:#050505!important}body{background:transparent!important}
             }
         }
 
-        let isDrawing = false; 
+        const drawing = {}; const lastTry = {}, tries = {}; 
 
         // SORTEO JUSTO: prioridad a quienes NO recibieron ticket ayer; luego, menor historial de asientos.
         async function ejecutarSorteoJusto(turno) {
-            if (isDrawing) return;
-            isDrawing = true;
+            if (drawing[turno]) return;
+            drawing[turno] = true;
 
             try {
                 const fechaID = getFechaID();
@@ -1148,13 +1148,13 @@ html{background:#050505!important}body{background:transparent!important}
 
                 const priorizados = ganadores.filter(g => !g.tuvoTicketAyer).length;
                 const conTicketAyer = ganadores.length - priorizados;
-                const resultado = await Swal.fire({
+                const resultado = Swal.fire({
                     title: '¡Sorteo finalizado!',
                     html: `Tickets asignados: <b>${ganadores.length}</b><br>Sin ticket ayer (prioridad): <b>${priorizados}</b><br>Con ticket ayer: <b>${conTicketAyer}</b><br><br>Turno bloqueado para evitar un segundo sorteo.`,
                     icon: 'success', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#374151',
                     confirmButtonText: 'Descargar esta lista', cancelButtonText: 'Ver luego', background: '#111', color: '#fff'
                 });
-                if (resultado.isConfirmed) generarReporteAutomatizado(turno);
+                resultado.then(r => { if (r.isConfirmed) generarReporteAutomatizado(turno); });
             } catch (error) {
                 console.error('Error ejecutando sorteo:', error);
                 // Recupera el estado si el sorteo falla antes de publicar los resultados.
@@ -1164,7 +1164,7 @@ html{background:#050505!important}body{background:transparent!important}
                 } catch (_) {}
                 Swal.fire({title: 'Error en el sorteo', text: error.message || 'No se pudo completar. Revisa la conexión y los permisos de Firebase.', icon: 'error', background: '#111', color: '#fff'});
             } finally {
-                isDrawing = false;
+                drawing[turno] = false;
                 actualizarListaMaestraEnVivo();
             }
         }
@@ -1206,7 +1206,7 @@ html{background:#050505!important}body{background:transparent!important}
             scanner.render(onScanSuccess);
 
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
-            setInterval(evaluarTurnosAutomaticos, 8000); setTimeout(evaluarTurnosAutomaticos, 2500);
+            setInterval(evaluarTurnosAutomaticos, 8000); setTimeout(evaluarTurnosAutomaticos, 2500); mantenerPantalla();
 
             /*
              * LISTA OFICIAL EN VIVO
@@ -1757,6 +1757,30 @@ html{background:#050505!important}body{background:transparent!important}
                 Swal.fire({ icon: 'error', title: 'No se pudo cambiar', text: bad ? 'La contraseña actual es incorrecta.' : ((e && e.message) || 'Error desconocido'), background: '#111', color: '#fff' });
             }
         }
+        // VIGILANTE: dispara el sorteo apenas pasan los 2 minutos, usando la hora del servidor.
+        function tickSorteo() {
+            if (!configCargada) return;
+            const now = Date.now() + serverTimeOffset;
+            ['tarde1', 'tarde2', 'noche'].forEach(t => {
+                if (!misPermisos.includes(t)) return;
+                const ini = configGlobal[`${t}_inicio_recepcion`] || 0;
+                if (configGlobal[`${t}_estado`] !== 'recepcionando') { tries[t] = 0; return; }
+                if (ini > 0 && now >= ini + 120000 && !drawing[t] && (tries[t] || 0) < 4 && Date.now() - (lastTry[t] || 0) > 6000) {
+                    lastTry[t] = Date.now(); tries[t] = (tries[t] || 0) + 1;
+                    ejecutarSorteoJusto(t);
+                }
+            });
+        }
+        // El temporizador corre en un Worker: el navegador no lo frena cuando la pestaña está en segundo plano.
+        (function () {
+            try {
+                const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},1000)'], { type: 'text/javascript' })));
+                w.onmessage = () => { try { tickSorteo(); } catch (_) {} };
+            } catch (e) { setInterval(() => { try { tickSorteo(); } catch (_) {} }, 1000); }
+        })();
+        // Mantiene la pantalla encendida mientras el panel está abierto (celulares).
+        async function mantenerPantalla() { try { if ('wakeLock' in navigator) window._wl = await navigator.wakeLock.request('screen'); } catch (_) {} }
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) { mantenerPantalla(); tickSorteo(); } });
         function notificarFlash(titulo, tipo, sub) {
             const f = document.getElementById('flash-notif'), t = document.getElementById('flash-text'), st = document.getElementById('flash-subtext'), i = document.getElementById('flash-icon');
             t.innerText = titulo; st.innerText = sub;
