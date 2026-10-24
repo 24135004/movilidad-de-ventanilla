@@ -215,6 +215,7 @@ html{background:#050505!important}body{background:transparent!important}
         function estadoEfectivo(est,fecha){est=est||'cerrado';return (est!=='cerrado'&&fecha&&fecha!==hoyLima())?'cerrado':est;}
 
         const Core = {
+            _baneado: null,
             _verif: false,          // evita consultas simultáneas del resultado
             _resultado: null,       // 'gano' | 'perdio' | null  (una vez definido no se vuelve a consultar)
             _enviando: false,       // evita doble clic al enviar la solicitud
@@ -249,6 +250,13 @@ html{background:#050505!important}body{background:transparent!important}
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
                 });
+
+                // Bloqueo de DNI en vivo: si el administrador lo bloquea (antes o durante), se corta el acceso al instante
+                db.ref('sistema/baneados/' + typedDni).on('value', snap => {
+                    this._baneado = snap.exists() ? (snap.val() || {}) : null;
+                    if (this._baneado) this.showBlockScreen('baneado');
+                    else if (document.getElementById('block-title').innerText === 'DNI BLOQUEADO') { document.getElementById('blocking-overlay').style.display = 'none'; this.reaccionarAlDelegado(); }
+                }, () => {});
 
                 // Escucha en vivo el estado que controla el panel del delegado
                 db.ref('sistema/config').on('value', snap => {
@@ -327,6 +335,13 @@ html{background:#050505!important}body{background:transparent!important}
                             </span>
                         </div>
                     `;
+                } else if (tipo === 'baneado') {
+                    overlay.style.borderTop = '15px solid #ef4444';
+                    icon.className = 'fa-solid fa-user-slash text-7xl text-red-600 mb-6';
+                    title.innerText = "DNI BLOQUEADO";
+                    title.className = "text-3xl font-black text-red-500 uppercase tracking-tighter";
+                    const mot = (this._baneado && this._baneado.motivo) ? String(this._baneado.motivo).replace(/[<>&]/g, '') : '';
+                    reason.innerHTML = "<div class='text-center'>Tu DNI fue bloqueado por el administrador por infringir las normas del servicio. No puedes solicitar ni recibir ticket." + (mot ? "<br><br><b>Motivo:</b> " + mot : "") + "</div>";
                 } else if (tipo === 'ya_aborde') {
                     overlay.style.borderTop = '15px solid #f59e0b';
                     icon.className = 'fa-solid fa-bus text-7xl text-yellow-500 mb-6';
@@ -367,6 +382,7 @@ html{background:#050505!important}body{background:transparent!important}
             // Reacciona en vivo a lo que hace el panel del delegado
             reaccionarAlDelegado: async function() {
                 if (!turnoDataLoaded) return;
+                if (this._baneado) { this.showBlockScreen('baneado'); return; }
                 if (!document.getElementById('step-3').classList.contains('hidden-section')) return; // ya tiene su ticket
                 if (this._resultado === 'perdio') return; // ya vio su resultado final: no tapar con "turno cerrado"
 
@@ -445,6 +461,7 @@ html{background:#050505!important}body{background:transparent!important}
                     const fechaID = this.getFechaID();
                     const snapReg = await db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}/registros/${typedDni}`).once('value');
 
+                    if (this._baneado) { overlay.style.display = 'none'; this._verif = false; return this.showBlockScreen('baneado'); }
                     if (snapReg.exists()) {
                         this._resultado = 'gano';
                         msg.innerText = "¡FELICIDADES! RECUPERANDO TICKET...";
