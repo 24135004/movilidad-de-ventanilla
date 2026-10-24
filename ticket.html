@@ -430,9 +430,12 @@ html{background:#050505!important}body{background:transparent!important}
                     await new Promise(r => setTimeout(r, 120)); 
                 }
 
-                db.ref('alumnos/' + dni).once('value').then(snap => {
+                db.ref('alumnos/' + dni).once('value').then(async snap => {
                     overlay.style.display = 'none';
                     if(snap.exists()){
+                        // DNI bloqueado por el administrador: no entra a ningún turno
+                        const ban = await this.consultarBaneo(dni);
+                        if (ban) { this.alumno = null; return this.mostrarBaneo(ban); }
                         this.alumno = snap.val(); 
                         this.alumno.dni = dni;
                         
@@ -466,7 +469,28 @@ html{background:#050505!important}body{background:transparent!important}
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
             },
 
-            goToTurno: function(pageUrl, turnoId) {
+            consultarBaneo: async function(dni) {
+                try { const b = await db.ref('sistema/baneados/' + dni).once('value'); return b.exists() ? (b.val() || {}) : null; }
+                catch (_) { return null; }
+            },
+
+            mostrarBaneo: function(ban) {
+                Swal.fire({
+                    title: '<span style="color:#ef4444">DNI BLOQUEADO</span>',
+                    html: '<div style="text-align:left;font-size:14px;color:#ccc">Tu DNI fue bloqueado por el administrador por infringir las normas del servicio, por eso no puedes sacar ticket.' + (ban && ban.motivo ? '<br><br><b>Motivo:</b> ' + String(ban.motivo).replace(/[<>&]/g, '') : '') + '<br><br>Si crees que es un error, comunícate con el delegado.</div>',
+                    icon: 'error', background: '#050505', color: '#fff', confirmButtonColor: '#00E5FF', confirmButtonText: 'ENTENDIDO', allowOutsideClick: false
+                }).then(() => {
+                    document.getElementById('step-2').classList.add('hidden-section');
+                    document.getElementById('step-1').classList.remove('hidden-section');
+                    document.getElementById('dniInput').value = '';
+                });
+            },
+
+            goToTurno: async function(pageUrl, turnoId) {
+                if (this.alumno) {
+                    const ban = await this.consultarBaneo(this.alumno.dni);
+                    if (ban) { this.alumno = null; return this.mostrarBaneo(ban); }
+                }
                 let isActive = false;
                 if (turnoId === 'tarde1') isActive = this.currentTarde1Active;
                 if (turnoId === 'tarde2') isActive = this.currentTarde2Active;
