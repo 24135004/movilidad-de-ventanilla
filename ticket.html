@@ -7,6 +7,7 @@
     
     <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -18,14 +19,14 @@
 
     <style>
         /* COLOR CIAN ACTUALIZADO */
-        :root { --accent: #60A5FA; --dark: #050505; --fire: #ff4500; --white-clean: #f8f9fa; }
+        :root { --accent: #00E5FF; --dark: #050505; --fire: #ff4500; --white-clean: #f8f9fa; }
         body, html { margin: 0; padding: 0; min-height: 100vh; background-color: var(--dark); font-family: 'Inter', sans-serif; color: #ffffff; overflow-x: hidden; user-select: none; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
         
         /* HUD DE CARGA AVANZADO */
         #scanning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(25px); }
-        .hud-box { width: 320px; height: 320px; border: 2px solid rgba(96,165,250, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
+        .hud-box { width: 320px; height: 320px; border: 2px solid rgba(0, 229, 255, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
         @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
 
@@ -54,7 +55,7 @@
         
         /* -- NUEVO: ESTILOS DINÁMICOS PARA EL CRONÓMETRO Y SORTEO -- */
         .time-badge.recepcionando { background: #facc15; color: #000; box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); animation: pulse 1.5s infinite; }
-        .time-badge.sorteado { background: var(--accent); color: #000; box-shadow: 0 0 20px rgba(96,165,250, 0.4); }
+        .time-badge.sorteado { background: var(--accent); color: #000; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
         .delegate-msg { position: relative; z-index: 2; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 700; max-width: 200px; margin-top: 10px; line-height: 1.4; }
@@ -65,28 +66,18 @@
         .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
         .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(96,165,250,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; letter-spacing: 2px; }
-        .input-tech:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(96,165,250, 0.2); }
+        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; letter-spacing: 2px; }
+        .input-tech:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); }
         
         #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
         .hidden-section { display: none !important; }
         @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } .asiento-display { font-size: 80px; } }
     
-/* ===== TEMA PROFESIONAL (azul institucional) ===== */
-:root{--accent:#60A5FA;--dark:#0B1220;--surface:#111B2F;--line:rgba(148,163,184,.18)}
-html,body{background:#0B1220!important}
-.italic{font-style:normal!important}.font-black{font-weight:800!important}.tracking-tighter{letter-spacing:-.01em!important}
-.text-cyan-400,.text-cyan-600{color:#60A5FA!important}
-.bg-cyan-400{background:#60A5FA!important}.bg-cyan-400:hover{background:#93C5FD!important}
-.border-cyan-400,.border-l-cyan-400{border-color:#60A5FA!important}
-.from-cyan-400{--tw-gradient-from:#60A5FA!important}.to-cyan-600{--tw-gradient-to:#2563EB!important}
-.glass,.glass-panel{background:#111B2F!important;border:1px solid rgba(148,163,184,.18)!important;border-radius:16px!important;backdrop-filter:none!important}
-.main-wrapper{background:linear-gradient(180deg,#0B1220 0%,#0E182B 100%)!important}
-.turno-card{background:#111B2F!important;border-color:rgba(148,163,184,.18)!important;border-radius:16px!important}
-.turno-card.active{border-color:#60A5FA!important;box-shadow:0 0 0 1px rgba(96,165,250,.35)!important}
-.card-panorama{border-radius:16px!important}.card-panorama::before{background:rgba(11,18,32,.78)!important}
-.input-tech,.input-display{border-color:rgba(148,163,184,.3)!important;background:#0B1220!important;border-radius:12px!important}
-#globe-area,#globe-box,#globe-box-2{display:none!important}
+/* ===== FONDO ANIMADO (diseño original conservado) ===== */
+html{background:#050505!important}body{background:transparent!important}
+#bg-fx{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none}
+#bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;opacity:.35;pointer-events:none}
+.main-wrapper{background:radial-gradient(circle at 50% 50%,rgba(5,5,5,.10) 0%,rgba(5,5,5,.60) 100%)!important}
 </style>
 </head>
 <body>
@@ -417,13 +408,13 @@ html,body{background:#0B1220!important}
 
             handleNotRegistered: function(dni) {
                 Swal.fire({
-                    title: '<span style="color:#60A5FA">IDENTIDAD NO ENCONTRADA</span>',
+                    title: '<span style="color:#00E5FF">IDENTIDAD NO ENCONTRADA</span>',
                     html: `<div style="text-align: left; font-size: 14px; color: #ccc;">
                         <p>El DNI <b>${dni}</b> no figura en el padrón oficial actualizado.</p><br>
                         <b>Causas probables:</b><ul style="margin-left:20px; list-style:circle; margin-top:10px;">
                         <li>Error al escribir el DNI.</li><li>No completaste tu registro este ciclo.</li></ul></div>`,
                     icon: 'warning', background: '#050505', color: '#fff', 
-                    confirmButtonText: 'IR A REGISTRO', showCancelButton: true, cancelButtonText: 'REINTENTAR', confirmButtonColor: '#60A5FA'
+                    confirmButtonText: 'IR A REGISTRO', showCancelButton: true, cancelButtonText: 'REINTENTAR', confirmButtonColor: '#00E5FF'
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
             },
 
@@ -448,7 +439,7 @@ html,body{background:#0B1220!important}
                 }
             },
 
-            initThree: function(id) { return;
+            initThree: function(id) {
                 const container = document.getElementById(id); if(!container) return; container.innerHTML = "";
                 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -461,5 +452,19 @@ html,body{background:#0B1220!important}
         };
         window.onload = () => Core.init();
     </script>
+<canvas id="bg-fx"></canvas>
+<!-- VIDEO OPCIONAL: sube un archivo llamado fondo.mp4 junto a este HTML y se verá automáticamente -->
+<video id="bg-video" autoplay muted loop playsinline preload="auto"><source src="fondo.mp4" type="video/mp4"></video>
+<script>
+(function(){var c=document.getElementById('bg-fx');if(!c)return;var x=c.getContext('2d'),W,H,P=[],N=window.innerWidth<700?38:70,run=true;
+function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();addEventListener('resize',rs);
+for(var i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45,r:Math.random()*1.6+.6});
+document.addEventListener('visibilitychange',function(){run=!document.hidden;if(run)f()});
+function f(){if(!run)return;x.clearRect(0,0,W,H);var g=x.createRadialGradient(W*.5,H*.4,0,W*.5,H*.4,Math.max(W,H)*.8);g.addColorStop(0,'rgba(0,229,255,.10)');g.addColorStop(1,'rgba(5,5,5,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+for(var i=0;i<N;i++){var p=P[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fillStyle='rgba(0,229,255,.7)';x.fill();
+for(var j=i+1;j<N;j++){var q=P[j],dx=p.x-q.x,dy=p.y-q.y,d=dx*dx+dy*dy;if(d<14000){x.strokeStyle='rgba(0,229,255,'+(.22*(1-d/14000))+')';x.lineWidth=.7;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}}
+requestAnimationFrame(f)}f()})();
+</script>
 </body>
 </html>
