@@ -261,18 +261,23 @@ html{background:#050505!important}body{background:transparent!important}
                 const cfg = this.config || {};
                 const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(Date.now() + serverTimeOffset)).split(':');
                 const mins = (parseInt(p[0], 10) % 24) * 60 + parseInt(p[1], 10);
+                const nowMs = Date.now() + serverTimeOffset;
                 ['tarde1', 'tarde2', 'noche'].forEach(t => {
                     const pm = cfg['prog_min_' + t];
                     if (cfg['prog_' + t] !== true || typeof pm !== 'number') return;
-                    if (this.est(t) !== 'cerrado' || cfg[t + '_fecha'] === hoyLima()) return;
+                    if (this.est(t) !== 'cerrado') return;
                     if (mins < pm || mins >= pm + 15) return;
+                    // Misma condición que validan las reglas de Firebase y el panel: solo se abre si el último inicio es ANTERIOR a la hora programada de hoy.
+                    // (Antes se bloqueaba si el turno ya se había abierto/cerrado hoy, aunque fuera antes de la hora programada, y por eso nunca se activaba.)
+                    const sched = nowMs - ((nowMs - 18000000) % 86400000) + pm * 60000;
+                    if ((cfg[t + '_inicio_recepcion'] || 0) >= sched) return;
                     if (Date.now() - (this._tryOpen[t] || 0) < 20000) return;
                     this._tryOpen[t] = Date.now();
                     db.ref('sistema/config').update({
                         [t + '_inicio_recepcion']: firebase.database.ServerValue.TIMESTAMP,
                         [t + '_fecha']: hoyLima(),
                         [t + '_estado']: 'recepcionando'
-                    }).catch(() => {});
+                    }).catch(err => { console.warn('Apertura programada rechazada (' + t + '):', err && (err.code || err.message)); });
                 });
             },
             renderComunicado: function() {
@@ -286,18 +291,18 @@ html{background:#050505!important}body{background:transparent!important}
             },
             est: function(t){ return estadoEfectivo(this.config[t+'_estado'], this.config[t+'_fecha']); },
 
-            init: function() { 
-                this.initThree('globe-box'); 
-                
+            init: function() {
+                this.initThree('globe-box');
+
                 db.ref('.info/serverTimeOffset').on('value', snap => {
                     serverTimeOffset = snap.val() || 0;
                     this.checkSchedules();
                 });
 
-                this.listenFirebase(); 
-                
+                this.listenFirebase();
+
                 // Actualiza cada segundo para que el cronómetro baje en vivo
-                setInterval(() => this.checkSchedules(), 1000); 
+                setInterval(() => this.checkSchedules(), 1000);
             },
 
             // FUNCIÓN ACTUALIZADA A HORA EXACTA DE LIMA/PERÚ PARA EVITAR BUGS DE NOCHE
@@ -478,6 +483,7 @@ html{background:#050505!important}body{background:transparent!important}
 
             initThree: function(id) {
                 const container = document.getElementById(id); if(!container) return; container.innerHTML = "";
+                try {
                 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
                 renderer.setSize(container.clientWidth, container.clientHeight); container.appendChild(renderer.domElement);
@@ -485,6 +491,7 @@ html{background:#050505!important}body{background:transparent!important}
                 scene.add(globe); camera.position.z = 100;
                 const animate = () => { requestAnimationFrame(animate); globe.rotation.y += 0.003; renderer.render(scene, camera); };
                 animate();
+                } catch (e) { console.warn('Globo 3D no disponible:', e); }
             }
         };
         window.onload = () => Core.init();
