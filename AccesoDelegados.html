@@ -1101,17 +1101,25 @@ html{background:#050505!important}body{background:transparent!important}
             }
         }
 
-        const drawing = {}; const lastTry = {}, tries = {}; 
+        const drawing = {}; const lastTry = {}, tries = {}; const drawingSince = {};
+
+        // Corta cualquier paso de Firebase que se quede esperando para siempre y dice cuál fue.
+        function conTimeout(promesa, ms, paso) {
+            return Promise.race([
+                promesa,
+                new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('Tiempo agotado en el paso: ' + paso), { code: 'TIMEOUT', paso })), ms))
+            ]);
+        }
 
         // Toma el turno para sortearlo (recepcionando -> procesando) sin depender de la caché local de Firebase.
         async function tomarTurnoParaSorteo(estadoRef) {
             try {
                 // Si la caché local aún no tiene el valor (null) igualmente se propone 'procesando': el servidor compara y reintenta con el valor real.
-                const r = await estadoRef.transaction(cur => (cur === null || cur === 'recepcionando') ? 'procesando' : undefined);
+                const r = await conTimeout(estadoRef.transaction(cur => (cur === null || cur === 'recepcionando') ? 'procesando' : undefined), 12000, 'bloquear el turno (transacción)');
                 if (r.committed && r.snapshot.val() === 'procesando') return true;
             } catch (e) { console.warn('La transacción de bloqueo falló, uso lectura directa:', e); }
-            const snap = await estadoRef.once('value');
-            if (snap.val() === 'recepcionando') { await estadoRef.set('procesando'); return true; }
+            const snap = await conTimeout(estadoRef.once('value'), 12000, 'leer el estado del turno');
+            if (snap.val() === 'recepcionando') { await conTimeout(estadoRef.set('procesando'), 12000, 'marcar el turno como procesando'); return true; }
             return false;
         }
 
@@ -1119,30 +1127,40 @@ html{background:#050505!important}body{background:transparent!important}
         async function ejecutarSorteoJusto(turno) {
             if (drawing[turno]) return;
             drawing[turno] = true;
+            drawingSince[turno] = Date.now();
+            let paso = 'inicio';
 
             try {
                 const fechaID = getFechaID();
                 const estadoRef = db.ref(`sistema/config/${turno}_estado`);
 
                 // Bloqueo atómico para evitar que dos paneles sorteen el mismo turno a la vez.
+                paso = 'bloquear el turno';
                 const tomado = await tomarTurnoParaSorteo(estadoRef);
                 if (!tomado) {
                     notificarFlash('SORTEO NO INICIADO', 'warning', 'El turno ya no está recepcionando (otro panel lo está sorteando)');
                     return;
                 }
 
-                const yaSort = await db.ref(`sistema/viajes/${fechaID}/${turno}/contador`).once('value');
-                if (yaSort.exists()) { await estadoRef.set('sorteado'); notificarFlash('YA SORTEADO', 'warning', 'Este turno ya se sorteó hoy'); return; }
+                paso = 'comprobar si ya se sorteó';
+                const yaSort = await conTimeout(db.ref(`sistema/viajes/${fechaID}/${turno}/contador`).once('value'), 15000, paso);
+                if (yaSort.exists()) {
+                    // Un intento anterior ya guardó los tickets pero no alcanzó a publicar el estado: se termina de publicar.
+                    await conTimeout(db.ref('sistema/config').update({ [`${turno}_sorteo_ts`]: firebase.database.ServerValue.TIMESTAMP, [`${turno}_estado`]: 'sorteado' }), 15000, 'publicar el estado sorteado');
+                    notificarFlash('SORTEO PUBLICADO', 'success', 'Este turno ya estaba sorteado');
+                    return;
+                }
+                paso = 'leer solicitudes e historial';
                 notificarFlash('CALCULANDO...', 'warning', 'Prioridad a quienes no fueron sentados ayer');
 
                 // Día de referencia = ayer; si ayer no hubo servicio (fin de semana, feriado) se toma el último día anterior con tickets (máx. 7 días atrás).
                 const fechasPrevias = [1, 2, 3, 4, 5, 6, 7].map(getFechaHaceID);
-                const [snapSol, baneados, ...snapsPrevios] = await Promise.all([
+                const [snapSol, baneados, ...snapsPrevios] = await conTimeout(Promise.all([
                     db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value'),
-                    // DNIs bloqueados: si la lectura falla (reglas aún sin actualizar) el sorteo continúa igual.
-                    db.ref('sistema/baneados').once('value').then(sn => sn.val() || {}).catch(() => ({})),
-                    ...fechasPrevias.map(f => db.ref(`sistema/viajes/${f}`).once('value').catch(() => null))
-                ]);
+                    // DNIs bloqueados / historial: si estas lecturas fallan, el sorteo continúa igual.
+                    conTimeout(db.ref('sistema/baneados').once('value'), 10000, 'leer bloqueados').then(sn => sn.val() || {}).catch(() => ({})),
+                    ...fechasPrevias.map(f => conTimeout(db.ref(`sistema/viajes/${f}`).once('value'), 10000, 'leer historial ' + f).catch(() => null))
+                ]), 20000, 'leer solicitudes e historial');
 
                 if (!snapSol.exists()) {
                     await estadoRef.set('cerrado');
@@ -1188,21 +1206,26 @@ html{background:#050505!important}body{background:transparent!important}
                     return;
                 }
 
-                const updates = {};
+                // Paso 1: se guardan los tickets (el turno sigue en 'procesando', que es lo que exigen las reglas para escribirlos).
+                const ticketsUpdate = {};
                 ganadores.forEach((g, index) => {
-                    updates[`sistema/viajes/${fechaID}/${turno}/registros/${g.dni}`] = {
+                    ticketsUpdate[`registros/${g.dni}`] = {
                         nombre: String(g.data.nombre || 'Estudiante'),
                         orden: index + 1,
-                        hora: String(g.data.hora || '')
+                        hora: String(g.data.hora || '--:--')
                     };
                 });
-                updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
-                updates[`sistema/config/${turno}_estado`] = 'sorteado';
-                updates[`sistema/config/${turno}_sorteo_ts`] = firebase.database.ServerValue.TIMESTAMP;
+                ticketsUpdate['contador'] = ganadores.length;
+                paso = 'guardar los tickets';
+                await conTimeout(db.ref(`sistema/viajes/${fechaID}/${turno}`).update(ticketsUpdate), 25000, paso);
 
-                // Un solo update publica tickets y estado final.
-                await db.ref().update(updates);
-                
+                // Paso 2: se publica el resultado para los alumnos.
+                paso = 'publicar el estado sorteado';
+                await conTimeout(db.ref('sistema/config').update({
+                    [`${turno}_sorteo_ts`]: firebase.database.ServerValue.TIMESTAMP,
+                    [`${turno}_estado`]: 'sorteado'
+                }), 15000, paso);
+
 
                 const priorizados = ganadores.filter(g => !g.tuvoTicketAyer).length;
                 const conTicketAyer = ganadores.length - priorizados;
@@ -1221,7 +1244,7 @@ html{background:#050505!important}body{background:transparent!important}
                     if (estado.val() === 'procesando') await db.ref(`sistema/config/${turno}_estado`).set('recepcionando');
                 } catch (_) {}
                 // Se muestra el motivo real (código de Firebase) y no se apilan ventanas si el sistema reintenta.
-                if (!Swal.isVisible()) Swal.fire({title: 'Error en el sorteo', text: ((error && error.code) ? error.code + ': ' : '') + ((error && error.message) || 'No se pudo completar. Revisa la conexión y los permisos de Firebase.') + ' — se reintentará automáticamente.', icon: 'error', background: '#111', color: '#fff'});
+                if (!Swal.isVisible()) Swal.fire({title: 'Error en el sorteo', text: 'Falló el paso: ' + paso + ' → ' + ((error && error.code) ? error.code + ': ' : '') + ((error && error.message) || 'No se pudo completar. Revisa la conexión y los permisos de Firebase.') + ' — se reintentará automáticamente.', icon: 'error', background: '#111', color: '#fff'});
             } finally {
                 drawing[turno] = false;
                 actualizarListaMaestraEnVivo();
@@ -1943,6 +1966,11 @@ html{background:#050505!important}body{background:transparent!important}
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 if (!misPermisos.includes(t)) return;
                 const ini = configGlobal[`${t}_inicio_recepcion`] || 0;
+                // Vigilante anti-cuelgue: si un sorteo lleva más de 45 s sin terminar, se libera y el turno vuelve a 'recepcionando' para reintentar.
+                if (drawing[t] && drawingSince[t] && Date.now() - drawingSince[t] > 45000) {
+                    drawing[t] = false;
+                    if (configGlobal[`${t}_estado`] === 'procesando') db.ref(`sistema/config/${t}_estado`).set('recepcionando').catch(() => {});
+                }
                 if (configGlobal[`${t}_estado`] !== 'recepcionando') { tries[t] = 0; return; }
                 if (ini > 0 && now >= ini + 120000 && !drawing[t] && Date.now() - (lastTry[t] || 0) > ((tries[t] || 0) < 4 ? 6000 : 20000)) {
                     lastTry[t] = Date.now(); tries[t] = (tries[t] || 0) + 1;
