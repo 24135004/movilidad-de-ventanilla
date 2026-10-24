@@ -105,6 +105,7 @@ html{background:#050505!important}body{background:transparent!important}
                     </div>
 
                     <button id="btn-submit-action" onclick="Core.submitDni()" class="bg-cyan-400 text-black font-black p-5 rounded-2xl w-full uppercase tracking-widest hover:bg-white transition shadow-[0_0_20px_rgba(0,229,255,0.4)]">CARGANDO...</button>
+                    <p id="diag-line" class="text-center text-[8px] text-gray-600 uppercase tracking-widest mt-4"></p>
                 </div>
             </div>
 
@@ -252,9 +253,17 @@ html{background:#050505!important}body{background:transparent!important}
                 // Escucha en vivo el estado que controla el panel del delegado
                 db.ref('sistema/config').on('value', snap => {
                     const data = snap.val() || {};
+                    const inicioNuevo = data[`${turnoActivoID}_inicio_recepcion`] || 0;
+                    // Si el delegado abrió una ronda nueva (o hizo Reset), se olvida todo lo de la ronda anterior
+                    if (window.estadoTurno.inicio !== undefined && inicioNuevo !== window.estadoTurno.inicio) {
+                        this._solicitudConfirmada = false;
+                        this._resultado = null;
+                        this._verif = false;
+                    }
                     window.estadoTurno = {
                         estado: estadoEfectivo(data[`${turnoActivoID}_estado`], data[`${turnoActivoID}_fecha`]),
-                        cupos: data.cupos_maximos || 40
+                        cupos: data.cupos_maximos || 40,
+                        inicio: inicioNuevo
                     };
                     turnoDataLoaded = true;
                     this.reaccionarAlDelegado();
@@ -318,6 +327,12 @@ html{background:#050505!important}body{background:transparent!important}
                             </span>
                         </div>
                     `;
+                } else if (tipo === 'ya_aborde') {
+                    overlay.style.borderTop = '15px solid #f59e0b';
+                    icon.className = 'fa-solid fa-bus text-7xl text-yellow-500 mb-6';
+                    title.innerText = "YA ABORDASTE HOY";
+                    title.className = "text-3xl font-black text-yellow-400 uppercase tracking-tighter";
+                    reason.innerHTML = "<div class='text-center'>Tu DNI ya fue escaneado en la puerta del bus hoy, por eso no puedes enviar otra solicitud.</div>";
                 } else if (tipo === 'sin_solicitud') {
                     overlay.style.borderTop = '15px solid #f59e0b';
                     icon.className = 'fa-solid fa-hourglass-end text-7xl text-yellow-500 mb-6 animate-pulse';
@@ -359,6 +374,10 @@ html{background:#050505!important}body{background:transparent!important}
                 const title = document.getElementById('block-title');
                 const estado = window.estadoTurno.estado;
 
+                // Línea de diagnóstico (para saber exactamente qué ve el sistema)
+                const diag = document.getElementById('diag-line');
+                if (diag) diag.innerText = `Turno: ${turnoActivoID} · Estado: ${estado} · Fecha: ${this.getFechaID()}`;
+
                 if (estado === 'cerrado' || estado === 'finalizado') {
                     this.showBlockScreen(estado);
                     return;
@@ -397,7 +416,8 @@ html{background:#050505!important}body{background:transparent!important}
             },
 
             keySolicitud: function() {
-                return `unac_solicitud_${this.getFechaID()}_${turnoActivoID}_${typedDni}`;
+                // La marca es de ESTA ronda (incluye la hora de apertura): si el delegado reabre o reinicia, se puede volver a solicitar
+                return `unac_solicitud_${this.getFechaID()}_${turnoActivoID}_${window.estadoTurno.inicio || 0}_${typedDni}`;
             },
 
             checkSecurityTime: function() {
@@ -491,10 +511,9 @@ html{background:#050505!important}body{background:transparent!important}
                     msg.innerText = "REVISANDO ABORDAJES PREVIOS...";
                     const asisSnap = await db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value');
                     if (asisSnap.exists()) {
+                        // Solo cuenta el abordaje de HOY (haber tenido ticket ayer NO bloquea a nadie)
                         overlay.style.display = 'none';
-                        document.getElementById('blocking-overlay').style.display = 'flex';
-                        document.getElementById('block-reason').innerText = "Tu DNI ya fue escaneado en la puerta del bus hoy. No puedes sacar otro ticket.";
-                        return;
+                        return this.showBlockScreen('ya_aborde');
                     }
 
                     msg.innerText = "VERIFICANDO ESTADO DEL DNI...";
@@ -515,12 +534,16 @@ html{background:#050505!important}body{background:transparent!important}
                         return this.mostrarExitoSolicitud(true);
                     }
 
-                    await this.refSolicitud().set({
-                        nombre: String(alu.Estudiante || "Estudiante"),
-                        codigo: String(alu.Codigo || alu.codigo || "S/C"),
-                        facultad: String(alu.Facultad || alu.facultad || "No Registrada"),
-                        hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
-                    });
+                    // Si no hay internet, set() nunca responde: se corta a los 15 s para no dejar la pantalla colgada
+                    await Promise.race([
+                        this.refSolicitud().set({
+                            nombre: String(alu.Estudiante || "Estudiante"),
+                            codigo: String(alu.Codigo || alu.codigo || "S/C"),
+                            facultad: String(alu.Facultad || alu.facultad || "No Registrada"),
+                            hora: this.getRealTime().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+                        }),
+                        new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('Sin respuesta del servidor'), { code: 'TIMEOUT' })), 15000))
+                    ]);
 
                     // Confirmación real: se vuelve a leer lo que quedó guardado (si las reglas lo permiten)
                     msg.innerText = "CONFIRMANDO RECEPCIÓN...";
