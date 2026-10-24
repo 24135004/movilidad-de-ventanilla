@@ -475,6 +475,14 @@ html{background:#050505!important}body{background:transparent!important}
                         return;
                     }
 
+                    msg.innerText = "VERIFICANDO ESTADO DEL DNI...";
+                    let baneado = null;
+                    try { const banSnap = await db.ref(`sistema/baneados/${typedDni}`).once('value'); if (banSnap.exists()) baneado = banSnap.val() || {}; } catch (_) {}
+                    if (baneado) {
+                        overlay.style.display = 'none';
+                        return Swal.fire({ title: 'DNI BLOQUEADO', text: 'Tu DNI fue bloqueado por el delegado por infringir las normas del servicio.' + (baneado.motivo ? ' Motivo: ' + baneado.motivo : ''), icon: 'error', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF' });
+                    }
+
                     msg.innerText = "ENVIANDO SOLICITUD AL SISTEMA...";
                     const keySolicitud = `unac_solicitud_${fechaID}_${turnoActivoID}_${typedDni}`;
                     await db.ref(`sistema/solicitudes/${fechaID}/${turnoActivoID}/${typedDni}`).set({
