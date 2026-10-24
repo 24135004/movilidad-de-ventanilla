@@ -7,7 +7,6 @@
     
     <!-- LIBRERÍAS EXTERNAS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -19,14 +18,14 @@
 
     <style>
         /* COLOR CIAN ACTUALIZADO */
-        :root { --accent: #00E5FF; --dark: #050505; --fire: #ff4500; --white-clean: #f8f9fa; }
+        :root { --accent: #60A5FA; --dark: #050505; --fire: #ff4500; --white-clean: #f8f9fa; }
         body, html { margin: 0; padding: 0; min-height: 100vh; background-color: var(--dark); font-family: 'Inter', sans-serif; color: #ffffff; overflow-x: hidden; user-select: none; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
         
         /* HUD DE CARGA AVANZADO */
         #scanning-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; backdrop-filter: blur(25px); }
-        .hud-box { width: 320px; height: 320px; border: 2px solid rgba(0, 229, 255, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
+        .hud-box { width: 320px; height: 320px; border: 2px solid rgba(96,165,250, 0.2); position: relative; border-radius: 40px; background: rgba(255,255,255,0.02); overflow: hidden; }
         .hud-line { position: absolute; width: 100%; height: 4px; background: var(--accent); top: 0; animation: scanLine 2.5s linear infinite; box-shadow: 0 0 30px var(--accent); }
         @keyframes scanLine { 0% { top: 0; } 100% { top: 100%; } }
 
@@ -55,7 +54,7 @@
         
         /* -- NUEVO: ESTILOS DINÁMICOS PARA EL CRONÓMETRO Y SORTEO -- */
         .time-badge.recepcionando { background: #facc15; color: #000; box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); animation: pulse 1.5s infinite; }
-        .time-badge.sorteado { background: var(--accent); color: #000; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
+        .time-badge.sorteado { background: var(--accent); color: #000; box-shadow: 0 0 20px rgba(96,165,250, 0.4); }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
         .delegate-msg { position: relative; z-index: 2; font-size: 9px; color: #aaa; text-transform: uppercase; font-weight: 700; max-width: 200px; margin-top: 10px; line-height: 1.4; }
@@ -66,13 +65,29 @@
         .data-grid { background: #f1f1f1; padding: 25px; border-radius: 30px; margin: 0 25px 25px; text-align: left; font-family: 'Share Tech Mono', monospace; }
         .turno-box { background: #000; color: var(--accent); padding: 15px; border-radius: 20px; font-weight: 900; text-transform: uppercase; font-size: 14px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
 
-        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; letter-spacing: 2px; }
-        .input-tech:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); }
+        .input-tech { width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(96,165,250,0.3); padding: 22px; border-radius: 20px; text-align: center; font-size: 26px; font-weight: 900; color: #fff; outline: none; transition: 0.3s; letter-spacing: 2px; }
+        .input-tech:focus { border-color: var(--accent); box-shadow: 0 0 20px rgba(96,165,250, 0.2); }
         
         #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
         .hidden-section { display: none !important; }
         @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } .asiento-display { font-size: 80px; } }
-    </style>
+    
+/* ===== TEMA PROFESIONAL (azul institucional) ===== */
+:root{--accent:#60A5FA;--dark:#0B1220;--surface:#111B2F;--line:rgba(148,163,184,.18)}
+html,body{background:#0B1220!important}
+.italic{font-style:normal!important}.font-black{font-weight:800!important}.tracking-tighter{letter-spacing:-.01em!important}
+.text-cyan-400,.text-cyan-600{color:#60A5FA!important}
+.bg-cyan-400{background:#60A5FA!important}.bg-cyan-400:hover{background:#93C5FD!important}
+.border-cyan-400,.border-l-cyan-400{border-color:#60A5FA!important}
+.from-cyan-400{--tw-gradient-from:#60A5FA!important}.to-cyan-600{--tw-gradient-to:#2563EB!important}
+.glass,.glass-panel{background:#111B2F!important;border:1px solid rgba(148,163,184,.18)!important;border-radius:16px!important;backdrop-filter:none!important}
+.main-wrapper{background:linear-gradient(180deg,#0B1220 0%,#0E182B 100%)!important}
+.turno-card{background:#111B2F!important;border-color:rgba(148,163,184,.18)!important;border-radius:16px!important}
+.turno-card.active{border-color:#60A5FA!important;box-shadow:0 0 0 1px rgba(96,165,250,.35)!important}
+.card-panorama{border-radius:16px!important}.card-panorama::before{background:rgba(11,18,32,.78)!important}
+.input-tech,.input-display{border-color:rgba(148,163,184,.3)!important;background:#0B1220!important;border-radius:12px!important}
+#globe-area,#globe-box,#globe-box-2{display:none!important}
+</style>
 </head>
 <body>
 
@@ -235,12 +250,15 @@
 
         let serverTimeOffset = 0;
 
+        function hoyLima(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+serverTimeOffset));}
+        function estadoEfectivo(est,fecha){est=est||'cerrado';return (est!=='cerrado'&&fecha&&fecha!==hoyLima())?'cerrado':est;}
         const Core = {
             alumno: null,
             config: {},
             currentTarde1Active: false,
             currentTarde2Active: false,
             currentNocheActive: false,
+            est: function(t){ return estadoEfectivo(this.config[t+'_estado'], this.config[t+'_fecha']); },
 
             init: function() { 
                 this.initThree('globe-box'); 
@@ -273,9 +291,9 @@
             checkSchedules: function() {
                 if (!this.config) return;
 
-                this.currentTarde1Active = (this.config.tarde1_estado === 'recepcionando' || this.config.tarde1_estado === 'sorteado');
-                this.currentTarde2Active = (this.config.tarde2_estado === 'recepcionando' || this.config.tarde2_estado === 'sorteado');
-                this.currentNocheActive = (this.config.noche_estado === 'recepcionando' || this.config.noche_estado === 'sorteado');
+                this.currentTarde1Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde1'));
+                this.currentTarde2Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde2'));
+                this.currentNocheActive = ['recepcionando','procesando','sorteado'].includes(this.est('noche'));
 
                 this.updateCardUI('tarde1', 'badge-m', 'card-m', 'time-badge-m');
                 this.updateCardUI('tarde2', 'badge-t', 'card-t', 'time-badge-t');
@@ -286,7 +304,7 @@
                 const b = document.getElementById(bid), c = document.getElementById(cid), t = document.getElementById(tid);
                 if(!b || !c || !t) return;
 
-                let estado = this.config[`${turno}_estado`] || 'cerrado';
+                let estado = this.est(turno);
                 let inicioRecepcion = this.config[`${turno}_inicio_recepcion`] || 0;
                 
                 // Obtenemos el tiempo exacto actual
@@ -321,6 +339,10 @@
                         b.innerText = "⌛ PROCESANDO...";
                         b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-orange-500/20 text-orange-400 border border-orange-500";
                     }
+                } else if (estado === 'procesando') {
+                    c.classList.remove('locked'); c.style.pointerEvents = "auto";
+                    t.innerText = "SORTEANDO..."; t.className = "time-badge";
+                    b.innerText = "⌛ PROCESANDO..."; b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-orange-500/20 text-orange-400 border border-orange-500";
                 } else if (estado === 'sorteado') {
                     c.classList.remove('locked'); c.style.pointerEvents = "auto";
                     
@@ -366,7 +388,7 @@
                 for (const s of steps) { 
                     msg.innerText = s.t; 
                     bar.style.width = s.p; 
-                    await new Promise(r => setTimeout(r, 1000)); 
+                    await new Promise(r => setTimeout(r, 120)); 
                 }
 
                 db.ref('alumnos/' + dni).once('value').then(snap => {
@@ -395,13 +417,13 @@
 
             handleNotRegistered: function(dni) {
                 Swal.fire({
-                    title: '<span style="color:#00E5FF">IDENTIDAD NO ENCONTRADA</span>',
+                    title: '<span style="color:#60A5FA">IDENTIDAD NO ENCONTRADA</span>',
                     html: `<div style="text-align: left; font-size: 14px; color: #ccc;">
                         <p>El DNI <b>${dni}</b> no figura en el padrón oficial actualizado.</p><br>
                         <b>Causas probables:</b><ul style="margin-left:20px; list-style:circle; margin-top:10px;">
                         <li>Error al escribir el DNI.</li><li>No completaste tu registro este ciclo.</li></ul></div>`,
                     icon: 'warning', background: '#050505', color: '#fff', 
-                    confirmButtonText: 'IR A REGISTRO', showCancelButton: true, cancelButtonText: 'REINTENTAR', confirmButtonColor: '#00E5FF'
+                    confirmButtonText: 'IR A REGISTRO', showCancelButton: true, cancelButtonText: 'REINTENTAR', confirmButtonColor: '#60A5FA'
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
             },
 
@@ -426,7 +448,7 @@
                 }
             },
 
-            initThree: function(id) {
+            initThree: function(id) { return;
                 const container = document.getElementById(id); if(!container) return; container.innerHTML = "";
                 const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
