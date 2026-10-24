@@ -129,6 +129,12 @@ html{background:#050505!important}body{background:transparent!important}
         </header>
 
         <main class="max-w-6xl mx-auto px-6 py-8 w-full flex-grow z-20">
+            <!-- COMUNICADO DE DELEGADO (sincronizado en vivo) -->
+            <div id="comunicado-box" class="hidden-section max-w-xl mx-auto mb-6 animate-fade-up" style="background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.55);border-left:5px solid #facc15;border-radius:16px;padding:12px 16px;box-shadow:0 0 25px rgba(250,204,21,.18);text-align:left">
+                <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-bullhorn" style="color:#facc15;font-size:13px"></i><span style="font-size:9px;font-weight:900;letter-spacing:3px;color:#facc15;text-transform:uppercase">Comunicado de delegado</span></div>
+                <p id="comunicado-texto" style="font-size:12px;font-weight:600;color:#fff;line-height:1.45;white-space:pre-line"></p>
+                <p id="comunicado-hasta" style="font-size:8px;color:#a3a3a3;margin-top:4px;text-transform:uppercase;letter-spacing:1px"></p>
+            </div>
             
             <!-- PASO 1 : INGRESO -->
             <div id="step-1" class="text-center animate-fade-up">
@@ -249,6 +255,35 @@ html{background:#050505!important}body{background:transparent!important}
             currentTarde1Active: false,
             currentTarde2Active: false,
             currentNocheActive: false,
+            _tryOpen: {}, comunicado: null,
+            // Apertura programada: usa la hora del SERVIDOR (las reglas de Firebase la validan), así no se puede adelantar cambiando la hora del celular.
+            autoOpen: function() {
+                const cfg = this.config || {};
+                const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(Date.now() + serverTimeOffset)).split(':');
+                const mins = (parseInt(p[0], 10) % 24) * 60 + parseInt(p[1], 10);
+                ['tarde1', 'tarde2', 'noche'].forEach(t => {
+                    const pm = cfg['prog_min_' + t];
+                    if (cfg['prog_' + t] !== true || typeof pm !== 'number') return;
+                    if (this.est(t) !== 'cerrado' || cfg[t + '_fecha'] === hoyLima()) return;
+                    if (mins < pm || mins >= pm + 15) return;
+                    if (Date.now() - (this._tryOpen[t] || 0) < 20000) return;
+                    this._tryOpen[t] = Date.now();
+                    db.ref('sistema/config').update({
+                        [t + '_inicio_recepcion']: firebase.database.ServerValue.TIMESTAMP,
+                        [t + '_fecha']: hoyLima(),
+                        [t + '_estado']: 'recepcionando'
+                    }).catch(() => {});
+                });
+            },
+            renderComunicado: function() {
+                const b = document.getElementById('comunicado-box'); if (!b) return;
+                const c = this.comunicado;
+                const ok = c && c.texto && (!c.hasta || c.hasta > Date.now() + serverTimeOffset);
+                if (!ok) { b.classList.add('hidden-section'); return; }
+                document.getElementById('comunicado-texto').textContent = c.texto;
+                document.getElementById('comunicado-hasta').textContent = c.hasta ? ('Vigente hasta las ' + new Date(c.hasta).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })) : '';
+                b.classList.remove('hidden-section');
+            },
             est: function(t){ return estadoEfectivo(this.config[t+'_estado'], this.config[t+'_fecha']); },
 
             init: function() { 
@@ -273,6 +308,7 @@ html{background:#050505!important}body{background:transparent!important}
             },
 
             listenFirebase: function() {
+                db.ref('sistema/comunicado').on('value', snap => { this.comunicado = snap.val(); this.renderComunicado(); });
                 db.ref('sistema/config').on('value', snap => {
                     this.config = snap.val() || {};
                     this.checkSchedules();
@@ -281,6 +317,7 @@ html{background:#050505!important}body{background:transparent!important}
 
             checkSchedules: function() {
                 if (!this.config) return;
+                this.autoOpen(); this.renderComunicado();
 
                 this.currentTarde1Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde1'));
                 this.currentTarde2Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde2'));
