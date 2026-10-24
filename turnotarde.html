@@ -496,23 +496,43 @@ html{background:#050505!important}body{background:transparent!important}
                     overlay.style.display = 'none';
                     
                     // NUEVO FLUJO: ALERTA DE ÉXITO + EXPULSIÓN A TICKET.HTML (Código 2)
-                    Swal.fire({
-                        title: '¡SOLICITUD ENVIADA!',
-                        html: '<div class="text-left text-sm leading-relaxed text-gray-300">Has entrado al sorteo oficial.<br><br><span class="text-cyan-400 font-bold uppercase text-[11px]"><i class="fa-solid fa-shield-halved"></i> Medida Anti-Saturación:</span><br>Serás redirigido a la pantalla principal para mantener el sistema estable.<br><br><b>Vuelve a ingresar a tu turno cuando el cronómetro termine para ver tu resultado.</b></div>',
-                        icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF', confirmButtonText: 'ENTENDIDO, VOLVER AL INICIO',
-                        allowOutsideClick: false
-                    }).then(() => {
-                        window.location.replace('ticket.html');
-                    });
+                    this.mostrarExitoSolicitud();
 
                 } catch (e) {
-                    overlay.style.display = 'none';
                     console.error(e);
-                    const detalle = (e && (e.code === 'PERMISSION_DENIED' || e.code === 'database/permission-denied'))
-                        ? 'La solicitud no se aceptó. Puede que ya hayas enviado una para este turno o que el delegado haya cerrado la recepción.'
-                        : 'Hubo un problema de conexión. Revisa internet e inténtalo una sola vez.';
-                    Swal.fire('Solicitud no aceptada', detalle, 'warning');
+                    const denegado = e && (e.code === 'PERMISSION_DENIED' || e.code === 'database/permission-denied');
+                    if (denegado) {
+                        // Ya pasaron las verificaciones (padrón, abordaje, bloqueo). Si la recepción sigue abierta, lo único que la base
+                        // rechaza es volver a enviar una solicitud que ya estaba registrada: el alumno SÍ está en el sorteo, así que se acepta.
+                        let sigueAbierta = false;
+                        try {
+                            const cs = await db.ref('sistema/config').once('value');
+                            const d = cs.val() || {};
+                            sigueAbierta = estadoEfectivo(d[`${turnoActivoID}_estado`], d[`${turnoActivoID}_fecha`]) === 'recepcionando';
+                        } catch (_) {}
+                        if (sigueAbierta) {
+                            overlay.style.display = 'none';
+                            sessionStorage.setItem(`unac_solicitud_${this.getFechaID()}_${turnoActivoID}_${typedDni}`, 'true');
+                            this.mostrarExitoSolicitud();
+                            return;
+                        }
+                        overlay.style.display = 'none';
+                        return Swal.fire({ title: 'Plazo terminado', text: 'La recepción de solicitudes de este turno ya terminó. Vuelve al portal y revisa tu resultado cuando se publique el sorteo.', icon: 'info', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF' });
+                    }
+                    overlay.style.display = 'none';
+                    Swal.fire('Solicitud no aceptada', 'Hubo un problema de conexión (' + ((e && (e.code || e.message)) || 'desconocido') + '). Revisa internet e inténtalo de nuevo.', 'warning');
                 }
+            },
+
+            mostrarExitoSolicitud: function() {
+                Swal.fire({
+                    title: '¡SOLICITUD ENVIADA!',
+                    html: '<div class="text-left text-sm leading-relaxed text-gray-300">Has entrado al sorteo oficial.<br><br><span class="text-cyan-400 font-bold uppercase text-[11px]"><i class="fa-solid fa-shield-halved"></i> Medida Anti-Saturación:</span><br>Serás redirigido a la pantalla principal para mantener el sistema estable.<br><br><b>Vuelve a ingresar a tu turno cuando el cronómetro termine para ver tu resultado.</b></div>',
+                    icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF', confirmButtonText: 'ENTENDIDO, VOLVER AL INICIO',
+                    allowOutsideClick: false
+                }).then(() => {
+                    window.location.replace('ticket.html');
+                });
             },
 
             renderFinal: function(alu, dni, ticket) {
