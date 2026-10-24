@@ -885,9 +885,11 @@ html{background:#050505!important}body{background:transparent!important}
                     return;
                 }
                 const h = configGlobal[`hora_${t}`];
-                if (configGlobal[`prog_${t}`] && h && raw === 'cerrado' && fecha !== hoy) {
+                if (configGlobal[`prog_${t}`] && h && raw === 'cerrado') {
                     const hm = parseInt(h.split(':')[0], 10) * 60 + parseInt(h.split(':')[1], 10);
-                    if (ahora >= hm && ahora < hm + 15) abrirRecepcion(t).catch(() => {});
+                    const nowMs = Date.now() + serverTimeOffset;
+                    const sched = nowMs - ((nowMs - 18000000) % 86400000) + hm * 60000;
+                    if (ahora >= hm && ahora < hm + 15 && (configGlobal[`${t}_inicio_recepcion`] || 0) < sched) abrirRecepcion(t).catch(() => {});
                 }
             });
         }
@@ -950,6 +952,7 @@ html{background:#050505!important}body{background:transparent!important}
                 const btnAbrir = document.getElementById(`btn-abrir-${t}`);
                 const btnSortear = document.getElementById(`btn-sortear-${t}`);
                 const btnCerrar = document.getElementById(`btn-cerrar-${t}`);
+                btnCerrar.innerHTML = '<i class="fa-solid fa-lock"></i> Cerrar Bus';
                 
                 let estado = configGlobal[`${t}_estado`] || 'cerrado';
                 let inicioRec = configGlobal[`${t}_inicio_recepcion`] || 0;
@@ -999,8 +1002,9 @@ html{background:#050505!important}body{background:transparent!important}
                     
                     btnAbrir.style.display = 'none';
                     btnSortear.style.display = 'none';
-                    // Una vez sorteado, el estado queda bloqueado para evitar reabrir y sortear de nuevo.
-                    btnCerrar.style.display = 'none';
+                    // Tras el sorteo se puede DESACTIVAR el turno (la lista y los escaneos se conservan).
+                    btnCerrar.style.display = 'flex';
+                    btnCerrar.innerHTML = '<i class="fa-solid fa-power-off"></i> Desactivar Turno';
                     
                     detenerCronometro(t);
                     timerEl.style.display = 'block';
@@ -1032,7 +1036,10 @@ html{background:#050505!important}body{background:transparent!important}
                     showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
-                        abrirRecepcion(t).then(ok => notificarFlash(ok ? "RECEPCIÓN INICIADA" : "NO SE PUDO ABRIR", ok ? "success" : "error", ok ? "Cronómetro iniciado" : "El turno ya fue abierto o sorteado hoy")).catch(() => notificarFlash("ERROR", "error", "Firebase rechazó la apertura"));
+                        db.ref(`sistema/viajes/${getFechaID()}/${t}/contador`).once('value').then(sn => {
+                            if (sn.exists()) return Swal.fire({ title: 'Turno ya sorteado hoy', text: 'Para volver a sortear este turno primero usa "Reset Total".', icon: 'info', background: '#111', color: '#fff' });
+                            return abrirRecepcion(t).then(ok => notificarFlash(ok ? "RECEPCIÓN INICIADA" : "NO SE PUDO ABRIR", ok ? "success" : "error", ok ? "Cronómetro iniciado" : "El turno ya fue abierto o sorteado hoy"));
+                        }).catch(() => notificarFlash("ERROR", "error", "Firebase rechazó la apertura"));
                     }
                 });
             } 
@@ -1053,7 +1060,7 @@ html{background:#050505!important}body{background:transparent!important}
             } 
             else if (accion === 'cerrar') {
                 Swal.fire({
-                    title: '¿Cerrar Turno?', text: 'La recepción se desactivará y nadie más podrá solicitar ticket, pero tu lista guardada NO se borrará.', icon: 'warning',
+                    title: estadoActual === 'sorteado' ? '¿Desactivar Turno?' : '¿Cerrar Turno?', text: estadoActual === 'sorteado' ? 'El turno quedará desactivado: los alumnos ya no podrán abrir su ticket desde la web. La lista sorteada y los escaneos se conservan. Hazlo cuando todos hayan abordado.' : 'La recepción se desactivará y nadie más podrá solicitar ticket, pero tu lista guardada NO se borrará.', icon: 'warning',
                     showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Cerrar Turno', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
@@ -1083,6 +1090,8 @@ html{background:#050505!important}body{background:transparent!important}
                     return;
                 }
 
+                const yaSort = await db.ref(`sistema/viajes/${fechaID}/${turno}/contador`).once('value');
+                if (yaSort.exists()) { await estadoRef.set('sorteado'); notificarFlash('YA SORTEADO', 'warning', 'Este turno ya se sorteó hoy'); return; }
                 notificarFlash('CALCULANDO...', 'warning', 'Prioridad según los tickets de ayer');
 
                 const [snapSol, snapHist, snapAyer] = await Promise.all([
