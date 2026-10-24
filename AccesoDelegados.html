@@ -17,7 +17,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
 
     <style>
         :root { --accent: #00E5FF; --dark: #050505; --red-bg: #ef4444; --green-bg: #10b981; }
@@ -79,7 +78,13 @@
         
         .permisos-checkboxes label { display: flex; align-items: center; font-size: 10px; font-weight: bold; text-transform: uppercase; color: #aaa; margin-bottom: 10px; cursor: pointer; }
         .permisos-checkboxes input { width: 16px; height: 16px; margin: 0 10px 0 0; accent-color: var(--accent); }
-    </style>
+    
+/* ===== FONDO ANIMADO (diseño original conservado) ===== */
+html{background:#050505!important}body{background:transparent!important}
+#bg-fx{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none}
+#bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;opacity:.35;pointer-events:none}
+.main-wrapper{background:radial-gradient(circle at 50% 50%,rgba(5,5,5,.10) 0%,rgba(5,5,5,.60) 100%)!important}
+</style>
 </head>
 <body>
 
@@ -418,10 +423,35 @@
         const DELEGATE_EMAIL_DOMAIN = '@delegados.unac.edu.pe';
         // Las altas y bajas de cuentas de Firebase Authentication se ejecutan en servidor.
         // La función adminManageDelegate valida el UID del administrador antes de operar.
-        const adminFunctions = firebase.app().functions('us-central1');
-        const adminManageDelegate = adminFunctions.httpsCallable('adminManageDelegate');
 
-        function emailDelegado(dni) { return `${dni}${DELEGATE_EMAIL_DOMAIN}`; }
+        function hoyLima(){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+serverTimeOffset));}
+        function estadoEfectivo(est,fecha){est=est||'cerrado';return (est!=='cerrado'&&fecha&&fecha!==hoyLima())?'cerrado':est;}
+        let configCargada = false;
+        function emailDelegado(dni, ver = 1) { return ver > 1 ? `${dni}.v${ver}${DELEGATE_EMAIL_DOMAIN}` : `${dni}${DELEGATE_EMAIL_DOMAIN}`; }
+        function esEmailDeDelegado(email, dni) { return !!email && email.endsWith(DELEGATE_EMAIL_DOMAIN) && email.split('@')[0].split('.')[0] === dni; }
+        // Crea la cuenta con una app secundaria: no cierra la sesión del administrador y NO necesita Cloud Functions ni terminal.
+        async function crearCuentaDelegado(dni, pass, ver) {
+            let app; try { app = firebase.app('sec'); } catch (_) { app = firebase.initializeApp(firebaseConfig, 'sec'); }
+            const a = app.auth();
+            try { const cred = await a.createUserWithEmailAndPassword(emailDelegado(dni, ver), pass); return cred.user.uid; }
+            finally { try { await a.signOut(); } catch (_) {} }
+        }
+        // Apertura atómica: primero inicio+fecha (sin que nadie vea el turno abierto con hora vieja) y luego el estado.
+        async function abrirRecepcion(t) {
+            if ((configGlobal[`${t}_estado`] || 'cerrado') !== 'cerrado') return false;
+            await db.ref('sistema/config').update({ [`${t}_inicio_recepcion`]: firebase.database.ServerValue.TIMESTAMP, [`${t}_fecha`]: getFechaID() });
+            const r = await db.ref(`sistema/config/${t}_estado`).transaction(c => (c === null || c === 'cerrado' || c === 'sorteado') ? 'recepcionando' : undefined);
+            return r.committed;
+        }
+        const rescates = {};
+        function programarRescate(t) {
+            if (rescates[t]) return;
+            rescates[t] = setTimeout(() => {
+                rescates[t] = null;
+                if (!isDrawing && configGlobal[`${t}_estado`] === 'procesando' && misPermisos.includes(t))
+                    db.ref(`sistema/config/${t}_estado`).set('recepcionando').catch(() => {});
+            }, 20000);
+        }
         function esAdminAutenticado() { return !!auth.currentUser && auth.currentUser.uid === ADMIN_AUTH_UID; }
 
         const soundOk = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -476,7 +506,7 @@
                 const tokenGuardado = localStorage.getItem('unac_session_token') || '';
                 const identidadCorrecta = !!user && (dniGuardado === ADMIN_DNI
                     ? user.uid === ADMIN_AUTH_UID
-                    : user.email === emailDelegado(dniGuardado));
+                    : esEmailDeDelegado(user.email, dniGuardado));
                 const login = document.getElementById('login-container');
                 const scanner = document.getElementById('scanner-container');
                 if (user && dniGuardado && tokenGuardado && identidadCorrecta) {
@@ -520,7 +550,10 @@
 
             let dni = esCorreo ? ADMIN_DNI : identificador;
             try {
-                const email = esCorreo ? identificador.toLowerCase() : (dni === ADMIN_DNI ? ADMIN_EMAIL : emailDelegado(dni));
+                let email;
+                if (esCorreo) email = identificador.toLowerCase();
+                else if (dni === ADMIN_DNI) email = ADMIN_EMAIL;
+                else { let ver = 1; try { ver = (await db.ref(`sistema/delegados_auth/login_map/${dni}`).once('value')).val() || 1; } catch (_) {} email = emailDelegado(dni, ver); }
                 const credential = await auth.signInWithEmailAndPassword(email, pass);
 
                 // El administrador se reconoce por UID, no por el correo que pudo haber cambiado en Firebase.
@@ -669,16 +702,27 @@
             }
 
             try {
-                const response = await adminManageDelegate({
-                    action: 'save',
-                    dni,
-                    password: pass || null,
-                    permisos,
-                    activo
-                });
-                const result = response && response.data ? response.data : {};
-                const profile = result.profile;
-                if (profile) subDelegadosData[dni] = profile;
+                const prev = perfilExistente; let uid = prev && prev.uid; let ver = (prev && prev.ver) || 1; const cambiaClave = !!pass;
+                if (cambiaClave) {
+                    if (uid) ver++;
+                    let nuevo = null;
+                    for (let i = 0; i < 6 && !nuevo; i++) {
+                        try { nuevo = await crearCuentaDelegado(dni, pass, ver); }
+                        catch (err) { if (err.code === 'auth/email-already-in-use') ver++; else throw err; }
+                    }
+                    if (!nuevo) throw new Error('No se pudo crear la cuenta en Firebase Authentication.');
+                    uid = nuevo;
+                }
+                if (!uid) throw new Error('Este delegado aún no tiene cuenta: escriba una contraseña de al menos 6 caracteres.');
+                const permObj = {}; permisos.forEach(p => permObj[p] = true);
+                const profile = { uid, activo, permisos, ver };
+                const up = {};
+                up[`sistema/delegados_auth/sub_users/${dni}`] = profile;
+                up[`sistema/delegados_auth/uid_access/${uid}`] = { activo, dni, permisos: permObj };
+                up[`sistema/delegados_auth/login_map/${dni}`] = ver;
+                if (cambiaClave && prev && prev.uid && prev.uid !== uid) { up[`sistema/delegados_auth/uid_access/${prev.uid}`] = null; up[`sistema/delegados_auth/sesiones/${dni}/token`] = 'EXPULSADO'; }
+                await db.ref().update(up);
+                subDelegadosData[dni] = profile;
                 document.getElementById('cfg-sub-pass').value = '';
                 document.getElementById('cfg-sub-pass').placeholder = 'Dejar vacío para conservar contraseña';
                 renderListaDelegados();
@@ -711,12 +755,15 @@
             if (dni === ADMIN_DNI) return notificarFlash('OPERACIÓN BLOQUEADA', 'error', 'La cuenta administradora no se puede eliminar desde aquí');
             const res = await Swal.fire({
                 title: '¿Eliminar cuenta?',
-                text: `Se eliminará la cuenta Firebase Authentication del DNI ${dni} y su acceso al panel. Los tickets, solicitudes, asistencias e historiales se conservarán.`,
+                text: `Se revocará todo el acceso al panel del DNI ${dni}. Los tickets, solicitudes, asistencias e historiales se conservarán.`,
                 icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, eliminar cuenta', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
             });
             if (!res.isConfirmed) return;
             try {
-                await adminManageDelegate({ action: 'delete', dni });
+                const pf = subDelegadosData[dni] || {}; const up = {};
+                up[`sistema/delegados_auth/sub_users/${dni}`] = null; up[`sistema/delegados_auth/login_map/${dni}`] = null; up[`sistema/delegados_auth/sesiones/${dni}`] = null;
+                if (pf.uid) up[`sistema/delegados_auth/uid_access/${pf.uid}`] = null;
+                await db.ref().update(up);
                 delete subDelegadosData[dni];
                 renderListaDelegados();
                 if (document.getElementById('cfg-sub-dni').value.trim() === dni) limpiarFormDelegado();
@@ -797,25 +844,24 @@
 
         // EVALUACIÓN DE APERTURAS (SÓLO ABRE AUTO, NO BORRA NADA)
         function evaluarTurnosAutomaticos() {
-            const currentMins = getPeruTimeMins();
-            const checkTime = (timeStr) => { if(!timeStr) return 9999; return parseInt(timeStr.split(':')[0], 10) * 60 + parseInt(timeStr.split(':')[1], 10); };
-
-            // EVALUACIÓN DE APERTURAS
+            if (!configCargada) return;
+            const hoy = getFechaID(), ahora = getPeruTimeMins();
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
-                let estadoActual = configGlobal[`${t}_estado`] || 'cerrado';
-                if (misPermisos.includes(t) && configGlobal[`prog_${t}`] && configGlobal[`hora_${t}`] && currentMins === checkTime(configGlobal[`hora_${t}`]) && estadoActual === 'cerrado') {
-                    db.ref(`sistema/config/${t}_estado`).set('recepcionando').catch(() => {});
-                    db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP).catch(() => {});
+                if (!misPermisos.includes(t)) return;
+                const raw = configGlobal[`${t}_estado_raw`] || 'cerrado', fecha = configGlobal[`${t}_fecha`] || '';
+                // Día nuevo: limpia el estado del día anterior (antes quedaba 'sorteado' y bloqueaba todo)
+                if (raw !== 'cerrado' && fecha !== hoy) {
+                    db.ref('sistema/config').update({ [`${t}_estado`]: 'cerrado', [`${t}_inicio_recepcion`]: 0 }).catch(() => {});
+                    return;
+                }
+                const h = configGlobal[`hora_${t}`];
+                if (configGlobal[`prog_${t}`] && h && raw === 'cerrado' && fecha !== hoy) {
+                    const hm = parseInt(h.split(':')[0], 10) * 60 + parseInt(h.split(':')[1], 10);
+                    if (ahora >= hm && ahora < hm + 15) abrirRecepcion(t).catch(() => {});
                 }
             });
-
-            // RESETEO DE MEDIA NOCHE PARA EL DÍA SIGUIENTE
-            if (currentMins === 0 || currentMins === 1) {
-                if (misPermisos.includes('tarde1') && configGlobal.tarde1_estado === 'cerrado') db.ref('sistema/config/tarde1_estado').set('cerrado').catch(() => {});
-                if (misPermisos.includes('tarde2') && configGlobal.tarde2_estado === 'cerrado') db.ref('sistema/config/tarde2_estado').set('cerrado').catch(() => {});
-                if (misPermisos.includes('noche') && configGlobal.noche_estado === 'cerrado') db.ref('sistema/config/noche_estado').set('cerrado').catch(() => {});
-            }
         }
+
 
         // CRONÓMETRO DE 2 MINUTOS
         function iniciarCronometroPanel(turno, inicioTimestamp) {
@@ -886,6 +932,7 @@
                 }
                 
                 if (estado === 'procesando') {
+                    programarRescate(t);
                     card.classList.add('active');
                     badge.className = 'badge-status badge-on';
                     badge.innerText = '🟡 SORTEO EN PROCESO';
@@ -955,9 +1002,7 @@
                     showCancelButton: true, confirmButtonColor: '#10b981', confirmButtonText: 'Sí, Abrir', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
                 }).then((res) => {
                     if(res.isConfirmed) {
-                        db.ref(`sistema/config/${t}_estado`).set('recepcionando');
-                        db.ref(`sistema/config/${t}_inicio_recepcion`).set(firebase.database.ServerValue.TIMESTAMP);
-                        notificarFlash("RECEPCIÓN INICIADA", "success", "Cronómetro iniciado");
+                        abrirRecepcion(t).then(ok => notificarFlash(ok ? "RECEPCIÓN INICIADA" : "NO SE PUDO ABRIR", ok ? "success" : "error", ok ? "Cronómetro iniciado" : "El turno ya fue abierto o sorteado hoy")).catch(() => notificarFlash("ERROR", "error", "Firebase rechazó la apertura"));
                     }
                 });
             } 
@@ -1002,7 +1047,7 @@
                 const estadoRef = db.ref(`sistema/config/${turno}_estado`);
 
                 // Bloqueo atómico para evitar que dos paneles sorteen el mismo turno a la vez.
-                const lock = await estadoRef.transaction(current => current === 'recepcionando' ? 'procesando' : current);
+                const lock = await estadoRef.transaction(current => current === 'recepcionando' ? 'procesando' : undefined);
                 if (!lock.committed) {
                     notificarFlash('SORTEO NO INICIADO', 'warning', 'El turno ya no está recepcionando');
                     return;
@@ -1065,10 +1110,11 @@
                 });
                 updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
                 updates[`sistema/config/${turno}_estado`] = 'sorteado';
+                updates[`sistema/config/${turno}_sorteo_ts`] = firebase.database.ServerValue.TIMESTAMP;
 
                 // Un solo update publica tickets, historial acumulado y estado final.
                 await db.ref().update(updates);
-                await actualizarListaMaestraEnVivo();
+                
 
                 const priorizados = ganadores.filter(g => !g.tuvoTicketAyer).length;
                 const conTicketAyer = ganadores.length - priorizados;
@@ -1129,7 +1175,7 @@
             scanner.render(onScanSuccess);
 
             db.ref('.info/serverTimeOffset').on('value', snap => { serverTimeOffset = snap.val() || 0; });
-            setInterval(evaluarTurnosAutomaticos, 15000);
+            setInterval(evaluarTurnosAutomaticos, 8000); setTimeout(evaluarTurnosAutomaticos, 2500);
 
             /*
              * LISTA OFICIAL EN VIVO
@@ -1146,23 +1192,24 @@
             db.ref('sistema/config').on('value', snap => {
                 const d = snap.val() || {};
 
+                configCargada = true;
                 configGlobal.cupos = Number(d.cupos_maximos) || 40;
 
                 configGlobal.prog_tarde1 = d.prog_tarde1 || false;
                 configGlobal.hora_tarde1 = d.hora_tarde1 || '';
-                configGlobal.tarde1_estado = d.tarde1_estado || 'cerrado';
+                configGlobal.tarde1_estado_raw = d.tarde1_estado || 'cerrado'; configGlobal.tarde1_fecha = d.tarde1_fecha || ''; configGlobal.tarde1_estado = estadoEfectivo(d.tarde1_estado, d.tarde1_fecha);
                 configGlobal.limite_tarde1 = d.limite_tarde1 || '';
                 configGlobal.tarde1_inicio_recepcion = d.tarde1_inicio_recepcion || 0;
 
                 configGlobal.prog_tarde2 = d.prog_tarde2 || false;
                 configGlobal.hora_tarde2 = d.hora_tarde2 || '';
-                configGlobal.tarde2_estado = d.tarde2_estado || 'cerrado';
+                configGlobal.tarde2_estado_raw = d.tarde2_estado || 'cerrado'; configGlobal.tarde2_fecha = d.tarde2_fecha || ''; configGlobal.tarde2_estado = estadoEfectivo(d.tarde2_estado, d.tarde2_fecha);
                 configGlobal.limite_tarde2 = d.limite_tarde2 || '';
                 configGlobal.tarde2_inicio_recepcion = d.tarde2_inicio_recepcion || 0;
 
                 configGlobal.prog_noche = d.prog_noche || false;
                 configGlobal.hora_noche = d.hora_noche || '';
-                configGlobal.noche_estado = d.noche_estado || 'cerrado';
+                configGlobal.noche_estado_raw = d.noche_estado || 'cerrado'; configGlobal.noche_fecha = d.noche_fecha || ''; configGlobal.noche_estado = estadoEfectivo(d.noche_estado, d.noche_fecha);
                 configGlobal.limite_noche = d.limite_noche || '';
                 configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
 
@@ -1258,7 +1305,7 @@
                  * registros sorteados.
                  */
                 await Promise.all(
-                    [...dnisConTicket].map(async dni => {
+                    [...dnisConTicket].filter(d => !directorioAlumnos[d]).map(async dni => {
                         try {
                             const snapAlumno = await db.ref(`alumnos/${dni}`).once('value');
                             directorioAlumnos[dni] = snapAlumno.val() || {};
@@ -1443,7 +1490,7 @@
 
             if (turnoDelTicket && configGlobal[`limite_${turnoDelTicket}`]) {
                 const now = new Date(Date.now() + serverTimeOffset);
-                const currentMins = now.getHours() * 60 + now.getMinutes();
+                const currentMins = getPeruTimeMins();
                 const limiteStr = configGlobal[`limite_${turnoDelTicket}`];
                 const limiteMins = parseInt(limiteStr.split(':')[0], 10) * 60 + parseInt(limiteStr.split(':')[1], 10);
                 
@@ -1632,5 +1679,19 @@
             f.style.display = 'block'; setTimeout(() => f.style.display = 'none', 2500);
         }
     </script>
+<canvas id="bg-fx"></canvas>
+<!-- VIDEO OPCIONAL: sube un archivo llamado fondo.mp4 junto a este HTML y se verá automáticamente -->
+<video id="bg-video" autoplay muted loop playsinline preload="auto"><source src="fondo.mp4" type="video/mp4"></video>
+<script>
+(function(){var c=document.getElementById('bg-fx');if(!c)return;var x=c.getContext('2d'),W,H,P=[],N=window.innerWidth<700?38:70,run=true;
+function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();addEventListener('resize',rs);
+for(var i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45,r:Math.random()*1.6+.6});
+document.addEventListener('visibilitychange',function(){run=!document.hidden;if(run)f()});
+function f(){if(!run)return;x.clearRect(0,0,W,H);var g=x.createRadialGradient(W*.5,H*.4,0,W*.5,H*.4,Math.max(W,H)*.8);g.addColorStop(0,'rgba(0,229,255,.10)');g.addColorStop(1,'rgba(5,5,5,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+for(var i=0;i<N;i++){var p=P[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fillStyle='rgba(0,229,255,.7)';x.fill();
+for(var j=i+1;j<N;j++){var q=P[j],dx=p.x-q.x,dy=p.y-q.y,d=dx*dx+dy*dy;if(d<14000){x.strokeStyle='rgba(0,229,255,'+(.22*(1-d/14000))+')';x.lineWidth=.7;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}}
+requestAnimationFrame(f)}f()})();
+</script>
 </body>
 </html>
