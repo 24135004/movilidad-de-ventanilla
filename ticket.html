@@ -129,14 +129,6 @@ html{background:#050505!important}body{background:transparent!important}
         </header>
 
         <main class="max-w-6xl mx-auto px-6 py-8 w-full flex-grow z-20">
-            <!-- COMUNICADO DE DELEGADO (sincronizado en vivo) -->
-            <div id="comunicado-box" class="hidden-section max-w-xl mx-auto mb-6 animate-fade-up" style="background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.55);border-left:5px solid #facc15;border-radius:16px;padding:12px 16px;box-shadow:0 0 25px rgba(250,204,21,.18);text-align:left">
-                <div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-bullhorn" style="color:#facc15;font-size:13px"></i><span style="font-size:9px;font-weight:900;letter-spacing:3px;color:#facc15;text-transform:uppercase">Comunicado de delegado</span></div>
-                <p id="comunicado-texto" style="font-size:12px;font-weight:600;color:#fff;line-height:1.45;white-space:pre-line"></p>
-                <img id="comunicado-img" alt="Comunicado" style="display:none;width:100%;max-height:260px;object-fit:contain;border-radius:12px;margin-top:8px;background:rgba(0,0,0,.25)">
-                <p id="comunicado-hasta" style="font-size:8px;color:#a3a3a3;margin-top:4px;text-transform:uppercase;letter-spacing:1px"></p>
-            </div>
-            
             <!-- PASO 1 : INGRESO -->
             <div id="step-1" class="text-center animate-fade-up">
                 <h1 class="text-5xl md:text-6xl font-black uppercase italic tracking-tighter mb-4 leading-none">Tickets <span class="text-cyan-400">Oficiales</span></h1>
@@ -285,7 +277,12 @@ html{background:#050505!important}body{background:transparent!important}
                 const b = document.getElementById('comunicado-box'); if (!b) return;
                 const c = this.comunicado;
                 const ok = c && (c.texto || c.imagen) && (!c.hasta || c.hasta > Date.now() + serverTimeOffset);
-                if (!ok) { b.classList.add('hidden-section'); return; }
+                if (!ok) { b.classList.add('hidden-section'); this._comKey = null; return; }
+                const key = String(c.ts || '') + '|' + (c.texto || '') + '|' + (c.imagen ? c.imagen.length : 0);
+                // Si el usuario ya lo cerró en esta visita y no cambió, no se vuelve a mostrar hasta recargar la web.
+                if (this._comCerrado === key) { b.classList.add('hidden-section'); return; }
+                if (this._comKey === key) return; // ya está en pantalla; no reiniciar la cuenta de 3 s
+                this._comKey = key; this._comCerrado = null;
                 const txt = document.getElementById('comunicado-texto');
                 txt.textContent = c.texto || ''; txt.style.display = c.texto ? '' : 'none';
                 const im = document.getElementById('comunicado-img');
@@ -294,6 +291,23 @@ html{background:#050505!important}body{background:transparent!important}
                 else { if (this._imgShown) { im.removeAttribute('src'); this._imgShown = null; } im.style.display = 'none'; }
                 document.getElementById('comunicado-hasta').textContent = c.hasta ? ('Vigente hasta las ' + new Date(c.hasta).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })) : '';
                 b.classList.remove('hidden-section');
+                // La X se habilita a los 3 segundos
+                const x = document.getElementById('comunicado-x'), esp = document.getElementById('comunicado-espera');
+                x.disabled = true; x.style.opacity = '.35'; x.style.cursor = 'not-allowed';
+                clearInterval(this._comTimer);
+                let seg = 3; esp.textContent = 'Podrás cerrarlo en ' + seg + 's';
+                this._comTimer = setInterval(() => {
+                    seg--;
+                    if (seg > 0) { esp.textContent = 'Podrás cerrarlo en ' + seg + 's'; return; }
+                    clearInterval(this._comTimer);
+                    esp.textContent = '';
+                    x.disabled = false; x.style.opacity = '1'; x.style.cursor = 'pointer';
+                }, 1000);
+            },
+            cerrarComunicado: function() {
+                const x = document.getElementById('comunicado-x'); if (x && x.disabled) return;
+                this._comCerrado = this._comKey;
+                document.getElementById('comunicado-box').classList.add('hidden-section');
             },
             est: function(t){ return estadoEfectivo(this.config[t+'_estado'], this.config[t+'_fecha']); },
 
@@ -540,5 +554,17 @@ x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fillStyle='rgba(0,229,255,.7)';x.fill
 for(var j=i+1;j<N;j++){var q=P[j],dx=p.x-q.x,dy=p.y-q.y,d=dx*dx+dy*dy;if(d<14000){x.strokeStyle='rgba(0,229,255,'+(.22*(1-d/14000))+')';x.lineWidth=.7;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}}
 requestAnimationFrame(f)}f()})();
 </script>
+    <!-- COMUNICADO DE DELEGADO (ventana emergente sobre la vista, sincronizado en vivo) -->
+    <div id="comunicado-box" class="hidden-section" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px">
+        <div style="position:relative;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;background:#0b0f19;border:1px solid rgba(250,204,21,.55);border-top:5px solid #facc15;border-radius:20px;padding:22px 18px 16px;box-shadow:0 0 45px rgba(250,204,21,.25);text-align:left">
+            <button id="comunicado-x" type="button" onclick="Core.cerrarComunicado()" disabled aria-label="Cerrar comunicado" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:1px solid rgba(250,204,21,.6);background:rgba(250,204,21,.12);color:#facc15;font-size:16px;cursor:not-allowed;opacity:.35;transition:opacity .3s"><i class="fa-solid fa-xmark"></i></button>
+            <div class="flex items-center gap-2 mb-2" style="padding-right:40px"><i class="fa-solid fa-bullhorn" style="color:#facc15;font-size:14px"></i><span style="font-size:10px;font-weight:900;letter-spacing:3px;color:#facc15;text-transform:uppercase">Comunicado de delegado</span></div>
+            <p id="comunicado-texto" style="font-size:13px;font-weight:600;color:#fff;line-height:1.5;white-space:pre-line"></p>
+            <img id="comunicado-img" alt="Comunicado" style="display:none;width:100%;max-height:50vh;object-fit:contain;border-radius:12px;margin-top:10px;background:rgba(0,0,0,.25)">
+            <p id="comunicado-hasta" style="font-size:8px;color:#a3a3a3;margin-top:8px;text-transform:uppercase;letter-spacing:1px"></p>
+            <p id="comunicado-espera" style="font-size:9px;color:#facc15;margin-top:6px;text-transform:uppercase;letter-spacing:1px;text-align:center"></p>
+        </div>
+    </div>
+
 </body>
 </html>
