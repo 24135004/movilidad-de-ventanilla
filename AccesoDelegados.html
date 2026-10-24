@@ -205,6 +205,21 @@ html{background:#050505!important}body{background:transparent!important}
         </div>
     </div>
 
+    <!-- MODAL COMUNICADO -->
+    <div id="modal-comunicado" class="modal-overlay">
+        <div class="glass p-6 w-[92%] max-w-sm relative max-h-[92vh] overflow-y-auto">
+            <button onclick="document.getElementById('modal-comunicado').style.display='none'" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            <h2 class="text-xl font-black text-yellow-400 uppercase italic mb-1"><i class="fa-solid fa-bullhorn"></i> Comunicado</h2>
+            <p id="com-estado" class="text-[9px] text-gray-400 uppercase tracking-widest mb-4">Sin comunicado activo</p>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Mensaje para los alumnos (máx. 280)</label>
+            <textarea id="com-texto" maxlength="280" rows="4" style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(250,204,21,.4);color:#fff;padding:12px;border-radius:12px;outline:none;font-size:14px;margin-bottom:12px"></textarea>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Mostrar hasta las (hora de hoy · vacío = hasta que lo elimines)</label>
+            <input type="time" id="com-hasta">
+            <button onclick="publicarComunicado()" class="btn-gold mb-2"><i class="fa-solid fa-paper-plane"></i> Publicar / Actualizar</button>
+            <button onclick="eliminarComunicado()" class="w-full bg-red-900/40 text-red-400 border border-red-600 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-red-700 hover:text-white transition"><i class="fa-solid fa-trash"></i> Eliminar comunicado</button>
+        </div>
+    </div>
+
     <!-- VISTA LISTA MAESTRA -->
     <div id="master-list-view">
         <header class="p-5 border-b border-white/10 flex justify-between items-center bg-black sticky top-0 z-50">
@@ -264,6 +279,11 @@ html{background:#050505!important}body{background:transparent!important}
                 <button onclick="abrirControlDelegados()" class="w-full bg-purple-900/50 text-purple-400 border border-purple-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-purple-800 hover:text-white transition shadow-lg">
                     <i class="fa-solid fa-users-gear"></i> Gestionar Permisos y Accesos
                 </button>
+            </div>
+
+            <div id="master-extra-btns" class="hidden w-full max-w-2xl mx-auto mb-6 grid grid-cols-2 gap-3">
+                <button onclick="abrirComunicado()" class="bg-yellow-900/40 text-yellow-400 border border-yellow-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-yellow-700 hover:text-white transition shadow-lg"><i class="fa-solid fa-bullhorn"></i> Comunicado</button>
+                <button onclick="cambiarMiClave()" class="bg-white/5 text-gray-200 border border-white/20 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-white/15 transition shadow-lg"><i class="fa-solid fa-key"></i> Mi contraseña</button>
             </div>
 
             <!-- SECCIÓN DE TARJETAS -->
@@ -439,9 +459,12 @@ html{background:#050505!important}body{background:transparent!important}
         // Apertura atómica: primero inicio+fecha (sin que nadie vea el turno abierto con hora vieja) y luego el estado.
         async function abrirRecepcion(t) {
             if ((configGlobal[`${t}_estado`] || 'cerrado') !== 'cerrado') return false;
-            await db.ref('sistema/config').update({ [`${t}_inicio_recepcion`]: firebase.database.ServerValue.TIMESTAMP, [`${t}_fecha`]: getFechaID() });
-            const r = await db.ref(`sistema/config/${t}_estado`).transaction(c => (c === null || c === 'cerrado' || c === 'sorteado') ? 'recepcionando' : undefined);
-            return r.committed;
+            await db.ref('sistema/config').update({
+                [`${t}_inicio_recepcion`]: firebase.database.ServerValue.TIMESTAMP,
+                [`${t}_fecha`]: getFechaID(),
+                [`${t}_estado`]: 'recepcionando'
+            });
+            return true;
         }
         const rescates = {};
         function programarRescate(t) {
@@ -836,6 +859,7 @@ html{background:#050505!important}body{background:transparent!important}
                 updates.limite_noche = document.getElementById('cfg-limite-noche').value || "";
             }
             
+            ['tarde1','tarde2','noche'].forEach(t => { if (('prog_' + t) in updates) { const hv = updates['hora_' + t]; updates['prog_min_' + t] = (updates['prog_' + t] && hv) ? (parseInt(hv.split(':')[0], 10) * 60 + parseInt(hv.split(':')[1], 10)) : null; } });
             Promise.all(Object.entries(updates).map(([key, value]) => db.ref(`sistema/config/${key}`).set(value)))
                 .then(() => notificarFlash('AJUSTES GUARDADOS', 'success', 'Límites actualizados'))
                 .catch(() => notificarFlash('ERROR', 'error', 'Firebase rechazó uno o más cambios'));
@@ -848,6 +872,12 @@ html{background:#050505!important}body{background:transparent!important}
             const hoy = getFechaID(), ahora = getPeruTimeMins();
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 if (!misPermisos.includes(t)) return;
+                if (esAdminAutenticado() && delegadoActivo === ADMIN_DNI && configGlobal._pm) {
+                    const hh = configGlobal[`hora_${t}`];
+                    const want = (configGlobal[`prog_${t}`] && hh) ? (parseInt(hh.split(':')[0], 10) * 60 + parseInt(hh.split(':')[1], 10)) : null;
+                    const have = configGlobal._pm[t];
+                    if ((want === null && have != null) || (want !== null && have !== want)) db.ref(`sistema/config/prog_min_${t}`).set(want).catch(() => {});
+                }
                 const raw = configGlobal[`${t}_estado_raw`] || 'cerrado', fecha = configGlobal[`${t}_fecha`] || '';
                 // Día nuevo: limpia el estado del día anterior (antes quedaba 'sorteado' y bloqueaba todo)
                 if (raw !== 'cerrado' && fecha !== hoy) {
@@ -1157,6 +1187,7 @@ html{background:#050505!important}body{background:transparent!important}
             if (esAdminAutenticado() && delegadoActivo === ADMIN_DNI) {
                 misPermisos = ['tarde1', 'tarde2', 'noche'];
                 document.getElementById('master-control-btn').classList.remove('hidden');
+                document.getElementById('master-extra-btns').classList.remove('hidden');
                 
                 db.ref('sistema/delegados_auth/sub_users').on('value', snap => {
                     subDelegadosData = snap.val() || {};
@@ -1193,6 +1224,7 @@ html{background:#050505!important}body{background:transparent!important}
                 const d = snap.val() || {};
 
                 configCargada = true;
+                configGlobal._pm = { tarde1: d.prog_min_tarde1, tarde2: d.prog_min_tarde2, noche: d.prog_min_noche };
                 configGlobal.cupos = Number(d.cupos_maximos) || 40;
 
                 configGlobal.prog_tarde1 = d.prog_tarde1 || false;
@@ -1671,6 +1703,60 @@ html{background:#050505!important}body{background:transparent!important}
 
         function toggleLista(show) { document.getElementById('master-list-view').style.display = show ? 'flex' : 'none'; }
         
+        function horaLimaDe(ms) { return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms)); }
+        async function abrirComunicado() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
+            document.getElementById('modal-comunicado').style.display = 'flex';
+            try {
+                const c = (await db.ref('sistema/comunicado').once('value')).val();
+                const vigente = c && c.texto && (!c.hasta || c.hasta > Date.now() + serverTimeOffset);
+                document.getElementById('com-texto').value = c ? (c.texto || '') : '';
+                document.getElementById('com-hasta').value = (c && c.hasta) ? horaLimaDe(c.hasta) : '';
+                document.getElementById('com-estado').innerText = vigente ? ('Activo ahora' + (c.hasta ? ' · hasta las ' + horaLimaDe(c.hasta) : ' · hasta que lo elimines')) : 'Sin comunicado activo';
+            } catch (e) {}
+        }
+        async function publicarComunicado() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return;
+            const texto = document.getElementById('com-texto').value.trim().slice(0, 280);
+            if (!texto) return notificarFlash('MENSAJE VACÍO', 'error', 'Escribe el comunicado');
+            let hasta = null; const hv = document.getElementById('com-hasta').value;
+            if (hv) {
+                hasta = new Date(`${getFechaID()}T${hv}:00-05:00`).getTime();
+                if (hasta <= Date.now() + serverTimeOffset) return notificarFlash('HORA INVÁLIDA', 'error', 'Elige una hora posterior a la actual');
+            }
+            try {
+                await db.ref('sistema/comunicado').set({ texto, hasta, ts: firebase.database.ServerValue.TIMESTAMP });
+                document.getElementById('modal-comunicado').style.display = 'none';
+                notificarFlash('COMUNICADO PUBLICADO', 'success', hv ? `Visible hasta las ${hv}` : 'Visible hasta que lo elimines');
+            } catch (e) { notificarFlash('ERROR', 'error', 'Firebase rechazó el comunicado (revisa las reglas)'); }
+        }
+        async function eliminarComunicado() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return;
+            try { await db.ref('sistema/comunicado').remove(); document.getElementById('modal-comunicado').style.display = 'none'; notificarFlash('COMUNICADO ELIMINADO', 'success', 'Ya no se muestra a los alumnos'); }
+            catch (e) { notificarFlash('ERROR', 'error', 'No se pudo eliminar'); }
+        }
+        async function cambiarMiClave() {
+            const u = auth.currentUser; if (!u) return;
+            const r = await Swal.fire({
+                title: 'Cambiar mi contraseña', background: '#111', color: '#fff', showCancelButton: true, confirmButtonText: 'Cambiar', cancelButtonText: 'Cancelar', focusConfirm: false,
+                html: '<input id="pw0" type="password" class="swal2-input" placeholder="Contraseña actual"><input id="pw1" type="password" class="swal2-input" placeholder="Nueva contraseña (mín. 6)"><input id="pw2" type="password" class="swal2-input" placeholder="Repite la nueva">',
+                preConfirm: () => {
+                    const a = document.getElementById('pw0').value, b = document.getElementById('pw1').value, c = document.getElementById('pw2').value;
+                    if (!a || b.length < 6) { Swal.showValidationMessage('Escribe tu clave actual y una nueva de al menos 6 caracteres'); return false; }
+                    if (b !== c) { Swal.showValidationMessage('Las contraseñas nuevas no coinciden'); return false; }
+                    return { a, b };
+                }
+            });
+            if (!r.isConfirmed) return;
+            try {
+                await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, r.value.a));
+                await u.updatePassword(r.value.b);
+                Swal.fire({ icon: 'success', title: 'Contraseña actualizada', text: 'Úsala la próxima vez que ingreses.', background: '#111', color: '#fff' });
+            } catch (e) {
+                const bad = e && (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential');
+                Swal.fire({ icon: 'error', title: 'No se pudo cambiar', text: bad ? 'La contraseña actual es incorrecta.' : ((e && e.message) || 'Error desconocido'), background: '#111', color: '#fff' });
+            }
+        }
         function notificarFlash(titulo, tipo, sub) {
             const f = document.getElementById('flash-notif'), t = document.getElementById('flash-text'), st = document.getElementById('flash-subtext'), i = document.getElementById('flash-icon');
             t.innerText = titulo; st.innerText = sub;
