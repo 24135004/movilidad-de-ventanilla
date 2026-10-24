@@ -213,10 +213,34 @@ html{background:#050505!important}body{background:transparent!important}
             <p id="com-estado" class="text-[9px] text-gray-400 uppercase tracking-widest mb-4">Sin comunicado activo</p>
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Mensaje para los alumnos (máx. 280)</label>
             <textarea id="com-texto" maxlength="280" rows="4" style="width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(250,204,21,.4);color:#fff;padding:12px;border-radius:12px;outline:none;font-size:14px;margin-bottom:12px"></textarea>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Imagen (opcional)</label>
+            <input type="file" id="com-imagen" accept="image/*" onchange="cargarImagenComunicado(this)" style="width:100%;margin-bottom:8px;font-size:12px;color:#ccc">
+            <div id="com-img-box" style="display:none;margin-bottom:12px;text-align:center">
+                <img id="com-preview" alt="Vista previa" style="max-width:100%;max-height:160px;border-radius:12px;margin:0 auto 6px;display:block">
+                <button type="button" onclick="quitarImagenComunicado()" class="text-[9px] text-red-400 font-black uppercase tracking-widest"><i class="fa-solid fa-trash"></i> Quitar imagen</button>
+            </div>
             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Mostrar hasta las (hora de hoy · vacío = hasta que lo elimines)</label>
             <input type="time" id="com-hasta">
             <button onclick="publicarComunicado()" class="btn-gold mb-2"><i class="fa-solid fa-paper-plane"></i> Publicar / Actualizar</button>
             <button onclick="eliminarComunicado()" class="w-full bg-red-900/40 text-red-400 border border-red-600 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-red-700 hover:text-white transition"><i class="fa-solid fa-trash"></i> Eliminar comunicado</button>
+        </div>
+    </div>
+
+    <!-- MODAL BLOQUEO DE DNI -->
+    <div id="modal-baneos" class="modal-overlay">
+        <div class="glass p-6 w-[92%] max-w-sm relative max-h-[92vh] overflow-y-auto">
+            <button onclick="cerrarBaneos()" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            <h2 class="text-xl font-black text-red-400 uppercase italic mb-1"><i class="fa-solid fa-user-slash"></i> Bloquear DNI</h2>
+            <p class="text-[9px] text-gray-400 uppercase tracking-widest mb-4">Un DNI bloqueado no entra al sorteo ni puede abordar</p>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">DNI del infractor</label>
+            <input type="text" id="ban-dni" maxlength="8" inputmode="numeric" placeholder="Ej: 12345678" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest block text-left mb-1">Motivo (opcional)</label>
+            <input type="text" id="ban-motivo" maxlength="120" placeholder="Ej: Cedió su ticket a otra persona">
+            <button onclick="bloquearDni()" class="btn-gold mb-4" style="background:#ef4444;color:#fff"><i class="fa-solid fa-ban"></i> Bloquear DNI</button>
+            <div class="bg-black/40 border border-white/5 p-3 rounded-xl text-left">
+                <h3 class="text-[10px] font-black text-red-400 uppercase tracking-widest border-b border-white/10 pb-2 mb-2">Bloqueados (<span id="contador-baneados">0</span>)</h3>
+                <div id="lista-baneados" class="max-h-48 overflow-y-auto space-y-2 pr-1"><p class="text-[9px] text-gray-500 italic text-center py-2">Cargando...</p></div>
+            </div>
         </div>
     </div>
 
@@ -284,6 +308,7 @@ html{background:#050505!important}body{background:transparent!important}
             <div id="master-extra-btns" class="hidden w-full max-w-2xl mx-auto mb-6 grid grid-cols-2 gap-3">
                 <button onclick="abrirComunicado()" class="bg-yellow-900/40 text-yellow-400 border border-yellow-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-yellow-700 hover:text-white transition shadow-lg"><i class="fa-solid fa-bullhorn"></i> Comunicado</button>
                 <button onclick="cambiarMiClave()" class="bg-white/5 text-gray-200 border border-white/20 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-white/15 transition shadow-lg"><i class="fa-solid fa-key"></i> Mi contraseña</button>
+                <button onclick="abrirBaneos()" class="col-span-2 bg-red-900/40 text-red-400 border border-red-500 font-black py-3 rounded-xl uppercase text-[10px] tracking-widest hover:bg-red-700 hover:text-white transition shadow-lg"><i class="fa-solid fa-user-slash"></i> Bloquear DNI (infractores)</button>
             </div>
 
             <!-- SECCIÓN DE TARJETAS -->
@@ -918,8 +943,8 @@ html{background:#050505!important}body{background:transparent!important}
                     timerEl.style.color = "#ef4444";
                     
                     if (configGlobal[`${turno}_estado`] === 'recepcionando') {
-                        // Bloqueo local INMEDIATO para evitar loop
-                        configGlobal[`${turno}_estado`] = 'procesando'; 
+                        // La protección contra doble ejecución es drawing[turno] dentro de ejecutarSorteoJusto.
+                        // (Antes se marcaba 'procesando' solo en local: si el bloqueo en Firebase fallaba, el panel dejaba de reintentar y el turno quedaba colgado.)
                         ejecutarSorteoJusto(turno);
                     }
                 } else {
@@ -1073,6 +1098,18 @@ html{background:#050505!important}body{background:transparent!important}
 
         const drawing = {}; const lastTry = {}, tries = {}; 
 
+        // Toma el turno para sortearlo (recepcionando -> procesando) sin depender de la caché local de Firebase.
+        async function tomarTurnoParaSorteo(estadoRef) {
+            try {
+                // Si la caché local aún no tiene el valor (null) igualmente se propone 'procesando': el servidor compara y reintenta con el valor real.
+                const r = await estadoRef.transaction(cur => (cur === null || cur === 'recepcionando') ? 'procesando' : undefined);
+                if (r.committed && r.snapshot.val() === 'procesando') return true;
+            } catch (e) { console.warn('La transacción de bloqueo falló, uso lectura directa:', e); }
+            const snap = await estadoRef.once('value');
+            if (snap.val() === 'recepcionando') { await estadoRef.set('procesando'); return true; }
+            return false;
+        }
+
         // SORTEO JUSTO: prioridad a quienes NO recibieron ticket ayer; luego, menor historial de asientos.
         async function ejecutarSorteoJusto(turno) {
             if (drawing[turno]) return;
@@ -1084,9 +1121,9 @@ html{background:#050505!important}body{background:transparent!important}
                 const estadoRef = db.ref(`sistema/config/${turno}_estado`);
 
                 // Bloqueo atómico para evitar que dos paneles sorteen el mismo turno a la vez.
-                const lock = await estadoRef.transaction(current => current === 'recepcionando' ? 'procesando' : undefined);
-                if (!lock.committed) {
-                    notificarFlash('SORTEO NO INICIADO', 'warning', 'El turno ya no está recepcionando');
+                const tomado = await tomarTurnoParaSorteo(estadoRef);
+                if (!tomado) {
+                    notificarFlash('SORTEO NO INICIADO', 'warning', 'El turno ya no está recepcionando (otro panel lo está sorteando)');
                     return;
                 }
 
@@ -1094,10 +1131,12 @@ html{background:#050505!important}body{background:transparent!important}
                 if (yaSort.exists()) { await estadoRef.set('sorteado'); notificarFlash('YA SORTEADO', 'warning', 'Este turno ya se sorteó hoy'); return; }
                 notificarFlash('CALCULANDO...', 'warning', 'Prioridad según los tickets de ayer');
 
-                const [snapSol, snapHist, snapAyer] = await Promise.all([
+                const [snapSol, snapHist, snapAyer, baneados] = await Promise.all([
                     db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value'),
                     db.ref('historial_sentados_permanente').once('value'),
-                    db.ref(`sistema/viajes/${fechaAyerID}`).once('value')
+                    db.ref(`sistema/viajes/${fechaAyerID}`).once('value'),
+                    // DNIs bloqueados: si la lectura falla (reglas aún sin actualizar) el sorteo continúa igual.
+                    db.ref('sistema/baneados').once('value').then(sn => sn.val() || {}).catch(() => ({}))
                 ]);
 
                 if (!snapSol.exists()) {
@@ -1106,7 +1145,10 @@ html{background:#050505!important}body{background:transparent!important}
                     return;
                 }
 
-                const solicitudes = snapSol.val() || {};
+                const solicitudesTodas = snapSol.val() || {};
+                const solicitudes = {};
+                Object.keys(solicitudesTodas).forEach(d => { if (!baneados[d]) solicitudes[d] = solicitudesTodas[d]; });
+                const excluidosPorBaneo = Object.keys(solicitudesTodas).length - Object.keys(solicitudes).length;
                 const historial = snapHist.val() || {};
                 const viajesAyer = snapAyer.val() || {};
                 const dnisConTicketAyer = new Set();
@@ -1159,7 +1201,7 @@ html{background:#050505!important}body{background:transparent!important}
                 const conTicketAyer = ganadores.length - priorizados;
                 const resultado = Swal.fire({
                     title: '¡Sorteo finalizado!',
-                    html: `Tickets asignados: <b>${ganadores.length}</b><br>Sin ticket ayer (prioridad): <b>${priorizados}</b><br>Con ticket ayer: <b>${conTicketAyer}</b><br><br>Turno bloqueado para evitar un segundo sorteo.`,
+                    html: `Tickets asignados: <b>${ganadores.length}</b><br>Sin ticket ayer (prioridad): <b>${priorizados}</b><br>Con ticket ayer: <b>${conTicketAyer}</b>${excluidosPorBaneo > 0 ? `<br>DNI bloqueados excluidos: <b>${excluidosPorBaneo}</b>` : ''}<br><br>Turno bloqueado para evitar un segundo sorteo.`,
                     icon: 'success', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#374151',
                     confirmButtonText: 'Descargar esta lista', cancelButtonText: 'Ver luego', background: '#111', color: '#fff'
                 });
@@ -1171,7 +1213,8 @@ html{background:#050505!important}body{background:transparent!important}
                     const estado = await db.ref(`sistema/config/${turno}_estado`).once('value');
                     if (estado.val() === 'procesando') await db.ref(`sistema/config/${turno}_estado`).set('recepcionando');
                 } catch (_) {}
-                Swal.fire({title: 'Error en el sorteo', text: error.message || 'No se pudo completar. Revisa la conexión y los permisos de Firebase.', icon: 'error', background: '#111', color: '#fff'});
+                // Se muestra el motivo real (código de Firebase) y no se apilan ventanas si el sistema reintenta.
+                if (!Swal.isVisible()) Swal.fire({title: 'Error en el sorteo', text: ((error && error.code) ? error.code + ': ' : '') + ((error && error.message) || 'No se pudo completar. Revisa la conexión y los permisos de Firebase.') + ' — se reintentará automáticamente.', icon: 'error', background: '#111', color: '#fff'});
             } finally {
                 drawing[turno] = false;
                 actualizarListaMaestraEnVivo();
@@ -1529,6 +1572,12 @@ html{background:#050505!important}body{background:transparent!important}
 
             if(!nombreAlumno) { notificarFlash("TICKET CADUCADO", "error", "No figura en ninguna lista de hoy"); if(soundError.readyState) soundError.play(); return liberarCamara(); }
 
+            // DNI bloqueado por infringir normas: no puede abordar aunque tenga ticket.
+            try {
+                const banSnap = await db.ref(`sistema/baneados/${dniScanned}`).once('value');
+                if (banSnap.exists()) { notificarFlash("DNI BLOQUEADO", "error", "No puede abordar: infringió las normas"); if(soundError.readyState) soundError.play(); return liberarCamara(); }
+            } catch (_) {}
+
             if (turnoDelTicket && configGlobal[`limite_${turnoDelTicket}`]) {
                 const now = new Date(Date.now() + serverTimeOffset);
                 const currentMins = getPeruTimeMins();
@@ -1713,13 +1762,127 @@ html{background:#050505!important}body{background:transparent!important}
         function toggleLista(show) { document.getElementById('master-list-view').style.display = show ? 'flex' : 'none'; }
         
         function horaLimaDe(ms) { return new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms)); }
+        // ---------- Imagen del comunicado (se comprime y se guarda dentro del propio comunicado) ----------
+        let comImgData = null;
+        function refrescarPreviewComunicado() {
+            const box = document.getElementById('com-img-box'), im = document.getElementById('com-preview'), inp = document.getElementById('com-imagen');
+            if (inp) inp.value = '';
+            if (comImgData) { im.src = comImgData; box.style.display = 'block'; }
+            else { im.removeAttribute('src'); box.style.display = 'none'; }
+        }
+        function quitarImagenComunicado() { comImgData = null; refrescarPreviewComunicado(); }
+        function comprimirImagenComunicado(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('El archivo no es una imagen válida.'));
+                    img.onload = () => {
+                        let maxLado = 900, q = 0.72;
+                        for (let i = 0; i < 8; i++) {
+                            const esc = Math.min(1, maxLado / Math.max(img.width, img.height));
+                            const c = document.createElement('canvas');
+                            c.width = Math.max(1, Math.round(img.width * esc)); c.height = Math.max(1, Math.round(img.height * esc));
+                            const ctx = c.getContext('2d');
+                            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+                            ctx.drawImage(img, 0, 0, c.width, c.height);
+                            const out = c.toDataURL('image/jpeg', q);
+                            if (out.length < 300000) return resolve(out);
+                            q = Math.max(0.4, q - 0.08); maxLado = Math.round(maxLado * 0.85);
+                        }
+                        reject(new Error('La imagen sigue muy pesada aun comprimida. Usa una más pequeña.'));
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        async function cargarImagenComunicado(inp) {
+            const f = inp.files && inp.files[0]; if (!f) return;
+            if (!/^image\//.test(f.type)) { inp.value = ''; return notificarFlash('ARCHIVO NO VÁLIDO', 'error', 'Elige una imagen'); }
+            try { comImgData = await comprimirImagenComunicado(f); refrescarPreviewComunicado(); notificarFlash('IMAGEN LISTA', 'success', 'Se publicará con el comunicado'); }
+            catch (e) { inp.value = ''; notificarFlash('IMAGEN NO VÁLIDA', 'error', (e && e.message) || 'No se pudo procesar'); }
+        }
+
+        // ---------- Bloqueo de DNI (solo administrador) ----------
+        let baneosListener = null;
+        function escHtml(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+        function abrirBaneos() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
+            document.getElementById('modal-baneos').style.display = 'flex';
+            if (!baneosListener) {
+                baneosListener = snap => renderBaneados(snap.val() || {});
+                db.ref('sistema/baneados').on('value', baneosListener, () => {
+                    document.getElementById('lista-baneados').innerHTML = '<p class="text-[9px] text-red-400 text-center py-2">Firebase rechazó la lectura. Publica las reglas nuevas de la base de datos.</p>';
+                });
+            }
+        }
+        function cerrarBaneos() {
+            document.getElementById('modal-baneos').style.display = 'none';
+            if (baneosListener) { db.ref('sistema/baneados').off('value', baneosListener); baneosListener = null; }
+        }
+        function renderBaneados(data) {
+            const dnis = Object.keys(data).filter(d => /^\d{8}$/.test(d));
+            document.getElementById('contador-baneados').innerText = dnis.length;
+            const el = document.getElementById('lista-baneados');
+            if (!dnis.length) { el.innerHTML = '<p class="text-[9px] text-gray-500 italic text-center py-2">No hay DNI bloqueados.</p>'; return; }
+            el.innerHTML = dnis.map(d => {
+                const b = data[d] || {};
+                return `<div class="bg-white/5 border border-red-500/30 p-2.5 rounded-lg flex justify-between items-center gap-2">
+                    <div class="leading-tight min-w-0">
+                        <p class="text-[12px] font-black text-white"><i class="fa-solid fa-user-slash text-red-400 text-[10px] mr-1"></i>${d}</p>
+                        <p class="text-[9px] text-gray-300 uppercase truncate">${escHtml(b.nombre || '')}</p>
+                        <p class="text-[8px] text-gray-500 uppercase">${escHtml(b.motivo || 'Sin motivo')}</p>
+                    </div>
+                    <button onclick="desbloquearDni('${d}')" class="text-[9px] font-black uppercase text-green-400 border border-green-600 rounded-lg px-2 py-1 hover:bg-green-700 hover:text-white transition shrink-0">Desbloquear</button>
+                </div>`;
+            }).join('');
+        }
+        async function bloquearDni() {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
+            const dni = document.getElementById('ban-dni').value.trim();
+            const motivo = document.getElementById('ban-motivo').value.trim().slice(0, 120);
+            if (!/^\d{8}$/.test(dni)) return notificarFlash('DNI INVÁLIDO', 'error', 'Debe tener 8 dígitos');
+            if (dni === ADMIN_DNI) return notificarFlash('OPERACIÓN BLOQUEADA', 'error', 'No puedes bloquear al administrador');
+            let nombre = '';
+            try { const a = (await db.ref('alumnos/' + dni).once('value')).val(); nombre = (a && a.Estudiante) || ''; } catch (_) {}
+            const r = await Swal.fire({
+                title: '¿Bloquear este DNI?',
+                html: `<b>${dni}</b>${nombre ? '<br>' + escHtml(nombre) : ''}<br><br>No entrará a ningún sorteo y no podrá abordar hasta que lo desbloquees.`,
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#374151', confirmButtonText: 'Sí, bloquear', cancelButtonText: 'Cancelar', background: '#111', color: '#fff'
+            });
+            if (!r.isConfirmed) return;
+            try {
+                const fecha = getFechaID(); const up = {};
+                up[`sistema/baneados/${dni}`] = { motivo: motivo || 'Infracción de normas', nombre: nombre || null, por: delegadoActivo, ts: firebase.database.ServerValue.TIMESTAMP };
+                // Si ya había enviado solicitud hoy, se retira para que no figure en el sorteo.
+                ['tarde1', 'tarde2', 'noche'].forEach(t => { up[`sistema/solicitudes/${fecha}/${t}/${dni}`] = null; });
+                await db.ref().update(up);
+                document.getElementById('ban-dni').value = ''; document.getElementById('ban-motivo').value = '';
+                notificarFlash('DNI BLOQUEADO', 'success', dni);
+            } catch (e) {
+                console.error(e);
+                Swal.fire({ icon: 'error', title: 'No se pudo bloquear', text: (e && e.code === 'PERMISSION_DENIED') ? 'Firebase rechazó el cambio: publica las reglas nuevas de la base de datos.' : ((e && e.message) || 'Error desconocido'), background: '#111', color: '#fff' });
+            }
+        }
+        async function desbloquearDni(dni) {
+            if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
+            if (!/^\d{8}$/.test(dni)) return;
+            const r = await Swal.fire({ title: '¿Desbloquear?', text: `El DNI ${dni} volverá a poder participar en los sorteos.`, icon: 'question', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#374151', confirmButtonText: 'Sí, desbloquear', cancelButtonText: 'Cancelar', background: '#111', color: '#fff' });
+            if (!r.isConfirmed) return;
+            try { await db.ref(`sistema/baneados/${dni}`).remove(); notificarFlash('DNI DESBLOQUEADO', 'success', dni); }
+            catch (e) { notificarFlash('ERROR', 'error', 'No se pudo desbloquear'); }
+        }
+
         async function abrirComunicado() {
             if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return notificarFlash('ACCESO DENEGADO', 'error', 'Solo el administrador principal');
             document.getElementById('modal-comunicado').style.display = 'flex';
             try {
                 const c = (await db.ref('sistema/comunicado').once('value')).val();
-                const vigente = c && c.texto && (!c.hasta || c.hasta > Date.now() + serverTimeOffset);
+                const vigente = c && (c.texto || c.imagen) && (!c.hasta || c.hasta > Date.now() + serverTimeOffset);
                 document.getElementById('com-texto').value = c ? (c.texto || '') : '';
+                comImgData = (c && c.imagen) || null; refrescarPreviewComunicado();
                 document.getElementById('com-hasta').value = (c && c.hasta) ? horaLimaDe(c.hasta) : '';
                 document.getElementById('com-estado').innerText = vigente ? ('Activo ahora' + (c.hasta ? ' · hasta las ' + horaLimaDe(c.hasta) : ' · hasta que lo elimines')) : 'Sin comunicado activo';
             } catch (e) {}
@@ -1727,14 +1890,14 @@ html{background:#050505!important}body{background:transparent!important}
         async function publicarComunicado() {
             if (!esAdminAutenticado() || delegadoActivo !== ADMIN_DNI) return;
             const texto = document.getElementById('com-texto').value.trim().slice(0, 280);
-            if (!texto) return notificarFlash('MENSAJE VACÍO', 'error', 'Escribe el comunicado');
+            if (!texto && !comImgData) return notificarFlash('MENSAJE VACÍO', 'error', 'Escribe un mensaje o adjunta una imagen');
             let hasta = null; const hv = document.getElementById('com-hasta').value;
             if (hv) {
                 hasta = new Date(`${getFechaID()}T${hv}:00-05:00`).getTime();
                 if (hasta <= Date.now() + serverTimeOffset) return notificarFlash('HORA INVÁLIDA', 'error', 'Elige una hora posterior a la actual');
             }
             try {
-                await db.ref('sistema/comunicado').set({ texto, hasta, ts: firebase.database.ServerValue.TIMESTAMP });
+                await db.ref('sistema/comunicado').set({ texto: texto || null, hasta, imagen: comImgData || null, ts: firebase.database.ServerValue.TIMESTAMP });
                 document.getElementById('modal-comunicado').style.display = 'none';
                 notificarFlash('COMUNICADO PUBLICADO', 'success', hv ? `Visible hasta las ${hv}` : 'Visible hasta que lo elimines');
             } catch (e) { notificarFlash('ERROR', 'error', 'Firebase rechazó el comunicado (revisa las reglas)'); }
@@ -1774,7 +1937,7 @@ html{background:#050505!important}body{background:transparent!important}
                 if (!misPermisos.includes(t)) return;
                 const ini = configGlobal[`${t}_inicio_recepcion`] || 0;
                 if (configGlobal[`${t}_estado`] !== 'recepcionando') { tries[t] = 0; return; }
-                if (ini > 0 && now >= ini + 120000 && !drawing[t] && (tries[t] || 0) < 4 && Date.now() - (lastTry[t] || 0) > 6000) {
+                if (ini > 0 && now >= ini + 120000 && !drawing[t] && Date.now() - (lastTry[t] || 0) > ((tries[t] || 0) < 4 ? 6000 : 20000)) {
                     lastTry[t] = Date.now(); tries[t] = (tries[t] || 0) + 1;
                     ejecutarSorteoJusto(t);
                 }
