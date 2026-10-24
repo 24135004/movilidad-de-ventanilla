@@ -539,6 +539,11 @@ html{background:#050505!important}body{background:transparent!important}
             const [y, m, d] = getFechaID().split('-').map(Number);
             return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
         }
+        // Fecha de hace N días (hora de Perú).
+        function getFechaHaceID(dias) {
+            const [y, m, d] = getFechaID().split('-').map(Number);
+            return new Date(Date.UTC(y, m - 1, d - dias)).toISOString().slice(0, 10);
+        }
 
         // HORA EXACTA DE PERÚ (En minutos totales)
         function getPeruTimeMins() {
@@ -1117,7 +1122,6 @@ html{background:#050505!important}body{background:transparent!important}
 
             try {
                 const fechaID = getFechaID();
-                const fechaAyerID = getFechaAyerID();
                 const estadoRef = db.ref(`sistema/config/${turno}_estado`);
 
                 // Bloqueo atómico para evitar que dos paneles sorteen el mismo turno a la vez.
@@ -1129,14 +1133,15 @@ html{background:#050505!important}body{background:transparent!important}
 
                 const yaSort = await db.ref(`sistema/viajes/${fechaID}/${turno}/contador`).once('value');
                 if (yaSort.exists()) { await estadoRef.set('sorteado'); notificarFlash('YA SORTEADO', 'warning', 'Este turno ya se sorteó hoy'); return; }
-                notificarFlash('CALCULANDO...', 'warning', 'Prioridad según los tickets de ayer');
+                notificarFlash('CALCULANDO...', 'warning', 'Prioridad a quienes no fueron sentados ayer');
 
-                const [snapSol, snapHist, snapAyer, baneados] = await Promise.all([
+                // Día de referencia = ayer; si ayer no hubo servicio (fin de semana, feriado) se toma el último día anterior con tickets (máx. 7 días atrás).
+                const fechasPrevias = [1, 2, 3, 4, 5, 6, 7].map(getFechaHaceID);
+                const [snapSol, baneados, ...snapsPrevios] = await Promise.all([
                     db.ref(`sistema/solicitudes/${fechaID}/${turno}`).once('value'),
-                    db.ref('historial_sentados_permanente').once('value'),
-                    db.ref(`sistema/viajes/${fechaAyerID}`).once('value'),
                     // DNIs bloqueados: si la lectura falla (reglas aún sin actualizar) el sorteo continúa igual.
-                    db.ref('sistema/baneados').once('value').then(sn => sn.val() || {}).catch(() => ({}))
+                    db.ref('sistema/baneados').once('value').then(sn => sn.val() || {}).catch(() => ({})),
+                    ...fechasPrevias.map(f => db.ref(`sistema/viajes/${f}`).once('value').catch(() => null))
                 ]);
 
                 if (!snapSol.exists()) {
@@ -1149,26 +1154,29 @@ html{background:#050505!important}body{background:transparent!important}
                 const solicitudes = {};
                 Object.keys(solicitudesTodas).forEach(d => { if (!baneados[d]) solicitudes[d] = solicitudesTodas[d]; });
                 const excluidosPorBaneo = Object.keys(solicitudesTodas).length - Object.keys(solicitudes).length;
-                const historial = snapHist.val() || {};
-                const viajesAyer = snapAyer.val() || {};
+                // Quiénes viajaron sentados (tuvieron ticket) en el día de referencia.
                 const dnisConTicketAyer = new Set();
-                ['tarde1', 'tarde2', 'noche'].forEach(turnoAyer => {
-                    const regs = viajesAyer[turnoAyer] && viajesAyer[turnoAyer].registros ? viajesAyer[turnoAyer].registros : {};
-                    Object.keys(regs).forEach(dni => dnisConTicketAyer.add(dni));
-                });
+                for (const snapPrev of snapsPrevios) {
+                    const v = (snapPrev && snapPrev.val()) || {};
+                    let hay = false;
+                    ['tarde1', 'tarde2', 'noche'].forEach(tn => {
+                        const regs = v[tn] && v[tn].registros ? v[tn].registros : {};
+                        Object.keys(regs).forEach(dni => { dnisConTicketAyer.add(dni); hay = true; });
+                    });
+                    if (hay) break;
+                }
 
                 const arrayCompetencia = Object.keys(solicitudes).map(dni => ({
                     dni,
                     data: solicitudes[dni] || {},
                     tuvoTicketAyer: dnisConTicketAyer.has(dni),
-                    vecesSentado: Number(historial[dni]) || 0,
                     factorSuerte: Math.random()
                 }));
 
-                // 1) sin ticket ayer primero; 2) menos asientos acumulados; 3) desempate aleatorio.
+                // Todos los que solicitaron participan. Primero se sortean los que NO fueron sentados ayer;
+                // si sobran asientos se completan con los que sí fueron sentados ayer (también al azar entre ellos).
                 arrayCompetencia.sort((a, b) =>
                     Number(a.tuvoTicketAyer) - Number(b.tuvoTicketAyer) ||
-                    a.vecesSentado - b.vecesSentado ||
                     a.factorSuerte - b.factorSuerte
                 );
 
@@ -1187,13 +1195,12 @@ html{background:#050505!important}body{background:transparent!important}
                         orden: index + 1,
                         hora: String(g.data.hora || '')
                     };
-                    updates[`historial_sentados_permanente/${g.dni}`] = g.vecesSentado + 1;
                 });
                 updates[`sistema/viajes/${fechaID}/${turno}/contador`] = ganadores.length;
                 updates[`sistema/config/${turno}_estado`] = 'sorteado';
                 updates[`sistema/config/${turno}_sorteo_ts`] = firebase.database.ServerValue.TIMESTAMP;
 
-                // Un solo update publica tickets, historial acumulado y estado final.
+                // Un solo update publica tickets y estado final.
                 await db.ref().update(updates);
                 
 
@@ -1201,7 +1208,7 @@ html{background:#050505!important}body{background:transparent!important}
                 const conTicketAyer = ganadores.length - priorizados;
                 const resultado = Swal.fire({
                     title: '¡Sorteo finalizado!',
-                    html: `Tickets asignados: <b>${ganadores.length}</b><br>Sin ticket ayer (prioridad): <b>${priorizados}</b><br>Con ticket ayer: <b>${conTicketAyer}</b>${excluidosPorBaneo > 0 ? `<br>DNI bloqueados excluidos: <b>${excluidosPorBaneo}</b>` : ''}<br><br>Turno bloqueado para evitar un segundo sorteo.`,
+                    html: `Tickets asignados: <b>${ganadores.length}</b><br>No sentados ayer (prioridad): <b>${priorizados}</b><br>Completados con los sentados ayer: <b>${conTicketAyer}</b>${excluidosPorBaneo > 0 ? `<br>DNI bloqueados excluidos: <b>${excluidosPorBaneo}</b>` : ''}<br><br>Turno bloqueado para evitar un segundo sorteo.`,
                     icon: 'success', showCancelButton: true, confirmButtonColor: '#10b981', cancelButtonColor: '#374151',
                     confirmButtonText: 'Descargar esta lista', cancelButtonText: 'Ver luego', background: '#111', color: '#fff'
                 });
