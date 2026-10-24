@@ -333,7 +333,7 @@ html{background:#050505!important}body{background:transparent!important}
             },
 
             listenFirebase: function() {
-                db.ref('sistema/comunicado').on('value', snap => { this.comunicado = snap.val(); this.renderComunicado(); });
+                db.ref('sistema/comunicado').on('value', snap => { this.comunicado = snap.val(); try { this.renderComunicado(); } catch (e) { console.warn('Comunicado:', e); } });
                 db.ref('sistema/config').on('value', snap => {
                     this.config = snap.val() || {};
                     this.checkSchedules();
@@ -342,7 +342,7 @@ html{background:#050505!important}body{background:transparent!important}
 
             checkSchedules: function() {
                 if (!this.config) return;
-                this.autoOpen(); this.renderComunicado();
+                this.autoOpen();
 
                 this.currentTarde1Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde1'));
                 this.currentTarde2Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde2'));
@@ -351,6 +351,9 @@ html{background:#050505!important}body{background:transparent!important}
                 this.updateCardUI('tarde1', 'badge-m', 'card-m', 'time-badge-m');
                 this.updateCardUI('tarde2', 'badge-t', 'card-t', 'time-badge-t');
                 this.updateCardUI('noche', 'badge-n', 'card-n', 'time-badge-n');
+
+                // El comunicado va al final y aislado: si fallara, nunca afecta a las tarjetas ni al sorteo.
+                try { this.renderComunicado(); } catch (e) { console.warn('Comunicado:', e); }
             },
 
             updateCardUI: function(turno, bid, cid, tid) {
