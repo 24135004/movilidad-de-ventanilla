@@ -328,6 +328,7 @@ html{background:#050505!important}body{background:transparent!important}
                         <i class="fa-solid fa-sun text-4xl text-yellow-400 mb-3 mt-4 block"></i>
                         <h4 class="text-lg font-black uppercase tracking-tighter">Tarde (2:00)</h4>
                         <p class="text-[10px] text-gray-400 uppercase mt-1 mb-2 tracking-widest font-bold">Prog: <span id="lbl-hora-tarde1" class="text-cyan-400 font-black">MANUAL</span></p>
+                        <p id="auto-tarde1" class="text-[8px] font-bold uppercase tracking-wider mb-2 leading-tight" style="color:#9ca3af"></p>
                         
                         <div id="timer-tarde1" class="timer-display">02:00</div>
 
@@ -344,6 +345,7 @@ html{background:#050505!important}body{background:transparent!important}
                         <i class="fa-solid fa-cloud-sun text-4xl text-orange-400 mb-3 mt-4 block"></i>
                         <h4 class="text-lg font-black uppercase tracking-tighter">Tarde (6:00)</h4>
                         <p class="text-[10px] text-gray-400 uppercase mt-1 mb-2 tracking-widest font-bold">Prog: <span id="lbl-hora-tarde2" class="text-cyan-400 font-black">MANUAL</span></p>
+                        <p id="auto-tarde2" class="text-[8px] font-bold uppercase tracking-wider mb-2 leading-tight" style="color:#9ca3af"></p>
                         
                         <div id="timer-tarde2" class="timer-display">02:00</div>
 
@@ -360,6 +362,7 @@ html{background:#050505!important}body{background:transparent!important}
                         <i class="fa-solid fa-moon text-4xl text-purple-400 mb-3 mt-4 block"></i>
                         <h4 class="text-lg font-black uppercase tracking-tighter">Noche (10:15)</h4>
                         <p class="text-[10px] text-gray-400 uppercase mt-1 mb-2 tracking-widest font-bold">Prog: <span id="lbl-hora-noche" class="text-cyan-400 font-black">MANUAL</span></p>
+                        <p id="auto-noche" class="text-[8px] font-bold uppercase tracking-wider mb-2 leading-tight" style="color:#9ca3af"></p>
                         
                         <div id="timer-noche" class="timer-display">02:00</div>
 
@@ -924,61 +927,87 @@ html{background:#050505!important}body{background:transparent!important}
             abrirProgramados();
         }
 
-        // APERTURA PROGRAMADA (revisada cada segundo desde el Worker, con la hora del SERVIDOR).
-        // Mismas condiciones que validan las reglas de Firebase, así panel, ticket y turnotarde abren el turno igual y una sola vez.
+        // ACTIVACIÓN PROGRAMADA — la hace SOLO este panel (admin o delegado con permiso del turno). Los alumnos no pueden abrir turnos:
+        // las reglas de Firebase solo aceptan esa escritura de un delegado autenticado, y la hora que se usa es la del SERVIDOR.
+        // Se revisa cada segundo (Worker). Abre si: está programado, el turno está libre, ya llegó la hora (con 60 min de margen
+        // por si el panel se abrió tarde, sin pasar la hora límite) y NO se abrió ya desde la hora programada de hoy.
         const abriendo = {};
+        const VENTANA_AUTO_MIN = 60;
+        function pintarAuto(t, txt, color) {
+            const el = document.getElementById(`auto-${t}`); if (!el) return;
+            if (el.innerText !== txt) el.innerText = txt;
+            el.style.color = color || '#9ca3af';
+        }
         function abrirProgramados() {
             if (!configCargada) return;
-            const ahora = getPeruTimeMins(), hoy = getFechaID();
+            const hoy = getFechaID();
             const nowMs = Date.now() + serverTimeOffset;
             const iniDia = nowMs - ((nowMs - 18000000) % 86400000);
+            const segDia = Math.floor((nowMs - iniDia) / 1000);
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 if (!misPermisos.includes(t)) return;
                 const h = configGlobal[`hora_${t}`];
-                if (!configGlobal[`prog_${t}`] || !h) return;
-                const raw = configGlobal[`${t}_estado_raw`] || 'cerrado', fecha = configGlobal[`${t}_fecha`] || '';
-                // Libre = cerrado, o con un estado que quedó de un día anterior.
-                if (!(raw === 'cerrado' || fecha !== hoy)) return;
+                if (!configGlobal[`prog_${t}`] || !h) { pintarAuto(t, ''); return; }
                 const hm = parseInt(h.split(':')[0], 10) * 60 + parseInt(h.split(':')[1], 10);
-                if (!(ahora >= hm && ahora < hm + 15)) return;
-                if ((configGlobal[`${t}_sorteo_ts`] || 0) >= iniDia) return;                      // ya se sorteó hoy
-                if ((configGlobal[`${t}_inicio_recepcion`] || 0) >= iniDia + hm * 60000) return;  // ya se abrió a la hora programada
-                if (abriendo[t] && Date.now() - abriendo[t] < 15000) return;                      // evita aperturas repetidas
+                let fin = hm + VENTANA_AUTO_MIN;
+                const lim = configGlobal[`limite_${t}`];
+                if (lim) { const lm = parseInt(lim.split(':')[0], 10) * 60 + parseInt(lim.split(':')[1], 10); if (lm > hm) fin = Math.min(fin, lm); }
+                const raw = configGlobal[`${t}_estado_raw`] || 'cerrado', fecha = configGlobal[`${t}_fecha`] || '';
+                const libre = raw === 'cerrado' || fecha !== hoy;               // un estado de un día anterior no cuenta
+                const yaAbierto = (configGlobal[`${t}_inicio_recepcion`] || 0) >= iniDia + hm * 60000;
+
+                if (!libre) {
+                    if (segDia < hm * 60) pintarAuto(t, `AUTO ${h} · NO se activará solo: el turno está ${raw.toUpperCase()} hoy (ciérralo o usa Reset Total)`, '#facc15');
+                    else pintarAuto(t, `AUTO ${h} · ${yaAbierto ? 'ya se activó hoy' : 'turno en marcha'}`, '#00E5FF');
+                    return;
+                }
+                if (segDia < hm * 60) {
+                    const r = hm * 60 - segDia;
+                    pintarAuto(t, `AUTO ${h} · se activa solo en ${String(Math.floor(r / 3600)).padStart(2, '0')}:${String(Math.floor((r % 3600) / 60)).padStart(2, '0')}:${String(r % 60).padStart(2, '0')}`, '#34d399');
+                    return;
+                }
+                if (yaAbierto) { pintarAuto(t, `AUTO ${h} · ya se activó hoy`, '#9ca3af'); return; }
+                if (segDia >= fin * 60) { pintarAuto(t, `AUTO ${h} · pasó el margen de activación: ábrelo manualmente`, '#f87171'); return; }
+                if (abriendo[t] && Date.now() - abriendo[t] < 15000) { pintarAuto(t, `AUTO ${h} · activando…`, '#facc15'); return; }
                 abriendo[t] = Date.now();
-                abrirRecepcion(t).then(ok => { if (ok) logSorteo(t, 'Apertura automática a la hora programada'); else abriendo[t] = 0; }).catch(() => { /* si Firebase la rechaza, se reintenta recién a los 15 s (no cada segundo) */ });
+                pintarAuto(t, `AUTO ${h} · activando…`, '#facc15');
+                abrirRecepcion(t)
+                    .then(ok => { if (ok) logSorteo(t, 'Activación automática a la hora programada'); else abriendo[t] = 0; })
+                    .catch(e => { logSorteo(t, 'Firebase rechazó la activación automática: ' + ((e && (e.code || e.message)) || e) + ' (reintento en 15 s)'); });
             });
         }
 
-        // CONTADORES PÚBLICOS: los alumnos no pueden leer las solicitudes (llevan DNI), así que el panel publica solo el número
-        // en sistema/config/solicitudes/<turno> = {n, fecha}. Ticket y turnotarde lo muestran en vivo.
+        // CONTADOR PÚBLICO DE SOLICITUDES: sistema/contadores/<fecha>/<turno>.
+        // Los alumnos lo suman al enviar su solicitud (así se ve en vivo aunque este panel no esté abierto) y este panel lo
+        // corrige con el conteo REAL (bloqueos, reinicios, solicitudes que no se guardaron). Los DNI nunca se publican.
         const contSol = {};
         function sincronizarContadoresSolicitudes() {
             const fecha = getFechaID();
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 const c = contSol[t], debe = misPermisos.includes(t);
-                if (c && (!debe || c.fecha !== fecha)) { try { c.ref.off('value', c.fn); } catch (_) {} clearTimeout(c.timer); delete contSol[t]; }
+                if (c && (!debe || c.fecha !== fecha)) {
+                    try { c.refS.off('value', c.fnS); c.refC.off('value', c.fnC); } catch (_) {}
+                    clearTimeout(c.timer); delete contSol[t];
+                }
                 if (!debe || contSol[t]) return;
-                const entry = { ref: db.ref(`sistema/solicitudes/${fecha}/${t}`), fecha, timer: null, ultimo: null, fn: null };
-                entry.fn = snap => {
-                    const n = snap.numChildren();
-                    clearTimeout(entry.timer);
-                    entry.timer = setTimeout(() => publicarContadorSolicitudes(t, fecha, n, entry), 800);
+                const e = { fecha, timer: null, n: null, pub: null, fnS: null, fnC: null,
+                    refS: db.ref(`sistema/solicitudes/${fecha}/${t}`), refC: db.ref(`sistema/contadores/${fecha}/${t}`) };
+                const reconciliar = () => {
+                    clearTimeout(e.timer);
+                    e.timer = setTimeout(() => {
+                        if (contSol[t] !== e || e.n === null || e.pub === null || e.n === e.pub) return;
+                        e.refC.set(e.n)
+                            .then(() => logSorteo(t, `Contador de solicitudes corregido: ${e.n}`))
+                            .catch(err => console.warn('No se pudo corregir el contador de ' + t + ':', err && (err.code || err.message)));
+                    }, 800);
                 };
-                contSol[t] = entry;
-                entry.ref.on('value', entry.fn, err => console.warn('Contador de solicitudes ' + t + ':', err && (err.code || err.message)));
+                e.fnS = sn => { e.n = sn.numChildren(); reconciliar(); };
+                e.fnC = sn => { e.pub = Number(sn.val()) || 0; reconciliar(); };
+                contSol[t] = e;
+                e.refS.on('value', e.fnS, err => console.warn('Solicitudes ' + t + ':', err && (err.code || err.message)));
+                e.refC.on('value', e.fnC, err => console.warn('Contador ' + t + ':', err && (err.code || err.message)));
             });
         }
-        function publicarContadorSolicitudes(t, fecha, n, entry) {
-            if (contSol[t] !== entry) return;
-            const pub = (configGlobal.sol_pub || {})[t];
-            if (pub && pub.n === n && pub.fecha === fecha) return;                                     // ya está publicado
-            if (entry.ultimo && entry.ultimo.n === n && Date.now() - entry.ultimo.ts < 15000) return;  // evita repetir la misma escritura
-            entry.ultimo = { n, ts: Date.now() };
-            db.ref(`sistema/config/solicitudes/${t}`).set({ n, fecha })
-                .then(() => logSorteo(t, `Solicitudes publicadas para tickets: ${n}`))
-                .catch(e => { entry.ultimo = null; console.warn('No se pudo publicar el contador de ' + t + ':', e && (e.code || e.message)); });
-        }
-
 
         // CRONÓMETRO DE 2 MINUTOS
         function iniciarCronometroPanel(turno, inicioTimestamp) {
@@ -1396,11 +1425,10 @@ html{background:#050505!important}body{background:transparent!important}
                 configGlobal.limite_noche = d.limite_noche || '';
                 configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
 
-                // Última hora de sorteo de cada turno (evita reabrir solo un turno que ya se sorteó hoy) y contadores publicados para tickets.
+                // Última hora de sorteo de cada turno.
                 configGlobal.tarde1_sorteo_ts = d.tarde1_sorteo_ts || 0;
                 configGlobal.tarde2_sorteo_ts = d.tarde2_sorteo_ts || 0;
                 configGlobal.noche_sorteo_ts = d.noche_sorteo_ts || 0;
-                configGlobal.sol_pub = d.solicitudes || {};
 
                 actualizarUI_Tarjetas();
 
@@ -1781,6 +1809,7 @@ html{background:#050505!important}body{background:transparent!important}
                         await db.ref(`sistema/viajes/${fecha}`).remove(); 
                         await db.ref(`sistema/asistencias/${fecha}`).remove();
                         await db.ref(`sistema/solicitudes/${fecha}`).remove();
+                        await db.ref(`sistema/contadores/${fecha}`).remove();
                         
                         // Cerrar los turnos activos en Firebase para que inicie limpio
                         await db.ref('sistema/config').update({
