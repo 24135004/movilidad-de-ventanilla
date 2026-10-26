@@ -163,6 +163,7 @@ html{background:#050505!important}body{background:transparent!important}
                             <div class="flex flex-wrap gap-3 mt-3">
                                 <span class="bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 text-[9px] font-mono text-gray-300">DNI: <span id="userDni" class="text-white font-bold"></span></span>
                                 <span class="bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 text-[9px] font-mono text-gray-300">CÓDIGO: <span id="userCod" class="text-white font-bold"></span></span>
+                                <span class="bg-black/50 px-3 py-1.5 rounded-lg border border-cyan-400/30 text-[9px] font-mono text-gray-300"><i class="fa-solid fa-ticket text-cyan-400"></i> SOLICITUDES HOY: <span id="userSolHoy" class="text-cyan-400 font-bold">0</span></span>
                             </div>
                         </div>
                     </div>
@@ -172,6 +173,7 @@ html{background:#050505!important}body{background:transparent!important}
                             <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest">Conexión Segura</p>
                         </div>
                         <div class="text-xs font-black text-white mt-2">SISTEMA <span class="text-cyan-400">EN LÍNEA</span></div>
+                        <div class="mt-2 text-[8px] font-mono text-gray-400 uppercase tracking-wider">2PM <b id="sol-t1" class="text-white">0</b> · 6PM <b id="sol-t2" class="text-white">0</b> · 10PM <b id="sol-n" class="text-white">0</b></div>
                     </div>
                 </div>
 
@@ -249,6 +251,7 @@ html{background:#050505!important}body{background:transparent!important}
             currentTarde2Active: false,
             currentNocheActive: false,
             _tryOpen: {}, comunicado: null,
+            _misSol: {}, _consultando: {}, _ultCons: {}, _avisado: {},
             // Apertura programada: usa la hora del SERVIDOR (las reglas de Firebase la validan), así no se puede adelantar cambiando la hora del celular.
             autoOpen: function() {
                 const cfg = this.config || {};
@@ -262,7 +265,9 @@ html{background:#050505!important}body{background:transparent!important}
                     if (mins < pm || mins >= pm + 15) return;
                     // Misma condición que validan las reglas de Firebase y el panel: solo se abre si el último inicio es ANTERIOR a la hora programada de hoy.
                     // (Antes se bloqueaba si el turno ya se había abierto/cerrado hoy, aunque fuera antes de la hora programada, y por eso nunca se activaba.)
-                    const sched = nowMs - ((nowMs - 18000000) % 86400000) + pm * 60000;
+                    const iniDia = nowMs - ((nowMs - 18000000) % 86400000);
+                    if ((cfg[t + '_sorteo_ts'] || 0) >= iniDia) return; // ya se sorteó hoy: no se reabre solo
+                    const sched = iniDia + pm * 60000;
                     if ((cfg[t + '_inicio_recepcion'] || 0) >= sched) return;
                     if (Date.now() - (this._tryOpen[t] || 0) < 20000) return;
                     this._tryOpen[t] = Date.now();
@@ -273,8 +278,15 @@ html{background:#050505!important}body{background:transparent!important}
                     }).catch(err => { console.warn('Apertura programada rechazada (' + t + '):', err && (err.code || err.message)); });
                 });
             },
+            // ¿El alumno ya ingresó su DNI y está viendo las tres tarjetas?
+            enPaso2: function() {
+                const s2 = document.getElementById('step-2');
+                return !!this.alumno && !!s2 && !s2.classList.contains('hidden-section');
+            },
             renderComunicado: function() {
                 const b = document.getElementById('comunicado-box'); if (!b) return;
+                // El comunicado NO sale al abrir/actualizar la página: solo después de verificar el DNI.
+                if (!this.enPaso2()) { b.classList.add('hidden-section'); return; }
                 const c = this.comunicado;
                 const ok = c && (c.texto || c.imagen) && (!c.hasta || c.hasta > Date.now() + serverTimeOffset);
                 if (!ok) { b.classList.add('hidden-section'); this._comKey = null; return; }
@@ -308,8 +320,68 @@ html{background:#050505!important}body{background:transparent!important}
                 const x = document.getElementById('comunicado-x'); if (x && x.disabled) return;
                 this._comCerrado = this._comKey;
                 document.getElementById('comunicado-box').classList.add('hidden-section');
+                try { this.evaluarAvisoResultado(); } catch (e) {}
             },
             est: function(t){ return estadoEfectivo(this.config[t+'_estado'], this.config[t+'_fecha']); },
+
+            // Solicitudes del día publicadas por el panel de delegados (sistema/config/solicitudes/<turno> = {n, fecha}).
+            cntSol: function(t) {
+                const s = (this.config && this.config.solicitudes) ? this.config.solicitudes[t] : null;
+                return (s && s.fecha === hoyLima() && Number(s.n) > 0) ? Number(s.n) : 0;
+            },
+            renderSolicitudes: function() {
+                const a = this.cntSol('tarde1'), b = this.cntSol('tarde2'), c = this.cntSol('noche');
+                const set = (id, v) => { const e = document.getElementById(id); if (e && e.innerText !== String(v)) e.innerText = String(v); };
+                set('userSolHoy', a + b + c); set('sol-t1', a); set('sol-t2', b); set('sol-n', c);
+            },
+
+            // Identifica la ronda (fecha + turno + hora de apertura) para saber si es la misma o una nueva.
+            keyRonda: function(t) { return hoyLima() + '|' + t + '|' + (this.config[t + '_inicio_recepcion'] || 0); },
+
+            // ¿Este alumno ya envió su solicitud en la ronda actual? (lectura de UN solo nodo: solicitudes/fecha/turno/dni)
+            verificarMisSolicitudes: function() {
+                if (!this.enPaso2()) return;
+                const dni = this.alumno.dni, fecha = hoyLima();
+                ['tarde1', 'tarde2', 'noche'].forEach(t => {
+                    const st = this.est(t);
+                    if (st !== 'recepcionando' && st !== 'procesando' && st !== 'sorteado') return;
+                    const k = this.keyRonda(t);
+                    if (this._consultando[k]) return;
+                    const previo = this._misSol[k];
+                    const reconsultar = previo === false && st === 'recepcionando' && (Date.now() - (this._ultCons[k] || 0) > 8000);
+                    if (previo !== undefined && !reconsultar) return;
+                    this._consultando[k] = true; this._ultCons[k] = Date.now();
+                    db.ref('sistema/solicitudes/' + fecha + '/' + t + '/' + dni).once('value')
+                        .then(sn => { this._misSol[k] = sn.exists(); })
+                        .catch(() => {})
+                        .then(() => { this._consultando[k] = false; try { this.evaluarAvisoResultado(); } catch (e) {} });
+                });
+            },
+
+            // Cuando el panel publica el sorteo y el alumno participó, se le avisa y se le lleva a su resultado (sin recargar nada).
+            evaluarAvisoResultado: function() {
+                if (!this.enPaso2()) return;
+                const bc = document.getElementById('comunicado-box');
+                if ((bc && !bc.classList.contains('hidden-section')) || (window.Swal && Swal.isVisible())) return;
+                const dni = this.alumno.dni;
+                const nombres = { tarde1: 'TARDE 2:00 PM', tarde2: 'TARDE 6:00 PM', noche: 'NOCHE 10:15 PM' };
+                const urls = { tarde1: 'turnotarde.html', tarde2: 'turnotarde.html', noche: 'turnonoche.html' };
+                for (const t of ['tarde1', 'tarde2', 'noche']) {
+                    if (this.est(t) !== 'sorteado') continue;
+                    const k = this.keyRonda(t);
+                    if (this._misSol[k] !== true || this._avisado[k]) continue;
+                    if (sessionStorage.getItem('unac_visto_' + k.replace(/\|/g, '_') + '_' + dni) === '1') continue; // ya vio su resultado
+                    this._avisado[k] = true;
+                    Swal.fire({
+                        title: '¡SORTEO PUBLICADO!',
+                        html: 'Ya salieron los resultados de <b>' + nombres[t] + '</b>.<br>Te llevamos a tu resultado en unos segundos…',
+                        icon: 'success', timer: 6000, timerProgressBar: true,
+                        showCancelButton: true, confirmButtonText: 'VER MI RESULTADO', cancelButtonText: 'DESPUÉS',
+                        background: '#050505', color: '#fff', confirmButtonColor: '#00E5FF', allowOutsideClick: false
+                    }).then(r => { if (r.isConfirmed || r.dismiss === Swal.DismissReason.timer) this.goToTurno(urls[t], t); });
+                    break;
+                }
+            },
 
             init: function() {
                 this.initThree('globe-box');
@@ -354,6 +426,8 @@ html{background:#050505!important}body{background:transparent!important}
 
                 // El comunicado va al final y aislado: si fallara, nunca afecta a las tarjetas ni al sorteo.
                 try { this.renderComunicado(); } catch (e) { console.warn('Comunicado:', e); }
+                // Contador de solicitudes + aviso automático del resultado (aislados igual que el comunicado).
+                try { this.renderSolicitudes(); this.verificarMisSolicitudes(); this.evaluarAvisoResultado(); } catch (e) { console.warn('Sync:', e); }
             },
 
             updateCardUI: function(turno, bid, cid, tid) {
@@ -386,8 +460,13 @@ html{background:#050505!important}body{background:transparent!important}
                         t.innerText = `TIEMPO: ${m}:${s}`;
                         t.className = "time-badge recepcionando";
                         
-                        b.innerText = "🟡 PARTICIPAR";
-                        b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
+                        if (this.enPaso2() && this._misSol[this.keyRonda(turno)] === true) {
+                            b.innerText = "✅ SOLICITUD ENVIADA";
+                            b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-green-500/20 text-green-400 border border-green-500";
+                        } else {
+                            b.innerText = "🟡 PARTICIPAR";
+                            b.className = "relative z-10 text-[9px] font-black px-4 py-1 rounded-full mb-1 bg-yellow-500/20 text-yellow-400 border border-yellow-500";
+                        }
                     } else {
                         t.innerText = "ESPERANDO RESULTADOS...";
                         t.className = "time-badge";
@@ -465,6 +544,10 @@ html{background:#050505!important}body{background:transparent!important}
                         document.getElementById('userCod').innerText = this.alumno.Codigo || this.alumno.codigo || "S/C"; 
                         
                         this.initThree('globe-box-2');
+
+                        // Recién ahora (DNI verificado, tres tarjetas a la vista) sale el comunicado, cada vez que ingresa.
+                        this._comKey = null; this._comCerrado = null;
+                        try { this.renderSolicitudes(); this.renderComunicado(); this.verificarMisSolicitudes(); } catch (e) { console.warn('Paso 2:', e); }
                     } else {
                         this.handleNotRegistered(dni);
                     }
