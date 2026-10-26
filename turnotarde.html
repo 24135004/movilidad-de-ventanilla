@@ -483,8 +483,8 @@ html{background:#050505!important}body{background:transparent!important}
                 } else if (estado === 'sorteado') {
                     this.setBoton("VERIFICANDO RESULTADOS...", false, clsCian + " animate-pulse");
                     if (this._resultado === null && !this._verif) {
-                        // Retraso aleatorio (0.3 a 2.5 s) para no saturar Firebase cuando todos entran a la vez
-                        const retraso = 300 + Math.floor(Math.random() * 2200);
+                        // Pequeño retraso aleatorio (0.1 a 0.7 s) para repartir la carga cuando todos entran a la vez
+                        const retraso = 100 + Math.floor(Math.random() * 600);
                         setTimeout(() => this.verificarGanadorAutomatico(), retraso);
                     }
                 }
@@ -518,15 +518,19 @@ html{background:#050505!important}body{background:transparent!important}
 
                 try {
                     const fechaID = this.getFechaID();
-                    const snapReg = await db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}/registros/${typedDni}`).once('value');
+                    // Ticket y perfil en paralelo: una sola espera de red.
+                    const [snapReg, aluPre] = await Promise.all([
+                        db.ref(`sistema/viajes/${fechaID}/${turnoActivoID}/registros/${typedDni}`).once('value'),
+                        db.ref('alumnos/' + typedDni).once('value').catch(() => null)
+                    ]);
 
                     if (this._baneado) { overlay.style.display = 'none'; this._verif = false; return this.showBlockScreen('baneado'); }
                     if (snapReg.exists()) {
                         this._resultado = 'gano';
                         try { sessionStorage.setItem(this.keyVisto(), '1'); } catch (_) {}
                         msg.innerText = "¡FELICIDADES! RECUPERANDO TICKET...";
-                        const aluSnap = await db.ref('alumnos/' + typedDni).once('value');
-                        this.renderFinal(aluSnap.val() || {}, typedDni, snapReg.val());
+                        const aluSnap = aluPre || await db.ref('alumnos/' + typedDni).once('value');
+                        this.renderFinal((aluSnap && aluSnap.val()) || {}, typedDni, snapReg.val());
                     } else {
                         this._resultado = 'perdio';
                         try { sessionStorage.setItem(this.keyVisto(), '1'); } catch (_) {}
@@ -578,33 +582,35 @@ html{background:#050505!important}body{background:transparent!important}
                 try {
                     const fechaID = this.getFechaID();
 
-                    msg.innerText = "VERIFICANDO PADRÓN OFICIAL...";
-                    const aluSnap = await db.ref('alumnos/' + typedDni).once('value');
+                    msg.innerText = "VERIFICANDO TU ELEGIBILIDAD...";
+                    // Padrón, abordaje de hoy, bloqueo y solicitud previa se consultan JUNTOS (antes eran 4 esperas seguidas).
+                    const [aluSnap, asisSnap, banSnap, yaExiste] = await Promise.all([
+                        db.ref('alumnos/' + typedDni).once('value'),
+                        db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value'),
+                        db.ref(`sistema/baneados/${typedDni}`).once('value').catch(() => null),
+                        this.consultarMiSolicitud()
+                    ]);
+
                     if (!aluSnap.exists()) {
                         overlay.style.display = 'none';
                         return Swal.fire({ title: 'No Encontrado', text: 'No estás registrado en el padrón actual.', icon: 'error', background: '#111', color: '#fff' });
                     }
                     const alu = aluSnap.val();
 
-                    msg.innerText = "REVISANDO ABORDAJES PREVIOS...";
-                    const asisSnap = await db.ref(`sistema/asistencias/${fechaID}/${typedDni}`).once('value');
                     if (asisSnap.exists()) {
                         // Solo cuenta el abordaje de HOY (haber tenido ticket ayer NO bloquea a nadie)
                         overlay.style.display = 'none';
                         return this.showBlockScreen('ya_aborde');
                     }
 
-                    msg.innerText = "VERIFICANDO ESTADO DEL DNI...";
-                    let baneado = null;
-                    try { const banSnap = await db.ref(`sistema/baneados/${typedDni}`).once('value'); if (banSnap.exists()) baneado = banSnap.val() || {}; } catch (_) {}
-                    if (baneado) {
+                    if (banSnap && banSnap.exists()) {
+                        const baneado = banSnap.val() || {};
                         overlay.style.display = 'none';
                         return Swal.fire({ title: 'DNI BLOQUEADO', text: 'Tu DNI fue bloqueado por el delegado por infringir las normas del servicio.' + (baneado.motivo ? ' Motivo: ' + baneado.motivo : ''), icon: 'error', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF' });
                     }
 
                     // Si ya había enviado antes, no se reenvía
                     msg.innerText = "ENVIANDO SOLICITUD AL SISTEMA...";
-                    const yaExiste = await this.consultarMiSolicitud();
                     if (yaExiste === true) {
                         this._solicitudConfirmada = true;
                         sessionStorage.setItem(this.keySolicitud(), 'true');
@@ -623,15 +629,12 @@ html{background:#050505!important}body{background:transparent!important}
                         new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('Sin respuesta del servidor'), { code: 'TIMEOUT' })), 15000))
                     ]);
 
-                    // Confirmación real: se vuelve a leer lo que quedó guardado (si las reglas lo permiten)
+                    // Confirmación real: set() solo se resuelve cuando el servidor aceptó la escritura (si las reglas la rechazan, lanza error).
                     msg.innerText = "CONFIRMANDO RECEPCIÓN...";
-                    const guardada = await this.consultarMiSolicitud();
-                    if (guardada === false) throw Object.assign(new Error('La solicitud no quedó guardada'), { code: 'NO_GUARDADA' });
-
                     this._solicitudConfirmada = true;
                     sessionStorage.setItem(this.keySolicitud(), 'true');
                     // Contador público (+1 atómico). Es solo informativo: si falla no afecta tu solicitud, y el panel lo corrige con el conteo real.
-                    try { await Promise.race([db.ref('sistema/contadores/' + fechaID + '/' + turnoActivoID).transaction(c => (Number(c) || 0) + 1), new Promise(r => setTimeout(r, 4000))]); } catch (_) {}
+                    try { await Promise.race([db.ref('sistema/contadores/' + fechaID + '/' + turnoActivoID).transaction(c => (Number(c) || 0) + 1), new Promise(r => setTimeout(r, 1500))]); } catch (_) {}
                     overlay.style.display = 'none';
                     this.mostrarExitoSolicitud(false);
 
@@ -729,12 +732,11 @@ html{background:#050505!important}body{background:transparent!important}
                     correctLevel : QRCode.CorrectLevel.H
                 });
 
-                setTimeout(() => {
-                    document.getElementById('scanning-overlay').style.display = 'none';
-                    document.getElementById('step-1').classList.add('hidden-section');
-                    document.getElementById('step-3').classList.remove('hidden-section');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }, 1000);
+                // Se muestra el ticket de inmediato (antes había 1 s de espera artificial).
+                document.getElementById('scanning-overlay').style.display = 'none';
+                document.getElementById('step-1').classList.add('hidden-section');
+                document.getElementById('step-3').classList.remove('hidden-section');
+                window.scrollTo({ top: 0 });
             },
 
             initThree: function() {
@@ -747,7 +749,7 @@ html{background:#050505!important}body{background:transparent!important}
                     container.appendChild(renderer.domElement);
                     const sphere = new THREE.Mesh(new THREE.IcosahedronGeometry(20, 1), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.15 }));
                     scene.add(sphere); camera.position.z = 50;
-                    function animate() { requestAnimationFrame(animate); sphere.rotation.y += 0.005; renderer.render(scene, camera); }
+                    function animate() { requestAnimationFrame(animate); if (document.hidden || container.offsetParent === null) return; sphere.rotation.y += 0.005; renderer.render(scene, camera); }
                     animate();
                 } catch (e) { console.warn('Globo 3D no disponible:', e); }
             }
