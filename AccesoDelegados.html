@@ -918,14 +918,65 @@ html{background:#050505!important}body{background:transparent!important}
                     db.ref('sistema/config').update({ [`${t}_estado`]: 'cerrado', [`${t}_inicio_recepcion`]: 0 }).catch(() => {});
                     return;
                 }
-                const h = configGlobal[`hora_${t}`];
-                if (configGlobal[`prog_${t}`] && h && raw === 'cerrado') {
-                    const hm = parseInt(h.split(':')[0], 10) * 60 + parseInt(h.split(':')[1], 10);
-                    const nowMs = Date.now() + serverTimeOffset;
-                    const sched = nowMs - ((nowMs - 18000000) % 86400000) + hm * 60000;
-                    if (ahora >= hm && ahora < hm + 15 && (configGlobal[`${t}_inicio_recepcion`] || 0) < sched) abrirRecepcion(t).catch(() => {});
-                }
             });
+            // Contadores de solicitudes (se re-enganchan solos al cambiar el día) y apertura programada.
+            try { sincronizarContadoresSolicitudes(); } catch (_) {}
+            abrirProgramados();
+        }
+
+        // APERTURA PROGRAMADA (revisada cada segundo desde el Worker, con la hora del SERVIDOR).
+        // Mismas condiciones que validan las reglas de Firebase, así panel, ticket y turnotarde abren el turno igual y una sola vez.
+        const abriendo = {};
+        function abrirProgramados() {
+            if (!configCargada) return;
+            const ahora = getPeruTimeMins(), hoy = getFechaID();
+            const nowMs = Date.now() + serverTimeOffset;
+            const iniDia = nowMs - ((nowMs - 18000000) % 86400000);
+            ['tarde1', 'tarde2', 'noche'].forEach(t => {
+                if (!misPermisos.includes(t)) return;
+                const h = configGlobal[`hora_${t}`];
+                if (!configGlobal[`prog_${t}`] || !h) return;
+                const raw = configGlobal[`${t}_estado_raw`] || 'cerrado', fecha = configGlobal[`${t}_fecha`] || '';
+                // Libre = cerrado, o con un estado que quedó de un día anterior.
+                if (!(raw === 'cerrado' || fecha !== hoy)) return;
+                const hm = parseInt(h.split(':')[0], 10) * 60 + parseInt(h.split(':')[1], 10);
+                if (!(ahora >= hm && ahora < hm + 15)) return;
+                if ((configGlobal[`${t}_sorteo_ts`] || 0) >= iniDia) return;                      // ya se sorteó hoy
+                if ((configGlobal[`${t}_inicio_recepcion`] || 0) >= iniDia + hm * 60000) return;  // ya se abrió a la hora programada
+                if (abriendo[t] && Date.now() - abriendo[t] < 15000) return;                      // evita aperturas repetidas
+                abriendo[t] = Date.now();
+                abrirRecepcion(t).then(ok => { if (ok) logSorteo(t, 'Apertura automática a la hora programada'); else abriendo[t] = 0; }).catch(() => { /* si Firebase la rechaza, se reintenta recién a los 15 s (no cada segundo) */ });
+            });
+        }
+
+        // CONTADORES PÚBLICOS: los alumnos no pueden leer las solicitudes (llevan DNI), así que el panel publica solo el número
+        // en sistema/config/solicitudes/<turno> = {n, fecha}. Ticket y turnotarde lo muestran en vivo.
+        const contSol = {};
+        function sincronizarContadoresSolicitudes() {
+            const fecha = getFechaID();
+            ['tarde1', 'tarde2', 'noche'].forEach(t => {
+                const c = contSol[t], debe = misPermisos.includes(t);
+                if (c && (!debe || c.fecha !== fecha)) { try { c.ref.off('value', c.fn); } catch (_) {} clearTimeout(c.timer); delete contSol[t]; }
+                if (!debe || contSol[t]) return;
+                const entry = { ref: db.ref(`sistema/solicitudes/${fecha}/${t}`), fecha, timer: null, ultimo: null, fn: null };
+                entry.fn = snap => {
+                    const n = snap.numChildren();
+                    clearTimeout(entry.timer);
+                    entry.timer = setTimeout(() => publicarContadorSolicitudes(t, fecha, n, entry), 800);
+                };
+                contSol[t] = entry;
+                entry.ref.on('value', entry.fn, err => console.warn('Contador de solicitudes ' + t + ':', err && (err.code || err.message)));
+            });
+        }
+        function publicarContadorSolicitudes(t, fecha, n, entry) {
+            if (contSol[t] !== entry) return;
+            const pub = (configGlobal.sol_pub || {})[t];
+            if (pub && pub.n === n && pub.fecha === fecha) return;                                     // ya está publicado
+            if (entry.ultimo && entry.ultimo.n === n && Date.now() - entry.ultimo.ts < 15000) return;  // evita repetir la misma escritura
+            entry.ultimo = { n, ts: Date.now() };
+            db.ref(`sistema/config/solicitudes/${t}`).set({ n, fecha })
+                .then(() => logSorteo(t, `Solicitudes publicadas para tickets: ${n}`))
+                .catch(e => { entry.ultimo = null; console.warn('No se pudo publicar el contador de ' + t + ':', e && (e.code || e.message)); });
         }
 
 
@@ -970,6 +1021,7 @@ html{background:#050505!important}body{background:transparent!important}
         }
 
         function actualizarUI_Tarjetas() {
+            try { sincronizarContadoresSolicitudes(); } catch (_) {}
             const btnAjustesBus = document.getElementById('btn-ajustes-bus');
             const esAdministradorPrincipal = esAdminAutenticado() && delegadoActivo === ADMIN_DNI;
             btnAjustesBus.classList.toggle('hidden', !esAdministradorPrincipal);
@@ -1343,6 +1395,12 @@ html{background:#050505!important}body{background:transparent!important}
                 configGlobal.noche_estado_raw = d.noche_estado || 'cerrado'; configGlobal.noche_fecha = d.noche_fecha || ''; configGlobal.noche_estado = estadoEfectivo(d.noche_estado, d.noche_fecha);
                 configGlobal.limite_noche = d.limite_noche || '';
                 configGlobal.noche_inicio_recepcion = d.noche_inicio_recepcion || 0;
+
+                // Última hora de sorteo de cada turno (evita reabrir solo un turno que ya se sorteó hoy) y contadores publicados para tickets.
+                configGlobal.tarde1_sorteo_ts = d.tarde1_sorteo_ts || 0;
+                configGlobal.tarde2_sorteo_ts = d.tarde2_sorteo_ts || 0;
+                configGlobal.noche_sorteo_ts = d.noche_sorteo_ts || 0;
+                configGlobal.sol_pub = d.solicitudes || {};
 
                 actualizarUI_Tarjetas();
 
@@ -1726,9 +1784,9 @@ html{background:#050505!important}body{background:transparent!important}
                         
                         // Cerrar los turnos activos en Firebase para que inicie limpio
                         await db.ref('sistema/config').update({
-                            tarde1_estado: 'cerrado', tarde1_inicio_recepcion: 0,
-                            tarde2_estado: 'cerrado', tarde2_inicio_recepcion: 0,
-                            noche_estado: 'cerrado', noche_inicio_recepcion: 0
+                            tarde1_estado: 'cerrado', tarde1_inicio_recepcion: 0, tarde1_sorteo_ts: 0,
+                            tarde2_estado: 'cerrado', tarde2_inicio_recepcion: 0, tarde2_sorteo_ts: 0,
+                            noche_estado: 'cerrado', noche_inicio_recepcion: 0, noche_sorteo_ts: 0
                         });
 
                         notificarFlash("SISTEMA REINICIADO", "success", "Todo en 0"); 
@@ -1979,6 +2037,7 @@ html{background:#050505!important}body{background:transparent!important}
         // VIGILANTE: dispara el sorteo apenas pasan los 2 minutos, usando la hora del servidor.
         function tickSorteo() {
             if (!configCargada) return;
+            try { abrirProgramados(); } catch (_) {}
             const now = Date.now() + serverTimeOffset;
             ['tarde1', 'tarde2', 'noche'].forEach(t => {
                 if (!misPermisos.includes(t)) return;
