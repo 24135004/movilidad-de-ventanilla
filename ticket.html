@@ -359,7 +359,7 @@ html{background:#050505!important}body{background:transparent!important}
                     Swal.fire({
                         title: '¡SORTEO PUBLICADO!',
                         html: 'Ya salieron los resultados de <b>' + nombres[t] + '</b>.<br>Te llevamos a tu resultado en unos segundos…',
-                        icon: 'success', timer: 6000, timerProgressBar: true,
+                        icon: 'success', timer: 4000, timerProgressBar: true,
                         showCancelButton: true, confirmButtonText: 'VER MI RESULTADO', cancelButtonText: 'DESPUÉS',
                         background: '#050505', color: '#fff', confirmButtonColor: '#00E5FF', allowOutsideClick: false
                     }).then(r => { if (r.isConfirmed || r.dismiss === Swal.DismissReason.timer) this.goToTurno(urls[t], t); });
@@ -492,53 +492,87 @@ html{background:#050505!important}body{background:transparent!important}
             },
 
             startScan: async function() {
+                if (this._scanBusy) return;
                 const dni = document.getElementById('dniInput').value.trim();
-                if(!/^\d{8}$/.test(dni)) return Swal.fire('Error', 'Debe ingresar un DNI válido de 8 dígitos', 'warning');
-                
+                if (!/^\d{8}$/.test(dni)) return Swal.fire('Error', 'Debe ingresar un DNI válido de 8 dígitos', 'warning');
+                this._scanBusy = true;
+
                 const overlay = document.getElementById('scanning-overlay'), msg = document.getElementById('loader-msg'), bar = document.getElementById('progress-bar');
                 overlay.style.display = 'flex';
-                
-                const steps = [
-                    {p:"25%",t:"VERIFICANDO HORA DE SERVIDOR..."},
-                    {p:"50%",t:"BUSCANDO IDENTIDAD EN PADRÓN..."},
-                    {p:"85%",t:"CARGANDO PERFIL ESTUDIANTIL..."},
-                    {p:"100%",t:"ACCESO AUTORIZADO"}
+                bar.style.width = '8%'; msg.innerText = 'VERIFICANDO IDENTIDAD...';
+
+                // El HUD avanza MIENTRAS se consulta la base (antes primero esperaba y recién después consultaba).
+                const pasos = [
+                    { p: '30%', t: 'BUSCANDO IDENTIDAD EN PADRÓN...' },
+                    { p: '60%', t: 'VERIFICANDO ESTADO DEL DNI...' },
+                    { p: '85%', t: 'CARGANDO PERFIL ESTUDIANTIL...' }
                 ];
-                for (const s of steps) { 
-                    msg.innerText = s.t; 
-                    bar.style.width = s.p; 
-                    await new Promise(r => setTimeout(r, 120)); 
+                let paso = 0;
+                const anim = setInterval(() => { if (paso < pasos.length) { msg.innerText = pasos[paso].t; bar.style.width = pasos[paso].p; paso++; } }, 110);
+                const t0 = Date.now();
+
+                try {
+                    // Padrón + bloqueo en PARALELO (una sola espera de red en vez de dos seguidas).
+                    const lectura = Promise.all([
+                        db.ref('alumnos/' + dni).once('value'),
+                        db.ref('sistema/baneados/' + dni).once('value').catch(() => null)
+                    ]);
+                    const tope = new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('Tiempo agotado'), { code: 'TIMEOUT' })), 12000));
+                    const [snap, banSnap] = await Promise.race([lectura, tope]);
+
+                    // Duración mínima del HUD para que no parpadee si la red es muy rápida.
+                    const falta = 380 - (Date.now() - t0);
+                    if (falta > 0) await new Promise(r => setTimeout(r, falta));
+                    clearInterval(anim);
+                    bar.style.width = '100%'; msg.innerText = 'ACCESO AUTORIZADO';
+
+                    if (!snap.exists()) { overlay.style.display = 'none'; return this.handleNotRegistered(dni); }
+                    const ban = (banSnap && banSnap.exists()) ? (banSnap.val() || {}) : null;
+                    if (ban) { overlay.style.display = 'none'; this.alumno = null; return this.mostrarBaneo(ban); }
+
+                    this.alumno = snap.val();
+                    this.alumno.dni = dni;
+                    this._ban = null;
+
+                    document.getElementById('userName').innerText = this.alumno.Estudiante || 'Estudiante UNAC';
+                    document.getElementById('userFac').innerText = this.alumno.Facultad || 'Facultad No Registrada';
+                    document.getElementById('userDni').innerText = dni;
+                    document.getElementById('userCod').innerText = this.alumno.Codigo || this.alumno.codigo || 'S/C';
+
+                    // Primero se muestra el paso 2 y recién entonces se oculta el HUD: sin pantallas intermedias ni "saltos".
+                    document.getElementById('step-1').classList.add('hidden-section');
+                    document.getElementById('step-2').classList.remove('hidden-section');
+                    overlay.style.display = 'none';
+                    window.scrollTo({ top: 0 });
+
+                    // Estado en vivo del DNI (si lo bloquean mientras está dentro, se le corta el acceso al instante).
+                    this.escucharBaneo(dni);
+
+                    // Recién ahora (DNI verificado, tres tarjetas a la vista) sale el comunicado.
+                    this._comKey = null; this._comCerrado = null;
+                    try { this.checkSchedules(); this.renderSolicitudes(); this.renderComunicado(); this.verificarMisSolicitudes(); } catch (e) { console.warn('Paso 2:', e); }
+
+                    // El globo 3D es decorativo: se crea después de pintar para no retrasar la pantalla.
+                    setTimeout(() => this.initThree('globe-box-2'), 150);
+                } catch (err) {
+                    console.error('startScan:', err);
+                    Swal.fire('Error de Conexión', 'No se pudo contactar con la base de datos. Revisa tu internet e inténtalo de nuevo.', 'error');
+                } finally {
+                    clearInterval(anim);
+                    overlay.style.display = 'none';
+                    this._scanBusy = false;
                 }
+            },
 
-                db.ref('alumnos/' + dni).once('value').then(async snap => {
-                    overlay.style.display = 'none';
-                    if(snap.exists()){
-                        // DNI bloqueado por el administrador: no entra a ningún turno
-                        const ban = await this.consultarBaneo(dni);
-                        if (ban) { this.alumno = null; return this.mostrarBaneo(ban); }
-                        this.alumno = snap.val(); 
-                        this.alumno.dni = dni;
-                        
-                        document.getElementById('step-1').classList.add('hidden-section');
-                        document.getElementById('step-2').classList.remove('hidden-section');
-                        
-                        document.getElementById('userName').innerText = this.alumno.Estudiante || "Estudiante UNAC";
-                        document.getElementById('userFac').innerText = this.alumno.Facultad || "Facultad No Registrada";
-                        document.getElementById('userDni').innerText = dni;
-                        document.getElementById('userCod').innerText = this.alumno.Codigo || this.alumno.codigo || "S/C"; 
-                        
-                        this.initThree('globe-box-2');
-
-                        // Recién ahora (DNI verificado, tres tarjetas a la vista) sale el comunicado, cada vez que ingresa.
-                        this._comKey = null; this._comCerrado = null;
-                        try { this.renderSolicitudes(); this.renderComunicado(); this.verificarMisSolicitudes(); } catch (e) { console.warn('Paso 2:', e); }
-                    } else {
-                        this.handleNotRegistered(dni);
-                    }
-                }).catch(err => {
-                    overlay.style.display = 'none';
-                    Swal.fire('Error de Conexión', 'No se pudo contactar con la base de datos. Revisa tu internet.', 'error');
-                });
+            // Escucha en vivo si el administrador bloquea este DNI. Deja el dato en caché para no consultar la red al elegir un turno.
+            escucharBaneo: function(dni) {
+                if (this._banRef) { try { this._banRef.off(); } catch (_) {} }
+                this._ban = null;
+                this._banRef = db.ref('sistema/baneados/' + dni);
+                this._banRef.on('value', sn => {
+                    this._ban = sn.exists() ? (sn.val() || {}) : null;
+                    if (this._ban && this.alumno) { const b = this._ban; this.alumno = null; this.mostrarBaneo(b); }
+                }, () => {});
             },
 
             handleNotRegistered: function(dni) {
@@ -551,11 +585,6 @@ html{background:#050505!important}body{background:transparent!important}
                     icon: 'warning', background: '#050505', color: '#fff', 
                     confirmButtonText: 'IR A REGISTRO', showCancelButton: true, cancelButtonText: 'REINTENTAR', confirmButtonColor: '#00E5FF'
                 }).then((r) => { if (r.isConfirmed) window.location.href = "registro.html"; });
-            },
-
-            consultarBaneo: async function(dni) {
-                try { const b = await db.ref('sistema/baneados/' + dni).once('value'); return b.exists() ? (b.val() || {}) : null; }
-                catch (_) { return null; }
             },
 
             mostrarBaneo: function(ban) {
@@ -571,10 +600,8 @@ html{background:#050505!important}body{background:transparent!important}
             },
 
             goToTurno: async function(pageUrl, turnoId) {
-                if (this.alumno) {
-                    const ban = await this.consultarBaneo(this.alumno.dni);
-                    if (ban) { this.alumno = null; return this.mostrarBaneo(ban); }
-                }
+                // El bloqueo ya está en caché y se actualiza en vivo: la navegación es inmediata.
+                if (this._ban) { const b = this._ban; this.alumno = null; return this.mostrarBaneo(b); }
                 let isActive = false;
                 if (turnoId === 'tarde1') isActive = this.currentTarde1Active;
                 if (turnoId === 'tarde2') isActive = this.currentTarde2Active;
@@ -603,7 +630,7 @@ html{background:#050505!important}body{background:transparent!important}
                 renderer.setSize(container.clientWidth, container.clientHeight); container.appendChild(renderer.domElement);
                 const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.15 }));
                 scene.add(globe); camera.position.z = 100;
-                const animate = () => { requestAnimationFrame(animate); globe.rotation.y += 0.003; renderer.render(scene, camera); };
+                const animate = () => { requestAnimationFrame(animate); if (document.hidden || container.offsetParent === null) return; globe.rotation.y += 0.003; renderer.render(scene, camera); };
                 animate();
                 } catch (e) { console.warn('Globo 3D no disponible:', e); }
             }
