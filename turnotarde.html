@@ -220,6 +220,68 @@ html{background:#050505!important}body{background:transparent!important}
             _resultado: null,       // 'gano' | 'perdio' | null  (una vez definido no se vuelve a consultar)
             _enviando: false,       // evita doble clic al enviar la solicitud
             _solicitudConfirmada: false,
+            cfg: {},                // copia en vivo de sistema/config (la publica el panel de delegados)
+            _tryOpen: 0,            // última vez que este cliente intentó la apertura programada
+
+            // Minutos transcurridos del día en Lima, con la hora del SERVIDOR (no la del celular).
+            minutosLima: function() {
+                const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(Date.now() + serverTimeOffset)).split(':');
+                return (parseInt(p[0], 10) % 24) * 60 + parseInt(p[1], 10);
+            },
+
+            // Solicitudes del día de ESTE turno, publicadas por el panel (sistema/config/solicitudes/<turno> = {n, fecha}).
+            cntSol: function() {
+                const s = (this.cfg && this.cfg.solicitudes) ? this.cfg.solicitudes[turnoActivoID] : null;
+                return (s && s.fecha === hoyLima() && Number(s.n) > 0) ? Number(s.n) : 0;
+            },
+
+            // Apertura programada también desde esta pantalla (misma condición que validan las reglas y el panel).
+            autoOpen: function() {
+                if (!turnoDataLoaded || window.estadoTurno.estado !== 'cerrado') return;
+                const t = turnoActivoID, cfg = this.cfg || {};
+                const pm = cfg['prog_min_' + t];
+                if (cfg['prog_' + t] !== true || typeof pm !== 'number') return;
+                const mins = this.minutosLima();
+                if (mins < pm || mins >= pm + 15) return;
+                const nowMs = Date.now() + serverTimeOffset;
+                const iniDia = nowMs - ((nowMs - 18000000) % 86400000);
+                if ((cfg[t + '_sorteo_ts'] || 0) >= iniDia) return;                 // ya se sorteó hoy
+                if ((cfg[t + '_inicio_recepcion'] || 0) >= iniDia + pm * 60000) return; // ya se abrió a la hora programada
+                if (Date.now() - this._tryOpen < 20000) return;
+                this._tryOpen = Date.now();
+                db.ref('sistema/config').update({
+                    [t + '_inicio_recepcion']: firebase.database.ServerValue.TIMESTAMP,
+                    [t + '_fecha']: hoyLima(),
+                    [t + '_estado']: 'recepcionando'
+                }).catch(err => { console.warn('Apertura programada rechazada (' + t + '):', err && (err.code || err.message)); });
+            },
+
+            // Línea de estado (se repinta cada segundo con el cronómetro de la ventana de solicitudes).
+            pintarDiag: function() {
+                const diag = document.getElementById('diag-line'); if (!diag || !turnoDataLoaded) return;
+                const e = window.estadoTurno;
+                let txt = `Turno: ${turnoActivoID} · Estado: ${e.estado} · Fecha: ${this.getFechaID()} · Solicitudes hoy: ${this.cntSol()}`;
+                if (e.estado === 'recepcionando' && e.inicio) {
+                    const rest = e.inicio + 120000 - (Date.now() + serverTimeOffset);
+                    if (rest > 0) txt += ` · Cierra en ${String(Math.floor(rest / 60000)).padStart(2, '0')}:${String(Math.floor((rest % 60000) / 1000)).padStart(2, '0')}`;
+                }
+                diag.innerText = txt;
+            },
+
+            // Pasados los 2 minutos de la ventana ya no se puede enviar (el panel sortea en ese momento).
+            actualizarVentana: function() {
+                const e = window.estadoTurno;
+                if (!turnoDataLoaded || e.estado !== 'recepcionando' || !e.inicio) return;
+                if (this._enviando || this._solicitudConfirmada || sessionStorage.getItem(this.keySolicitud()) === 'true') return;
+                if (!document.getElementById('step-3').classList.contains('hidden-section')) return;
+                const rest = e.inicio + 120000 - (Date.now() + serverTimeOffset);
+                if (rest <= 0) this.setBoton("RECEPCIÓN FINALIZADA · ESPERANDO SORTEO", false, "bg-gray-600 text-white font-black p-5 rounded-2xl w-full uppercase tracking-widest cursor-not-allowed text-xs");
+            },
+
+            // Marca (para ticket.html) que este alumno ya vio el resultado de esta ronda.
+            keyVisto: function() {
+                return `unac_visto_${this.getFechaID()}_${turnoActivoID}_${window.estadoTurno.inicio || 0}_${typedDni}`;
+            },
 
             init: function() {
                 // --- FILTRO DE SEGURIDAD: debe venir de ticket.html ---
@@ -261,12 +323,16 @@ html{background:#050505!important}body{background:transparent!important}
                 // Escucha en vivo el estado que controla el panel del delegado
                 db.ref('sistema/config').on('value', snap => {
                     const data = snap.val() || {};
+                    this.cfg = data;
                     const inicioNuevo = data[`${turnoActivoID}_inicio_recepcion`] || 0;
                     // Si el delegado abrió una ronda nueva (o hizo Reset), se olvida todo lo de la ronda anterior
                     if (window.estadoTurno.inicio !== undefined && inicioNuevo !== window.estadoTurno.inicio) {
                         this._solicitudConfirmada = false;
                         this._resultado = null;
                         this._verif = false;
+                        // Si seguía en pantalla el resultado de la ronda anterior, se quita para poder participar en la nueva.
+                        const ov = document.getElementById('blocking-overlay'), ttl = document.getElementById('block-title').innerText;
+                        if (ov.style.display === 'flex' && (ttl === 'CUPOS LLENOS' || ttl === 'NO PARTICIPASTE')) ov.style.display = 'none';
                     }
                     window.estadoTurno = {
                         estado: estadoEfectivo(data[`${turnoActivoID}_estado`], data[`${turnoActivoID}_fecha`]),
@@ -274,7 +340,9 @@ html{background:#050505!important}body{background:transparent!important}
                         inicio: inicioNuevo
                     };
                     turnoDataLoaded = true;
-                    this.reaccionarAlDelegado();
+                    const sig = [window.estadoTurno.estado, inicioNuevo, window.estadoTurno.cupos, data['prog_' + turnoActivoID], data['hora_' + turnoActivoID]].join('|');
+                    const cambio = (this._sig !== sig); this._sig = sig;
+                    if (cambio) this.reaccionarAlDelegado(); else this.pintarDiag();
                 }, err => {
                     console.error('No se pudo leer sistema/config:', err);
                     Swal.fire({ title: 'Sin conexión con el sistema', text: 'No se pudo leer el estado del turno (' + (err && (err.code || err.message) || 'desconocido') + ').', icon: 'error', background: '#111', color: '#fff', confirmButtonColor: '#00E5FF' });
@@ -282,6 +350,7 @@ html{background:#050505!important}body{background:transparent!important}
 
                 this.initThree();
                 setInterval(() => this.checkSecurityTime(), 1000);
+                setInterval(() => { try { this.autoOpen(); this.pintarDiag(); this.actualizarVentana(); } catch (e) { console.warn('Sync:', e); } }, 1000);
             },
 
             getRealTime: function() {
@@ -359,7 +428,11 @@ html{background:#050505!important}body{background:transparent!important}
                     icon.className = 'fa-solid fa-shield-halved text-7xl text-red-600 mb-6 animate-bounce';
                     title.innerText = "TURNO CERRADO";
                     title.className = "text-3xl font-black text-white uppercase tracking-tighter";
-                    reason.innerHTML = "<div class='text-center'>El delegado a cargo ha desactivado la emisión de tickets para este turno.</div>";
+                    const cf = this.cfg || {}, hp = cf['hora_' + turnoActivoID], pmc = cf['prog_min_' + turnoActivoID];
+                    const programado = cf['prog_' + turnoActivoID] === true && /^\d{2}:\d{2}$/.test(String(hp || '')) && typeof pmc === 'number' && this.minutosLima() < pmc + 15;
+                    reason.innerHTML = programado
+                        ? "<div class='text-center'>Este turno se activa <b>automáticamente a las " + hp + "</b>. Esta pantalla se actualizará sola cuando se abra la recepción.</div>"
+                        : "<div class='text-center'>El delegado a cargo ha desactivado la emisión de tickets para este turno.</div>";
                 } else {
                     overlay.style.borderTop = '15px solid #ef4444';
                     icon.className = 'fa-solid fa-clock text-7xl text-red-600 mb-6 animate-pulse';
@@ -391,8 +464,7 @@ html{background:#050505!important}body{background:transparent!important}
                 const estado = window.estadoTurno.estado;
 
                 // Línea de diagnóstico (para saber exactamente qué ve el sistema)
-                const diag = document.getElementById('diag-line');
-                if (diag) diag.innerText = `Turno: ${turnoActivoID} · Estado: ${estado} · Fecha: ${this.getFechaID()}`;
+                this.pintarDiag();
 
                 if (estado === 'cerrado' || estado === 'finalizado') {
                     this.showBlockScreen(estado);
@@ -415,7 +487,9 @@ html{background:#050505!important}body{background:transparent!important}
                         const existe = await this.consultarMiSolicitud();
                         if (existe === true) { yaEnviada = true; this._solicitudConfirmada = true; sessionStorage.setItem(this.keySolicitud(), 'true'); }
                     }
+                    const vencida = !!window.estadoTurno.inicio && (Date.now() + serverTimeOffset) > window.estadoTurno.inicio + 120000;
                     if (yaEnviada) this.setBoton("SOLICITUD YA ENVIADA", false, clsGris);
+                    else if (vencida) this.setBoton("RECEPCIÓN FINALIZADA · ESPERANDO SORTEO", false, clsGris + " text-xs");
                     else this.setBoton("ENVIAR SOLICITUD DE CUPO", true, clsAmarillo);
 
                 } else if (estado === 'procesando') {
@@ -464,11 +538,13 @@ html{background:#050505!important}body{background:transparent!important}
                     if (this._baneado) { overlay.style.display = 'none'; this._verif = false; return this.showBlockScreen('baneado'); }
                     if (snapReg.exists()) {
                         this._resultado = 'gano';
+                        try { sessionStorage.setItem(this.keyVisto(), '1'); } catch (_) {}
                         msg.innerText = "¡FELICIDADES! RECUPERANDO TICKET...";
                         const aluSnap = await db.ref('alumnos/' + typedDni).once('value');
                         this.renderFinal(aluSnap.val() || {}, typedDni, snapReg.val());
                     } else {
                         this._resultado = 'perdio';
+                        try { sessionStorage.setItem(this.keyVisto(), '1'); } catch (_) {}
                         overlay.style.display = 'none';
                         // ¿participó? (si las reglas no permiten leerlo, se asume que sí y se muestra prioridad)
                         const participo = this._solicitudConfirmada || sessionStorage.getItem(this.keySolicitud()) === 'true' || (await this.consultarMiSolicitud());
