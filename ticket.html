@@ -250,34 +250,10 @@ html{background:#050505!important}body{background:transparent!important}
             currentTarde1Active: false,
             currentTarde2Active: false,
             currentNocheActive: false,
-            _tryOpen: {}, comunicado: null,
+            comunicado: null,
+            _cnt: {}, _cntFecha: null, _cntRefs: [],
             _misSol: {}, _consultando: {}, _ultCons: {}, _avisado: {},
-            // Apertura programada: usa la hora del SERVIDOR (las reglas de Firebase la validan), así no se puede adelantar cambiando la hora del celular.
-            autoOpen: function() {
-                const cfg = this.config || {};
-                const p = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(Date.now() + serverTimeOffset)).split(':');
-                const mins = (parseInt(p[0], 10) % 24) * 60 + parseInt(p[1], 10);
-                const nowMs = Date.now() + serverTimeOffset;
-                ['tarde1', 'tarde2', 'noche'].forEach(t => {
-                    const pm = cfg['prog_min_' + t];
-                    if (cfg['prog_' + t] !== true || typeof pm !== 'number') return;
-                    if (this.est(t) !== 'cerrado') return;
-                    if (mins < pm || mins >= pm + 15) return;
-                    // Misma condición que validan las reglas de Firebase y el panel: solo se abre si el último inicio es ANTERIOR a la hora programada de hoy.
-                    // (Antes se bloqueaba si el turno ya se había abierto/cerrado hoy, aunque fuera antes de la hora programada, y por eso nunca se activaba.)
-                    const iniDia = nowMs - ((nowMs - 18000000) % 86400000);
-                    if ((cfg[t + '_sorteo_ts'] || 0) >= iniDia) return; // ya se sorteó hoy: no se reabre solo
-                    const sched = iniDia + pm * 60000;
-                    if ((cfg[t + '_inicio_recepcion'] || 0) >= sched) return;
-                    if (Date.now() - (this._tryOpen[t] || 0) < 20000) return;
-                    this._tryOpen[t] = Date.now();
-                    db.ref('sistema/config').update({
-                        [t + '_inicio_recepcion']: firebase.database.ServerValue.TIMESTAMP,
-                        [t + '_fecha']: hoyLima(),
-                        [t + '_estado']: 'recepcionando'
-                    }).catch(err => { console.warn('Apertura programada rechazada (' + t + '):', err && (err.code || err.message)); });
-                });
-            },
+            // La activación de los turnos (manual o programada) la hace SOLO el panel de delegados; esta pantalla únicamente la refleja en vivo.
             // ¿El alumno ya ingresó su DNI y está viendo las tres tarjetas?
             enPaso2: function() {
                 const s2 = document.getElementById('step-2');
@@ -324,10 +300,18 @@ html{background:#050505!important}body{background:transparent!important}
             },
             est: function(t){ return estadoEfectivo(this.config[t+'_estado'], this.config[t+'_fecha']); },
 
-            // Solicitudes del día publicadas por el panel de delegados (sistema/config/solicitudes/<turno> = {n, fecha}).
-            cntSol: function(t) {
-                const s = (this.config && this.config.solicitudes) ? this.config.solicitudes[t] : null;
-                return (s && s.fecha === hoyLima() && Number(s.n) > 0) ? Number(s.n) : 0;
+            // Solicitudes de HOY por turno: sistema/contadores/<fecha>/<turno>. Se suma cuando el alumno envía su solicitud y el panel lo corrige con el conteo real.
+            cntSol: function(t) { return Number(this._cnt[t]) > 0 ? Number(this._cnt[t]) : 0; },
+            engancharContadores: function() {
+                const f = hoyLima();
+                if (this._cntFecha === f) return;                       // ya enganchado a la fecha de hoy (si cambia el día se re-engancha solo)
+                (this._cntRefs || []).forEach(r => { try { r.off(); } catch (_) {} });
+                this._cntRefs = []; this._cnt = {}; this._cntFecha = f;
+                ['tarde1', 'tarde2', 'noche'].forEach(t => {
+                    const r = db.ref('sistema/contadores/' + f + '/' + t);
+                    r.on('value', sn => { this._cnt[t] = Number(sn.val()) || 0; try { this.renderSolicitudes(); } catch (_) {} }, () => {});
+                    this._cntRefs.push(r);
+                });
             },
             renderSolicitudes: function() {
                 const a = this.cntSol('tarde1'), b = this.cntSol('tarde2'), c = this.cntSol('noche');
@@ -414,7 +398,7 @@ html{background:#050505!important}body{background:transparent!important}
 
             checkSchedules: function() {
                 if (!this.config) return;
-                this.autoOpen();
+                this.engancharContadores();
 
                 this.currentTarde1Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde1'));
                 this.currentTarde2Active = ['recepcionando','procesando','sorteado'].includes(this.est('tarde2'));
