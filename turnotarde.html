@@ -221,7 +221,7 @@ html{background:#050505!important}body{background:transparent!important}
             _enviando: false,       // evita doble clic al enviar la solicitud
             _solicitudConfirmada: false,
             cfg: {},                // copia en vivo de sistema/config (la publica el panel de delegados)
-            _tryOpen: 0,            // última vez que este cliente intentó la apertura programada
+            _cnt: 0, _cntFecha: null, _cntRef: null,
 
             // Minutos transcurridos del día en Lima, con la hora del SERVIDOR (no la del celular).
             minutosLima: function() {
@@ -229,33 +229,18 @@ html{background:#050505!important}body{background:transparent!important}
                 return (parseInt(p[0], 10) % 24) * 60 + parseInt(p[1], 10);
             },
 
-            // Solicitudes del día de ESTE turno, publicadas por el panel (sistema/config/solicitudes/<turno> = {n, fecha}).
-            cntSol: function() {
-                const s = (this.cfg && this.cfg.solicitudes) ? this.cfg.solicitudes[turnoActivoID] : null;
-                return (s && s.fecha === hoyLima() && Number(s.n) > 0) ? Number(s.n) : 0;
+            // Solicitudes de HOY de ESTE turno: sistema/contadores/<fecha>/<turno> (se suma al enviar y el panel lo corrige con el conteo real).
+            cntSol: function() { return this._cnt; },
+            engancharContador: function() {
+                const f = this.getFechaID();
+                if (this._cntFecha === f) return;
+                if (this._cntRef) { try { this._cntRef.off(); } catch (_) {} }
+                this._cntFecha = f; this._cnt = 0;
+                this._cntRef = db.ref('sistema/contadores/' + f + '/' + turnoActivoID);
+                this._cntRef.on('value', sn => { this._cnt = Number(sn.val()) || 0; try { this.pintarDiag(); } catch (_) {} }, () => {});
             },
 
-            // Apertura programada también desde esta pantalla (misma condición que validan las reglas y el panel).
-            autoOpen: function() {
-                if (!turnoDataLoaded || window.estadoTurno.estado !== 'cerrado') return;
-                const t = turnoActivoID, cfg = this.cfg || {};
-                const pm = cfg['prog_min_' + t];
-                if (cfg['prog_' + t] !== true || typeof pm !== 'number') return;
-                const mins = this.minutosLima();
-                if (mins < pm || mins >= pm + 15) return;
-                const nowMs = Date.now() + serverTimeOffset;
-                const iniDia = nowMs - ((nowMs - 18000000) % 86400000);
-                if ((cfg[t + '_sorteo_ts'] || 0) >= iniDia) return;                 // ya se sorteó hoy
-                if ((cfg[t + '_inicio_recepcion'] || 0) >= iniDia + pm * 60000) return; // ya se abrió a la hora programada
-                if (Date.now() - this._tryOpen < 20000) return;
-                this._tryOpen = Date.now();
-                db.ref('sistema/config').update({
-                    [t + '_inicio_recepcion']: firebase.database.ServerValue.TIMESTAMP,
-                    [t + '_fecha']: hoyLima(),
-                    [t + '_estado']: 'recepcionando'
-                }).catch(err => { console.warn('Apertura programada rechazada (' + t + '):', err && (err.code || err.message)); });
-            },
-
+            // La activación del turno la hace SOLO el panel de delegados; esta pantalla únicamente la refleja en vivo.
             // Línea de estado (se repinta cada segundo con el cronómetro de la ventana de solicitudes).
             pintarDiag: function() {
                 const diag = document.getElementById('diag-line'); if (!diag || !turnoDataLoaded) return;
@@ -350,7 +335,7 @@ html{background:#050505!important}body{background:transparent!important}
 
                 this.initThree();
                 setInterval(() => this.checkSecurityTime(), 1000);
-                setInterval(() => { try { this.autoOpen(); this.pintarDiag(); this.actualizarVentana(); } catch (e) { console.warn('Sync:', e); } }, 1000);
+                setInterval(() => { try { this.engancharContador(); this.pintarDiag(); this.actualizarVentana(); } catch (e) { console.warn('Sync:', e); } }, 1000);
             },
 
             getRealTime: function() {
@@ -431,7 +416,7 @@ html{background:#050505!important}body{background:transparent!important}
                     const cf = this.cfg || {}, hp = cf['hora_' + turnoActivoID], pmc = cf['prog_min_' + turnoActivoID];
                     const programado = cf['prog_' + turnoActivoID] === true && /^\d{2}:\d{2}$/.test(String(hp || '')) && typeof pmc === 'number' && this.minutosLima() < pmc + 15;
                     reason.innerHTML = programado
-                        ? "<div class='text-center'>Este turno se activa <b>automáticamente a las " + hp + "</b>. Esta pantalla se actualizará sola cuando se abra la recepción.</div>"
+                        ? "<div class='text-center'>El delegado activará este turno <b>automáticamente a las " + hp + "</b>. Esta pantalla se actualizará sola cuando se abra la recepción.</div>"
                         : "<div class='text-center'>El delegado a cargo ha desactivado la emisión de tickets para este turno.</div>";
                 } else {
                     overlay.style.borderTop = '15px solid #ef4444';
@@ -645,6 +630,8 @@ html{background:#050505!important}body{background:transparent!important}
 
                     this._solicitudConfirmada = true;
                     sessionStorage.setItem(this.keySolicitud(), 'true');
+                    // Contador público (+1 atómico). Es solo informativo: si falla no afecta tu solicitud, y el panel lo corrige con el conteo real.
+                    try { await Promise.race([db.ref('sistema/contadores/' + fechaID + '/' + turnoActivoID).transaction(c => (Number(c) || 0) + 1), new Promise(r => setTimeout(r, 4000))]); } catch (_) {}
                     overlay.style.display = 'none';
                     this.mostrarExitoSolicitud(false);
 
