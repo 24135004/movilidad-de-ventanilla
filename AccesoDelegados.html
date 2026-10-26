@@ -933,6 +933,16 @@ html{background:#050505!important}body{background:transparent!important}
         // por si el panel se abrió tarde, sin pasar la hora límite) y NO se abrió ya desde la hora programada de hoy.
         const abriendo = {};
         const VENTANA_AUTO_MIN = 60;
+        // ¿Este turno ya tiene tickets sorteados hoy? (cache de 20 s para no consultar la red cada segundo)
+        const sorteadoCache = {};
+        function refrescarSorteado(t) {
+            const c = sorteadoCache[t];
+            if (c && (c.cargando || Date.now() - c.ts < 20000)) return;
+            sorteadoCache[t] = { ts: c ? c.ts : 0, v: c ? c.v : null, cargando: true };
+            db.ref(`sistema/viajes/${getFechaID()}/${t}/contador`).once('value')
+                .then(sn => { sorteadoCache[t] = { ts: Date.now(), v: sn.exists(), cargando: false }; })
+                .catch(() => { sorteadoCache[t] = { ts: Date.now(), v: false, cargando: false }; });
+        }
         function pintarAuto(t, txt, color) {
             const el = document.getElementById(`auto-${t}`); if (!el) return;
             if (el.innerText !== txt) el.innerText = txt;
@@ -968,6 +978,10 @@ html{background:#050505!important}body{background:transparent!important}
                 }
                 if (yaAbierto) { pintarAuto(t, `AUTO ${h} · ya se activó hoy`, '#9ca3af'); return; }
                 if (segDia >= fin * 60) { pintarAuto(t, `AUTO ${h} · pasó el margen de activación: ábrelo manualmente`, '#f87171'); return; }
+                refrescarSorteado(t);
+                const sc = sorteadoCache[t];
+                if (!sc || sc.v === null) { pintarAuto(t, `AUTO ${h} · verificando…`, '#facc15'); return; }
+                if (sc.v === true) { pintarAuto(t, `AUTO ${h} · este turno ya se sorteó hoy (usa Reset Total para repetirlo)`, '#9ca3af'); return; }
                 if (abriendo[t] && Date.now() - abriendo[t] < 15000) { pintarAuto(t, `AUTO ${h} · activando…`, '#facc15'); return; }
                 abriendo[t] = Date.now();
                 pintarAuto(t, `AUTO ${h} · activando…`, '#facc15');
@@ -1220,7 +1234,7 @@ html{background:#050505!important}body{background:transparent!important}
             logSorteo(turno, 'Inicia el sorteo');
 
             try {
-                const fechaID = getFechaID();
+                const fechaID = configGlobal[`${turno}_fecha`] || getFechaID();   // fecha de LA RONDA, no la de este instante
                 const estadoRef = db.ref(`sistema/config/${turno}_estado`);
                 const inicio = configGlobal[`${turno}_inicio_recepcion`] || 0;
 
@@ -1434,6 +1448,9 @@ html{background:#050505!important}body{background:transparent!important}
 
                 // Actualizar ocupación cuando cambie la capacidad del bus.
                 actualizarListaMaestraEnVivo();
+
+                // Re-evaluar el motor automático de inmediato con la configuración recién recibida.
+                try { evaluarTurnosAutomaticos(); tickSorteo(); } catch (_) {}
             });
         }
 
@@ -2065,6 +2082,7 @@ html{background:#050505!important}body{background:transparent!important}
         }
         // VIGILANTE: dispara el sorteo apenas pasan los 2 minutos, usando la hora del servidor.
         function tickSorteo() {
+            try { pintarMotor(); } catch (_) {}
             if (!configCargada) return;
             try { abrirProgramados(); } catch (_) {}
             const now = Date.now() + serverTimeOffset;
@@ -2090,6 +2108,37 @@ html{background:#050505!important}body{background:transparent!important}
                 w.onmessage = () => { try { tickSorteo(); } catch (_) {} };
             } catch (e) { setInterval(() => { try { tickSorteo(); } catch (_) {} }, 1000); }
         })();
+        // Respaldo en el hilo principal: si el Worker fuera bloqueado por el navegador, el motor sigue corriendo.
+        // (Es seguro que ambos corran: abrirProgramados y ejecutarSorteoJusto tienen sus propios bloqueos.)
+        setInterval(() => { try { tickSorteo(); } catch (_) {} }, 2000);
+        window.addEventListener('online', () => { try { tickSorteo(); } catch (_) {} });
+        window.addEventListener('focus', () => { try { tickSorteo(); } catch (_) {} });
+
+        // Indicador del motor automático (abajo a la izquierda): muestra la hora del último latido del servidor.
+        // Si la hora que ves ahí no avanza, esta pestaña está dormida y el modo automático NO está corriendo en este equipo.
+        function pintarMotor() {
+            const sc = document.getElementById('scanner-container');
+            let el = document.getElementById('motor-chip');
+            const visible = !!sc && !sc.classList.contains('hidden');
+            if (!visible) { if (el) el.style.display = 'none'; return; }
+            if (!el) {
+                el = document.createElement('div'); el.id = 'motor-chip';
+                el.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:60;font:700 9px/1.3 monospace;letter-spacing:.5px;text-transform:uppercase;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.78);border:1px solid rgba(0,229,255,.35);pointer-events:none;max-width:75vw';
+                document.body.appendChild(el);
+            }
+            el.style.display = 'block';
+            const hh = new Date(Date.now() + serverTimeOffset).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour12: false });
+            let txt, col;
+            if (!configCargada) { txt = '🤖 Motor auto · conectando…'; col = '#facc15'; }
+            else if (!misPermisos.length) { txt = '🤖 Motor auto · sin turnos asignados a esta cuenta'; col = '#f87171'; }
+            else {
+                const n = misPermisos.filter(t => configGlobal['prog_' + t] && configGlobal['hora_' + t]).length;
+                txt = '🤖 Motor auto activo · ' + n + ' programado(s) · latido ' + hh; col = '#34d399';
+            }
+            if (el.textContent !== txt) el.textContent = txt;
+            el.style.color = col;
+        }
+
         // Mantiene la pantalla encendida mientras el panel está abierto (celulares).
         async function mantenerPantalla() { try { if ('wakeLock' in navigator) window._wl = await navigator.wakeLock.request('screen'); } catch (_) {} }
         document.addEventListener('visibilitychange', () => { if (!document.hidden) { mantenerPantalla(); tickSorteo(); } });
