@@ -185,7 +185,8 @@
     <script>
         function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
 
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwzVasP01RADjpQeQjULw_XT0ypa1hrB8_Y0OJgMDpXhr7PNMT1nkYQsTjwRr03TaR0Vg/exec';
+        // AQUÍ SE MODIFICÓ LA URL PARA QUE CONSULTE DIRECTO A FIREBASE (CUMPLE REGLAS)
+        const FIREBASE_URL = 'https://ventanilla---01-default-rtdb.firebaseio.com/alumnos/';
 
         const searchBtn = document.getElementById('searchBtn');
         const resultsBox = document.getElementById('resultsBox');
@@ -200,32 +201,30 @@
             resultsBox.classList.add('hidden');
             errorBox.classList.add('hidden');
 
-            fetch(`${API_URL}?dni=${dni}&t=${new Date().getTime()}`)
+            // CONSULTA DIRECTA AL DNI EN FIREBASE
+            fetch(`${FIREBASE_URL}${dni}.json`)
                 .then(res => res.json())
                 .then(data => {
                     searchBtn.innerText = "VERIFICAR REGISTRO";
                     searchBtn.disabled = false;
-                    if(data.found) {
-                        const nombreBase = data.Nombres || data.Estudiante || "Usuario";
-                        const primerNombre = nombreBase.split(' ')[0];
-                        const apellidoRaw = data.Apellidos || "";
-                        const apellidoMask = apellidoRaw.length > 0 ? apellidoRaw.substring(0,2) + "****" : "****";
-                        const codigoMask = data.Codigo ? data.Codigo.toString().substring(0,2) + "********" : "****";
-
-                        document.getElementById('resNombre').innerText = primerNombre + " " + apellidoMask;
-                        document.getElementById('resCodigo').innerText = codigoMask;
+                    
+                    if(data) {
+                        // LA DATA YA VIENE ENMASCARADA CON ASTERISCOS DESDE APPS SCRIPT
+                        document.getElementById('resNombre').innerText = data.Estudiante || "-";
+                        document.getElementById('resCodigo').innerText = data.Codigo || "-";
                         document.getElementById('resFacultad').innerText = data.Facultad || "-";
                         document.getElementById('resHorario').innerText = data.Horario || "-";
-                        document.getElementById('resConforme').innerText = data.Conforme || data.Estado || "SI";
+                        document.getElementById('resConforme').innerText = data.Estado || "ACTIVO";
                         
                         resultsBox.classList.remove('hidden');
                     } else {
+                        // SI DATA ES NULL, NO ESTÁ REGISTRADO
                         errorBox.classList.remove('hidden');
                     }
                 }).catch(() => {
                     searchBtn.innerText = "VERIFICAR REGISTRO";
                     searchBtn.disabled = false;
-                    alert("Error de conexión.");
+                    alert("Error de conexión con la base de datos.");
                 });
         });
 
