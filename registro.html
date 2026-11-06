@@ -153,18 +153,18 @@
                     <div class="data-item"><label>Código UNAC:</label><p id="resCodigo">-</p></div>
                     <div class="data-item"><label>Facultad:</label><p id="resFacultad">-</p></div>
                     <div class="data-item"><label>Horario Asignado:</label><p id="resHorario">-</p></div>
-                    <div class="data-item"><label>Numero de Telefono:</label><p id="resConforme">-</p></div>
+                    <div class="data-item"><label>Estado:</label><p id="resConforme">-</p></div>
                     <div class="mt-6 p-4 bg-green-500/10 border border-green-500/30 text-green-400 rounded-xl font-black text-center text-sm uppercase tracking-widest">
                         REGISTRO VALIDADO ✅
                     </div>
                 </div>
 
-                <!-- ERROR CORREGIDO -->
+                <!-- ERROR BOX "CHIVATO" -->
                 <div id="errorBox" class="glass p-8 w-full max-w-xl mx-auto hidden border-red-500/30">
                     <div class="text-center">
                         <i class="fa-solid fa-circle-xmark text-red-500 text-5xl mb-4"></i>
-                        <h3 class="text-red-500 font-black uppercase tracking-widest mb-4">DNI no encontrado</h3>
-                        <div class="bg-blue-600/20 text-blue-100 p-4 rounded-lg border border-blue-500/30 font-bold text-sm">
+                        <h3 id="errorTitle" class="text-red-500 font-black uppercase tracking-widest mb-4">DNI no encontrado</h3>
+                        <div id="errorMsg" class="bg-blue-600/20 text-blue-100 p-4 rounded-lg border border-blue-500/30 font-bold text-sm">
                             ⚠️ Por favor, llene el formulario de arriba para que su registro sea validado en el sistema.
                         </div>
                     </div>
@@ -176,7 +176,7 @@
 
         <footer class="w-full py-10 flex flex-col items-center border-t border-white/5 bg-black/20 mt-10 relative z-20">
             <span class="text-center text-[10px] font-bold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
-            <span class="text-center text-[9px] text-gray-500 tracking-[1px] text-center px-4 uppercase font-light italic">
+            <span class="text-center text-[9px] text-gray-500 tracking-[1px] px-4 uppercase font-light italic">
                 © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
             </span>
         </footer>
@@ -185,12 +185,15 @@
     <script>
         function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
 
-        // AQUÍ SE MODIFICÓ LA URL PARA QUE CONSULTE DIRECTO A FIREBASE (CUMPLE REGLAS)
         const FIREBASE_URL = 'https://ventanilla---01-default-rtdb.firebaseio.com/alumnos/';
 
         const searchBtn = document.getElementById('searchBtn');
         const resultsBox = document.getElementById('resultsBox');
         const errorBox = document.getElementById('errorBox');
+        
+        // Referencias para cambiar el mensaje de error dinámicamente
+        const errorTitle = document.getElementById('errorTitle');
+        const errorMsg = document.getElementById('errorMsg');
 
         searchBtn.addEventListener('click', () => {
             const dni = document.getElementById('dniInput').value.trim();
@@ -201,15 +204,26 @@
             resultsBox.classList.add('hidden');
             errorBox.classList.add('hidden');
 
-            // CONSULTA DIRECTA AL DNI EN FIREBASE
             fetch(`${FIREBASE_URL}${dni}.json`)
                 .then(res => res.json())
                 .then(data => {
                     searchBtn.innerText = "VERIFICAR REGISTRO";
                     searchBtn.disabled = false;
                     
-                    if(data) {
-                        // LA DATA YA VIENE ENMASCARADA CON ASTERISCOS DESDE APPS SCRIPT
+                    if (data === null) {
+                        // CASO 1: FIREBASE DICE QUE NO EXISTE EL DNI EN LA BASE DE DATOS
+                        errorTitle.innerText = "DNI NO ENCONTRADO";
+                        errorMsg.innerText = "⚠️ Por favor, llene el formulario de arriba para que su registro sea validado en el sistema.";
+                        errorBox.classList.remove('hidden');
+                    
+                    } else if (data.error) {
+                        // CASO 2: FIREBASE EXISTE, PERO BLOQUEA LA LECTURA (REGLAS DE SEGURIDAD)
+                        errorTitle.innerText = "ERROR DE PERMISOS";
+                        errorMsg.innerText = "Firebase bloqueó la lectura: " + data.error + ". Revisa las reglas de seguridad de tu base de datos.";
+                        errorBox.classList.remove('hidden');
+                        
+                    } else {
+                        // CASO 3: ¡ÉXITO!
                         document.getElementById('resNombre').innerText = data.Estudiante || "-";
                         document.getElementById('resCodigo').innerText = data.Codigo || "-";
                         document.getElementById('resFacultad').innerText = data.Facultad || "-";
@@ -217,9 +231,6 @@
                         document.getElementById('resConforme').innerText = data.Estado || "ACTIVO";
                         
                         resultsBox.classList.remove('hidden');
-                    } else {
-                        // SI DATA ES NULL, NO ESTÁ REGISTRADO
-                        errorBox.classList.remove('hidden');
                     }
                 }).catch(() => {
                     searchBtn.innerText = "VERIFICAR REGISTRO";
@@ -228,6 +239,7 @@
                 });
         });
 
+        // ANIMACIÓN 3D INTACTA
         let scene, camera, renderer, globe;
         function initThree() {
             const container = document.getElementById('globe-container');
@@ -238,7 +250,6 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
-            // COLOR DEL GLOBO 3D A CIAN
             globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 4), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.15 }));
             scene.add(globe);
             animate();
