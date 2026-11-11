@@ -72,6 +72,24 @@
         #globe-box, #globe-box-2 { width: 100%; height: 320px; pointer-events: none; }
         .hidden-section { display: none !important; }
         @media (max-width: 768px) { .nav-desktop { display: none; } .input-tech { font-size: 1.2rem; } .shift-title { font-size: 28px; } .asiento-display { font-size: 80px; } }
+
+/* ===== CRÉDITO DEL CREADOR (igual que rutas.html e index.html) ===== */
+footer.credit { position: relative; z-index: 20; width: 100%; margin-top: 40px; padding: 0 0 40px; overflow: hidden; background: linear-gradient(to top, rgba(0,229,255,.06), transparent); border-top: 1px solid rgba(255,255,255,.06); }
+.road { position: relative; height: 34px; margin-bottom: 26px; border-bottom: 2px solid rgba(255,255,255,.08); }
+.road::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: repeating-linear-gradient(90deg, var(--accent) 0 22px, transparent 22px 52px); opacity: .55; animation: lane 1.4s linear infinite; }
+@keyframes lane { to { background-position: -52px 0; } }
+.bus-run { position: absolute; bottom: 4px; left: -60px; font-size: 22px; color: var(--accent); filter: drop-shadow(0 0 10px rgba(0,229,255,.8)); animation: drive 9s linear infinite; }
+@keyframes drive { 0% { left: -80px; } 100% { left: 105%; } }
+.credit-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 0 16px; }
+.made { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8b95a0; font-weight: 600; }
+.beat { color: #ff5c7a; display: inline-block; animation: beat 1.2s ease-in-out infinite; }
+@keyframes beat { 0%,100% { transform: scale(1); } 20% { transform: scale(1.35); } 40% { transform: scale(1); } 60% { transform: scale(1.2); } }
+.by { font-family: 'Montserrat'; font-weight: 800; font-size: clamp(.8rem, 2.4vw, 1.1rem); letter-spacing: clamp(3px, 1.4vw, 10px); text-transform: uppercase; color: #cfd8de; }
+.shine { background: linear-gradient(100deg, #00E5FF 20%, #ffffff 40%, #00E5FF 60%, #7affc1 80%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: shine 3.2s linear infinite; display: inline-block; }
+@keyframes shine { to { background-position: -250% 0; } }
+.glow-line { width: 120px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity: .35; transform: scaleX(.6); } 50% { opacity: 1; transform: scaleX(1.15); } }
+.copy { font-size: 9px; color: #6b747d; letter-spacing: 1px; text-transform: uppercase; font-style: italic; font-weight: 300; margin-top: 4px; }
     
 /* ===== FONDO ANIMADO (diseño original conservado) ===== */
 html{background:#050505!important}body{background:transparent!important}
@@ -218,9 +236,15 @@ html{background:#050505!important}body{background:transparent!important}
 
         </main>
 
-        <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/40 mt-10 relative z-20">
-            <span class="text-center text-[10px] font-bold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
-            <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">© 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+        <!-- CRÉDITO DEL CREADOR -->
+        <footer class="credit">
+            <div class="road"><div class="bus-run"><i class="fa-solid fa-bus"></i></div></div>
+            <div class="credit-inner">
+                <span class="made">Hecho con <i class="fa-solid fa-heart beat"></i> para la comunidad UNAC</span>
+                <span class="by">Sistema creado por <b class="shine">SEBASTIAN</b></span>
+                <span class="glow-line"></span>
+                <span class="copy">© 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+            </div>
         </footer>
     </div>
 
@@ -622,17 +646,110 @@ html{background:#050505!important}body{background:transparent!important}
                 }
             },
 
+            // ESCENA 3D COMPLETA (globo + ruta + buses + satélites + partículas). Se dibuja en el mismo contenedor de siempre.
             initThree: function(id) {
                 const container = document.getElementById(id); if(!container) return; container.innerHTML = "";
                 try {
-                const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-                renderer.setSize(container.clientWidth, container.clientHeight); container.appendChild(renderer.domElement);
-                const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(30, 2), new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.15 }));
-                scene.add(globe); camera.position.z = 100;
-                const animate = () => { requestAnimationFrame(animate); if (document.hidden || container.offsetParent === null) return; globe.rotation.y += 0.003; renderer.render(scene, camera); };
-                animate();
-                } catch (e) { console.warn('Globo 3D no disponible:', e); }
+                    const ACC = 0x00E5FF;
+                    const scene = new THREE.Scene();
+                    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+                    camera.position.z = 150;
+                    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                    container.appendChild(renderer.domElement);
+
+                    const root = new THREE.Group(); root.rotation.x = 0.35; scene.add(root);
+
+                    // Globo
+                    const globe = new THREE.Mesh(new THREE.IcosahedronGeometry(35, 2), new THREE.MeshBasicMaterial({ color: ACC, wireframe: true, transparent: true, opacity: 0.18 }));
+                    globe.add(new THREE.Points(new THREE.IcosahedronGeometry(35.5, 2), new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 })));
+                    root.add(globe);
+                    root.add(new THREE.Mesh(new THREE.SphereGeometry(33.6, 32, 32), new THREE.MeshBasicMaterial({ color: 0x03141a, transparent: true, opacity: 0.85 })));
+
+                    // Ruta decorativa con punto viajando
+                    const toVec = (lat, lon, r) => { const phi = (90 - lat) * Math.PI / 180, th = (lon + 180) * Math.PI / 180; return new THREE.Vector3(-r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th)); };
+                    const start = toVec(-8, -95, 35.6), end = toVec(18, -40, 35.6);
+                    const mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(52);
+                    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+                    root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(80)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })));
+                    const halos = [];
+                    [start, end].forEach((p, i) => {
+                        const n = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshBasicMaterial({ color: ACC })); n.position.copy(p);
+                        const halo = new THREE.Mesh(new THREE.RingGeometry(2, 2.5, 32), new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
+                        halo.position.copy(p); halo.lookAt(p.clone().multiplyScalar(2));
+                        root.add(n); root.add(halo); halos.push({ halo: halo, off: i * 1.5 });
+                    });
+                    const runner = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })); root.add(runner);
+
+                    // Bus en wireframe
+                    const makeBus = () => {
+                        const g = new THREE.Group();
+                        const lineMat = new THREE.LineBasicMaterial({ color: ACC, transparent: true, opacity: 0.95 });
+                        const fillMat = new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.14 });
+                        const box = (w, h, d, x, y, z, fill) => {
+                            const geo = new THREE.BoxGeometry(w, h, d);
+                            const m = new THREE.Mesh(geo, fill || fillMat); m.position.set(x, y, z);
+                            const e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), lineMat); e.position.copy(m.position);
+                            g.add(m); g.add(e);
+                        };
+                        box(11, 4.2, 4.4, 0, 0, 0);
+                        box(9.6, 1.5, 4.6, -0.2, 0.8, 0, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22 }));
+                        box(0.6, 1.6, 4.0, 5.55, 0.5, 0, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }));
+                        [[-3.5, 2.4], [3.5, 2.4], [-3.5, -2.4], [3.5, -2.4]].forEach(p => {
+                            const w = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.8, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
+                            w.rotation.x = Math.PI / 2; w.position.set(p[0], -2.1, p[1]); g.add(w);
+                        });
+                        return g;
+                    };
+                    const ring = (r, tz, op) => { const m = new THREE.Mesh(new THREE.TorusGeometry(r, 0.12, 8, 160), new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: op })); m.rotation.set(Math.PI / 2, 0, tz); return m; };
+                    root.add(ring(55, 0.25, 0.35)); root.add(ring(66, -0.45, 0.22));
+                    const buses = [];
+                    [[55, 0.25, 0.012, 0], [66, -0.45, -0.009, 2.4]].forEach(c => {
+                        const pivot = new THREE.Group(); pivot.rotation.z = c[1];
+                        const bus = makeBus(); bus.position.x = c[0]; bus.rotation.y = Math.PI / 2; bus.scale.setScalar(0.62);
+                        pivot.add(bus); pivot.rotation.y = c[3]; root.add(pivot); buses.push({ pivot: pivot, speed: c[2] });
+                    });
+
+                    // Satélites geométricos
+                    const wire = (geo, size, color) => { const m = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.9 })); m.scale.setScalar(size); return m; };
+                    const orbiters = [];
+                    [
+                        { mesh: wire(new THREE.OctahedronGeometry(1), 4.2, 0xffffff), r: 78, tilt: 0.7, sp: 0.011, ph: 0 },
+                        { mesh: wire(new THREE.TorusKnotGeometry(1, 0.28, 60, 8), 3.4, ACC), r: 84, tilt: -0.9, sp: -0.008, ph: 2 },
+                        { mesh: wire(new THREE.BoxGeometry(1.6, 1.6, 1.6), 3.2, 0xffffff), r: 72, tilt: 1.2, sp: 0.014, ph: 4 },
+                        { mesh: wire(new THREE.IcosahedronGeometry(1, 0), 3.6, ACC), r: 90, tilt: 0.2, sp: -0.006, ph: 1 }
+                    ].forEach(s => {
+                        const pivot = new THREE.Group(); pivot.rotation.z = s.tilt; pivot.rotation.x = s.tilt * 0.5;
+                        s.mesh.position.x = s.r; pivot.add(s.mesh); pivot.rotation.y = s.ph; root.add(pivot);
+                        orbiters.push({ pivot: pivot, mesh: s.mesh, sp: s.sp });
+                    });
+
+                    // Partículas
+                    const N = 380, pos = new Float32Array(N * 3);
+                    for (let i = 0; i < N; i++) {
+                        const r = 95 + Math.random() * 60, a = Math.random() * Math.PI * 2, b = Math.acos(2 * Math.random() - 1);
+                        pos[i * 3] = r * Math.sin(b) * Math.cos(a); pos[i * 3 + 1] = r * Math.cos(b); pos[i * 3 + 2] = r * Math.sin(b) * Math.sin(a);
+                    }
+                    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                    const stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.45 }));
+                    scene.add(stars);
+
+                    let clk = 0;
+                    const animate = () => {
+                        requestAnimationFrame(animate);
+                        if (document.hidden || container.offsetParent === null) return;
+                        clk += 0.016;
+                        root.rotation.y += 0.0025;
+                        buses.forEach(b => { b.pivot.rotation.y += b.speed; });
+                        orbiters.forEach(o => { o.pivot.rotation.y += o.sp; o.mesh.rotation.x += 0.02; o.mesh.rotation.y += 0.015; });
+                        halos.forEach(n => { const s = 1 + 0.35 * Math.sin(clk * 3 + n.off); n.halo.scale.set(s, s, s); n.halo.material.opacity = 0.75 - 0.35 * Math.abs(Math.sin(clk * 3 + n.off)); });
+                        runner.position.copy(curve.getPoint((clk * 0.18) % 1));
+                        stars.rotation.y -= 0.0004;
+                        renderer.render(scene, camera);
+                    };
+                    animate();
+                } catch (e) { console.warn('Escena 3D no disponible:', e); }
             }
         };
         window.onload = () => Core.init();
