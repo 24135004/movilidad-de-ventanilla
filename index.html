@@ -13,36 +13,46 @@
     <style>
         :root { --accent: #00E5FF; --dark: #050505; }
 
-        * { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
         body, html {
             margin: 0; padding: 0; min-height: 100vh;
             background-color: var(--dark);
             font-family: 'Inter', sans-serif;
-            color: #fff; overflow-x: hidden;
+            color: #ffffff;
+            overflow-x: hidden;
         }
         a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+        /* ANIMACIONES */
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes zoomSlow { from { transform: scale(1); } to { transform: scale(1.08); } }
         .animate-fade-up { animation: fadeInUp .8s ease-out forwards; }
-        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-float { animation: float 5s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
-        /* ===== HEADER FIJO ===== */
-        #topbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-            transition: background .3s, border-color .3s; border-bottom: 1px solid transparent;
+        /* FONDO (el original) */
+        .main-wrapper {
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, rgba(20,20,20,.4) 0%, rgba(5,5,5,1) 100%),
+                        url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
         }
-        #topbar.scrolled { background: rgba(5,5,5,.85); backdrop-filter: blur(14px); border-color: rgba(255,255,255,.08); }
-        .bar-in { max-width: 1200px; margin: 0 auto; padding: 22px 20px; display: flex; justify-content: space-between; align-items: center; transition: padding .3s; }
-        #topbar.scrolled .bar-in { padding: 14px 20px; }
+        /* malla tenue encima del fondo */
+        .main-wrapper::before {
+            content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+            background-image: linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
+            background-size: 54px 54px;
+            -webkit-mask-image: radial-gradient(circle at 70% 35%, #000 0%, transparent 70%);
+                    mask-image: radial-gradient(circle at 70% 35%, #000 0%, transparent 70%);
+        }
 
+        header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 100; }
+
+        /* NAVEGACIÓN */
         .nav-link {
             font-size: 11px; font-weight: 700; letter-spacing: 2px;
-            color: rgba(255,255,255,.65); transition: .3s;
-            text-transform: uppercase; position: relative;
+            color: rgba(255,255,255,.6); transition: .3s; text-transform: uppercase; position: relative;
         }
         .nav-link:hover, .active-link { color: var(--accent); }
         .nav-link::after { content:''; position:absolute; width:0; height:2px; bottom:-6px; left:0; background:var(--accent); transition: width .3s; }
@@ -51,91 +61,97 @@
         #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
         #mobile-menu.active { display: flex; }
 
-        /* ===== HERO CON FOTO ===== */
-        .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        .hero-slides { position: absolute; inset: 0; z-index: 0; }
-        .hero-slides img {
-            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-            opacity: 0; transition: opacity 1.4s ease;
-        }
-        .hero-slides img.on { opacity: 1; animation: zoomSlow 9s ease-out forwards; }
-        .hero-shade {
-            position: absolute; inset: 0; z-index: 1;
-            background:
-              linear-gradient(90deg, rgba(5,5,5,.95) 0%, rgba(5,5,5,.75) 45%, rgba(5,5,5,.3) 100%),
-              linear-gradient(0deg, #050505 0%, transparent 30%);
-        }
-
         .content-box {
             position: relative; z-index: 2;
-            max-width: 1100px; width: 90%; margin: 0 auto;
+            max-width: 1100px; width: 90%;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 130px 0 60px;
+            padding: 20px 0; flex-grow: 1; gap: 20px;
         }
 
         h1 {
             font-family: 'Montserrat', sans-serif;
-            font-size: clamp(2rem, 6vw, 3.8rem);
+            font-size: clamp(2rem, 6vw, 3.5rem);
             line-height: 1; font-weight: 800; text-transform: uppercase;
         }
 
-        #globe-box { width: 400px; height: 400px; flex-shrink: 0; }
+        /* CHIPS DE DATOS RÁPIDOS */
+        .chip {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8);
+            padding: 7px 12px; border-radius: 999px;
+            background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+        }
+        .chip i { color: var(--accent); font-size: 11px; }
 
-        /* indicadores del slider */
-        .dots { display: flex; gap: 8px; margin-top: 28px; }
-        .dots button { width: 26px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.25); border: 0; padding: 0; cursor: pointer; transition: .3s; }
-        .dots button.on { background: var(--accent); width: 44px; }
+        /* ESCENA 3D */
+        .scene-wrap { position: relative; width: 480px; height: 480px; flex-shrink: 0; }
+        #globe-box { width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+        #globe-box.drag { cursor: grabbing; }
+        #globe-box canvas { display: block; }
+        .hint {
+            position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%);
+            font-size: 10px; letter-spacing: 1.5px; color: rgba(255,255,255,.45);
+            display: flex; align-items: center; gap: 8px; white-space: nowrap; pointer-events: none; text-transform: uppercase;
+        }
+        .hint i { color: var(--accent); }
+        .tag3d {
+            position: absolute; z-index: 3; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+            padding: 6px 10px; border-radius: 8px; text-transform: uppercase; pointer-events: none;
+            background: rgba(5,5,5,.7); border: 1px solid rgba(0,229,255,.3); color: var(--accent); backdrop-filter: blur(6px);
+        }
 
-        /* ===== STATS ===== */
+        /* ESTADÍSTICAS */
         .stats-area {
-            position: relative; z-index: 3;
+            position: relative; z-index: 2;
             display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 15px; width: 90%; max-width: 1100px; margin: 0 auto 70px;
+            gap: 15px; width: 90%; max-width: 1100px; margin-bottom: 40px;
         }
         .card-tech {
-            background: rgba(12,16,20,.75); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,.1);
-            padding: 24px 10px; border-radius: 15px; text-align: center; transition: .3s;
+            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+            padding: 22px 10px; border-radius: 15px; text-align: center; transition: .3s; backdrop-filter: blur(6px);
         }
         .card-tech:hover { border-color: var(--accent); transform: translateY(-5px); }
         .card-tech i { color: var(--accent); font-size: 1.2rem; margin-bottom: 10px; display: block; }
         .card-tech h3 { font-family:'Montserrat'; font-size: 1.6rem; font-weight: 800; margin: 0; }
         .card-tech p { font-size: 9px; color: #7d8791; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0; }
+        .card-tech small { display: block; margin-top: 8px; font-size: 11px; color: rgba(255,255,255,.45); font-weight: 300; }
 
-        /* ===== GALERÍA ===== */
-        .gal-wrap { max-width: 1100px; width: 90%; margin: 0 auto; padding-bottom: 90px; }
-        .sec-head { display:flex; align-items:center; gap:14px; margin-bottom: 26px; }
-        .sec-head span.bar { width: 36px; height: 3px; background: var(--accent); border-radius: 2px; }
+        /* SERVICIOS */
+        .services { position: relative; z-index: 2; width: 90%; max-width: 1100px; margin-bottom: 70px; }
+        .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+        .sec-head .bar { width: 36px; height: 3px; background: var(--accent); border-radius: 2px; }
         .sec-head h2 { font-family:'Montserrat'; font-size: 11px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin: 0; color: var(--accent); }
-        .gallery { display: grid; grid-template-columns: 1.5fr 1fr 1fr; grid-template-rows: 280px; gap: 14px; }
-        .ph {
-            position: relative; overflow: hidden; border-radius: 16px;
-            border: 1px solid rgba(255,255,255,.08); background: #0d1218; margin: 0;
+        .svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .svc {
+            display: block; padding: 24px 20px; border-radius: 15px; position: relative; overflow: hidden;
+            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); transition: .3s;
         }
-        .ph img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s ease; display: block; }
-        .ph:hover img { transform: scale(1.06); }
-        .ph figcaption {
-            position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 16px 14px;
-            background: linear-gradient(0deg, rgba(5,5,5,.92), transparent);
-            font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+        .svc::after { content:''; position:absolute; left:0; top:0; height:2px; width:0; background:var(--accent); transition: width .4s; }
+        .svc:hover { border-color: rgba(0,229,255,.4); transform: translateY(-5px); background: rgba(0,229,255,.04); }
+        .svc:hover::after { width: 100%; }
+        .svc .ico { width: 42px; height: 42px; border-radius: 10px; background: rgba(0,229,255,.1); color: var(--accent); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+        .svc h4 { font-family:'Montserrat'; font-size: .95rem; font-weight: 800; text-transform: uppercase; margin: 0 0 6px; }
+        .svc p { font-size: 12.5px; color: #8b95a0; line-height: 1.6; margin: 0; font-weight: 300; }
+        .svc .go { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
+
+        footer { z-index: 2; }
+
+        @media (max-width: 900px) {
+            .scene-wrap { width: 340px; height: 340px; }
+            .svc-grid { grid-template-columns: repeat(2, 1fr); }
         }
-        .ph figcaption i { color: var(--accent); margin-right: 6px; }
-
-        footer { border-top: 1px solid rgba(255,255,255,.06); background: rgba(0,0,0,.4); }
-
         @media (max-width: 768px) {
-            .bar-in { padding: 16px 15px; }
+            header { padding: 25px 15px; }
             .nav-minimal { display: none; }
-            .content-box { flex-direction: column-reverse; text-align: center; padding: 110px 0 30px; justify-content: center; }
-            #globe-box { width: 240px; height: 240px; margin: 0 auto 10px; }
-            .hero-shade { background: linear-gradient(0deg, #050505 0%, rgba(5,5,5,.8) 50%, rgba(5,5,5,.7) 100%); }
-            .stats-area { grid-template-columns: repeat(2, 1fr); margin-bottom: 50px; }
-            h1 { margin-top: 10px; text-align: center; }
+            .content-box { flex-direction: column-reverse; text-align: center; padding-top: 0; align-items: center; justify-content: center; }
+            .scene-wrap { width: 300px; height: 300px; margin: 0 auto 14px; }
+            .stats-area { grid-template-columns: repeat(2, 1fr); margin-bottom: 40px; }
+            h1 { margin-top: 15px; text-align: center; }
             .text-side { text-align: center !important; display: flex; flex-direction: column; align-items: center; }
-            .dots { justify-content: center; }
-            .gallery { grid-template-columns: 1fr; grid-template-rows: none; }
-            .ph { height: 220px; }
+            .chips { justify-content: center; }
+            .tag3d { display: none; }
         }
+        @media (max-width: 520px) { .svc-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -151,9 +167,9 @@
     <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Contacto</a>
 </div>
 
-<!-- HEADER -->
-<header id="topbar">
-    <div class="bar-in animate-fade-up">
+<div class="main-wrapper">
+    <!-- HEADER -->
+    <header class="flex justify-between items-center animate-fade-up relative z-20">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center">
                 <i class="fa-solid fa-bus text-black text-lg"></i>
@@ -176,23 +192,9 @@
         <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2 transition hover:bg-cyan-400 hover:text-black" aria-label="Abrir menú">
             MENU <i class="fa-solid fa-bars-staggered"></i>
         </button>
-    </div>
-</header>
+    </header>
 
-<!-- HERO -->
-<section class="hero">
-    <!--
-      FOTOS DEL HERO (slider automático).
-      Cada <img> intenta cargar primero tu foto local (carpeta img/).
-      Si aún no existe, usa la foto de respaldo para que nunca se vea vacío.
-    -->
-    <div class="hero-slides" id="slides">
-        <img class="on" src="img/hero-1.jpg" alt="Bus de la movilidad universitaria UNAC" data-fb="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920">
-        <img src="img/hero-2.jpg" alt="Unidades de la movilidad UNAC en ruta" data-fb="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1920">
-        <img src="img/hero-3.jpg" alt="Campus de la Universidad Nacional del Callao" data-fb="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=1920">
-    </div>
-    <div class="hero-shade"></div>
-
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="content-box">
         <div class="text-side animate-fade-up text-left">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
@@ -201,133 +203,302 @@
             </div>
 
             <h1>Movilidad <br><span class="text-cyan-400 italic opacity-90">Universitaria</span></h1>
-            <p class="mt-4 text-gray-300 text-sm max-w-md mx-auto md:mx-0 font-light leading-relaxed">
+            <p class="mt-4 text-gray-400 text-sm max-w-md mx-auto md:mx-0 font-light leading-relaxed">
                 Plataforma inteligente para la gestión y monitoreo de la movilidad RUTA VENTANILLA oficial de la Universidad Nacional del Callao ciclo 2026-B.
             </p>
 
-            <div class="flex gap-3 mt-8 justify-center md:justify-start">
-                <a href="ticket.html" class="bg-cyan-400 text-black text-[11px] font-black px-7 py-3 rounded-lg hover:scale-105 transition shadow-lg shadow-cyan-400/20 flex items-center justify-center uppercase">TICKETS</a>
-                <a href="contacto.html" class="bg-white/5 border border-white/20 text-[11px] font-bold px-7 py-3 rounded-lg hover:bg-white/10 transition flex items-center justify-center uppercase">CONTACTO</a>
+            <div class="chips flex flex-wrap gap-2 mt-5">
+                <span class="chip"><i class="fa-solid fa-route"></i> Ruta Ventanilla</span>
+                <span class="chip"><i class="fa-solid fa-building-columns"></i> Servicio oficial UNAC</span>
+                <span class="chip"><i class="fa-solid fa-calendar-check"></i> Ciclo 2026-B</span>
             </div>
 
-            <div class="dots" id="dots" aria-label="Fotos"></div>
+            <div class="flex gap-3 mt-8 justify-center md:justify-start">
+                <a href="ticket.html" class="bg-cyan-400 text-black text-[11px] font-black px-7 py-3 rounded-lg hover:scale-105 transition shadow-lg shadow-cyan-400/20 flex items-center justify-center gap-2 uppercase"><i class="fa-solid fa-ticket"></i> TICKETS</a>
+                <a href="contacto.html" class="bg-white/5 border border-white/10 text-[11px] font-bold px-7 py-3 rounded-lg hover:bg-white/10 transition flex items-center justify-center uppercase">CONTACTO</a>
+            </div>
         </div>
 
-        <div id="globe-box" class="animate-float" aria-hidden="true"></div>
+        <!-- ESCENA 3D INTERACTIVA -->
+        <div class="scene-wrap animate-float">
+            <div id="globe-box" aria-label="Escena 3D interactiva de la ruta, arrastra para rotar"></div>
+            <span class="tag3d" style="top:14%; left:2%;"><i class="fa-solid fa-bus"></i> Unidad 01</span>
+            <span class="tag3d" style="bottom:18%; right:0;"><i class="fa-solid fa-bus"></i> Unidad 02</span>
+            <div class="hint"><i class="fa-solid fa-hand-pointer"></i> Arrastra para rotar</div>
+        </div>
     </main>
 
-    <!-- STATS -->
+    <!-- ESTADÍSTICAS -->
     <section class="stats-area animate-fade-up">
-        <div class="card-tech"><i class="fa-solid fa-route"></i><h3>02</h3><p>Unidades</p></div>
-        <div class="card-tech"><i class="fa-solid fa-location-dot"></i><h3>35km</h3><p>Recorrido</p></div>
-        <div class="card-tech"><i class="fa-solid fa-users"></i><h3>+600</h3><p>Usuarios</p></div>
-        <div class="card-tech"><i class="fa-solid fa-clock"></i><h3>55m</h3><p>Frecuencia</p></div>
+        <div class="card-tech">
+            <i class="fa-solid fa-route"></i>
+            <h3 data-count="2" data-pad="2">02</h3>
+            <p>Unidades</p>
+            <small>Flota activa</small>
+        </div>
+        <div class="card-tech">
+            <i class="fa-solid fa-location-dot"></i>
+            <h3 data-count="35" data-suffix="km">35km</h3>
+            <p>Recorrido</p>
+            <small>Ruta Ventanilla</small>
+        </div>
+        <div class="card-tech">
+            <i class="fa-solid fa-users"></i>
+            <h3 data-count="600" data-prefix="+">+600</h3>
+            <p>Usuarios</p>
+            <small>Comunidad UNAC</small>
+        </div>
+        <div class="card-tech">
+            <i class="fa-solid fa-clock"></i>
+            <h3 data-count="55" data-suffix="m">55m</h3>
+            <p>Frecuencia</p>
+            <small>Intervalo de paso</small>
+        </div>
     </section>
-</section>
 
-<!-- GALERÍA DE LA MOVILIDAD -->
-<section class="gal-wrap">
-    <div class="sec-head"><span class="bar"></span><h2>Nuestra movilidad</h2></div>
-    <div class="gallery">
-        <figure class="ph">
-            <img src="img/bus-1.jpg" alt="Bus UNAC para estudiantes" loading="lazy" data-fb="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1000">
-            <figcaption><i class="fa-solid fa-bus"></i>Unidades para estudiantes</figcaption>
-        </figure>
-        <figure class="ph">
-            <img src="img/bus-2.jpg" alt="Ruta Ventanilla" loading="lazy" data-fb="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=800">
-            <figcaption><i class="fa-solid fa-route"></i>Ruta Ventanilla</figcaption>
-        </figure>
-        <figure class="ph">
-            <img src="img/campus.jpg" alt="Campus UNAC" loading="lazy" data-fb="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=800">
-            <figcaption><i class="fa-solid fa-building-columns"></i>Ciudad universitaria</figcaption>
-        </figure>
-    </div>
-</section>
+    <!-- SERVICIOS -->
+    <section class="services">
+        <div class="sec-head"><span class="bar"></span><h2>Todo en una plataforma</h2></div>
+        <div class="svc-grid">
+            <a href="rutas.html" class="svc">
+                <div class="ico"><i class="fa-solid fa-map-location-dot"></i></div>
+                <h4>Rutas</h4>
+                <p>Consulta el recorrido de la Ruta Ventanilla.</p>
+                <span class="go">Ver rutas <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+            <a href="ticket.html" class="svc">
+                <div class="ico"><i class="fa-solid fa-ticket"></i></div>
+                <h4>Ticket</h4>
+                <p>Gestiona tu ticket del servicio de movilidad.</p>
+                <span class="go">Ir a tickets <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+            <a href="registro.html" class="svc">
+                <div class="ico"><i class="fa-solid fa-user-plus"></i></div>
+                <h4>Registro</h4>
+                <p>Registra tus datos como usuario del servicio.</p>
+                <span class="go">Registrarme <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+            <a href="noticias.html" class="svc">
+                <div class="ico"><i class="fa-solid fa-newspaper"></i></div>
+                <h4>Noticias</h4>
+                <p>Avisos y novedades de la movilidad universitaria.</p>
+                <span class="go">Leer noticias <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </section>
 
-<!-- FOOTER -->
-<footer class="w-full py-12 flex flex-col items-center">
-    <span class="text-center text-[10px] font-extrabold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
-    <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light px-4">
-        © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
-    </span>
-</footer>
+    <!-- FOOTER -->
+    <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/20 relative z-20">
+        <span class="text-center text-[10px] font-extrabold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+        <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light px-4">
+            © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
+        </span>
+    </footer>
+</div>
 
 <script>
-    function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
+function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
 
-    /* Foto local primero; si no existe, usa la de respaldo (data-fb) */
-    document.querySelectorAll('img[data-fb]').forEach(function (img) {
-        img.addEventListener('error', function () {
-            if (img.dataset.fb && img.src !== img.dataset.fb) { img.src = img.dataset.fb; }
-        });
-    });
-
-    /* Header con fondo al hacer scroll */
-    var bar = document.getElementById('topbar');
-    function onScroll() { bar.classList.toggle('scrolled', window.scrollY > 30); }
-    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
-
-    /* Slider del hero */
-    (function () {
-        var imgs = document.querySelectorAll('#slides img');
-        var dotsBox = document.getElementById('dots');
-        var cur = 0, timer;
-        imgs.forEach(function (_, i) {
-            var b = document.createElement('button');
-            b.setAttribute('aria-label', 'Foto ' + (i + 1));
-            b.onclick = function () { go(i); restart(); };
-            dotsBox.appendChild(b);
-        });
-        var dots = dotsBox.querySelectorAll('button');
-        function go(n) {
-            imgs[cur].classList.remove('on'); dots[cur].classList.remove('on');
-            cur = n; imgs[cur].classList.add('on'); dots[cur].classList.add('on');
+/* ---------- Contadores animados ---------- */
+(function () {
+    var els = document.querySelectorAll('[data-count]');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function fmt(el, v) {
+        var s = String(Math.round(v));
+        if (el.dataset.pad) s = s.padStart(+el.dataset.pad, '0');
+        el.textContent = (el.dataset.prefix || '') + s + (el.dataset.suffix || '');
+    }
+    els.forEach(function (el) {
+        var end = +el.dataset.count;
+        if (reduce) { fmt(el, end); return; }
+        var t0 = null;
+        function step(t) {
+            if (!t0) t0 = t;
+            var p = Math.min((t - t0) / 1400, 1);
+            fmt(el, end * (1 - Math.pow(1 - p, 3)));
+            if (p < 1) requestAnimationFrame(step);
         }
-        function restart() { clearInterval(timer); timer = setInterval(function () { go((cur + 1) % imgs.length); }, 6000); }
-        dots[0].classList.add('on'); restart();
-    })();
+        fmt(el, 0); requestAnimationFrame(step);
+    });
+})();
 
-    /* Globo 3D */
-    var scene, camera, renderer, globe;
-    var container = document.getElementById('globe-box');
+/* ---------- Escena 3D ---------- */
+var scene, camera, renderer, root;
+var container = document.getElementById('globe-box');
+var orbiters = [], buses = [], nodes = [], stars;
+var ACC = 0x00E5FF;
 
-    function init() {
-        if (!container) return;
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-        camera.position.z = 100;
+function lonLatToVec(lat, lon, r) {
+    var phi = (90 - lat) * Math.PI / 180, th = (lon + 180) * Math.PI / 180;
+    return new THREE.Vector3(-r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th));
+}
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-
-        globe = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(35, 2),
-            new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.25 })
-        );
-        globe.add(new THREE.Points(
-            new THREE.IcosahedronGeometry(35.5, 2),
-            new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.6 })
-        ));
-        scene.add(globe);
-        animate();
+function makeBus() {
+    var g = new THREE.Group();
+    var lineMat = new THREE.LineBasicMaterial({ color: ACC, transparent: true, opacity: 0.95 });
+    var fillMat = new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.14 });
+    function box(w, h, d, x, y, z, fill) {
+        var geo = new THREE.BoxGeometry(w, h, d);
+        var m = new THREE.Mesh(geo, fill || fillMat); m.position.set(x, y, z);
+        var e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), lineMat); e.position.copy(m.position);
+        g.add(m); g.add(e);
     }
+    box(11, 4.2, 4.4, 0, 0, 0);                                   // carrocería
+    box(9.6, 1.5, 4.6, -0.2, 0.8, 0, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22 })); // ventanas
+    box(0.6, 1.6, 4.0, 5.55, 0.5, 0, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })); // parabrisas
+    [[-3.5, 2.4], [3.5, 2.4], [-3.5, -2.4], [3.5, -2.4]].forEach(function (p) {
+        var geo = new THREE.CylinderGeometry(0.95, 0.95, 0.8, 12);
+        var w = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
+        w.rotation.x = Math.PI / 2; w.position.set(p[0], -2.1, p[1]); g.add(w);
+    });
+    return g;
+}
 
-    function animate() {
-        requestAnimationFrame(animate);
-        if (globe) { globe.rotation.y += 0.002; globe.rotation.x += 0.001; }
-        renderer.render(scene, camera);
-    }
+function makeOrbitRing(r, tiltX, tiltZ, op) {
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.12, 8, 160),
+        new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: op }));
+    ring.rotation.set(Math.PI / 2 + tiltX, 0, tiltZ);
+    return ring;
+}
 
-    window.addEventListener('resize', function () {
-        if (!container || !container.clientWidth || !renderer) return;
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
+function init() {
+    if (!container || typeof THREE === 'undefined') return;
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.z = 150;
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    root = new THREE.Group();
+    root.rotation.x = 0.35;
+    scene.add(root);
+
+    /* Globo principal */
+    var globe = new THREE.Mesh(new THREE.IcosahedronGeometry(35, 2),
+        new THREE.MeshBasicMaterial({ color: ACC, wireframe: true, transparent: true, opacity: 0.18 }));
+    globe.add(new THREE.Points(new THREE.IcosahedronGeometry(35.5, 2),
+        new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 })));
+    root.add(globe);
+
+    /* Núcleo interno */
+    root.add(new THREE.Mesh(new THREE.SphereGeometry(33.6, 32, 32),
+        new THREE.MeshBasicMaterial({ color: 0x03141a, transparent: true, opacity: 0.85 })));
+
+    /* Ruta sobre el globo: Ventanilla → UNAC (decorativa) */
+    var mid;
+    var start = lonLatToVec(-8, -95, 35.6), end = lonLatToVec(18, -40, 35.6);
+    mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(52);
+    var curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    var routeLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(80)),
+        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 }));
+    root.add(routeLine);
+    [start, end].forEach(function (p, i) {
+        var n = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshBasicMaterial({ color: ACC }));
+        n.position.copy(p);
+        var halo = new THREE.Mesh(new THREE.RingGeometry(2, 2.5, 32),
+            new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
+        halo.position.copy(p); halo.lookAt(p.clone().multiplyScalar(2));
+        root.add(n); root.add(halo); nodes.push({ halo: halo, off: i * 1.5 });
+    });
+    /* punto viajando por la ruta */
+    var runner = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    root.add(runner);
+    root.userData.runner = { mesh: runner, curve: curve };
+
+    /* Anillos orbitales + buses (2 unidades) */
+    var ring1 = makeOrbitRing(55, 0, 0.25, 0.35), ring2 = makeOrbitRing(66, 0, -0.45, 0.22);
+    root.add(ring1); root.add(ring2);
+    [[55, 0.25, 0.012, 0], [66, -0.45, -0.009, 2.4]].forEach(function (c) {
+        var pivot = new THREE.Group(); pivot.rotation.z = c[1];
+        var bus = makeBus(); bus.position.x = c[0]; bus.rotation.y = Math.PI / 2;
+        bus.scale.setScalar(0.62);
+        pivot.add(bus); pivot.rotation.y = c[3];
+        root.add(pivot); buses.push({ pivot: pivot, speed: c[2] });
     });
 
-    window.onload = init;
+    /* Satélites geométricos movibles */
+    var wire = function (geo, size, color) {
+        var m = new THREE.LineSegments(new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.9 }));
+        m.scale.setScalar(size); return m;
+    };
+    var sats = [
+        { mesh: wire(new THREE.OctahedronGeometry(1), 4.2, 0xffffff), r: 78, tilt: 0.7, sp: 0.011, ph: 0 },
+        { mesh: wire(new THREE.TorusKnotGeometry(1, 0.28, 60, 8), 3.4, ACC), r: 84, tilt: -0.9, sp: -0.008, ph: 2 },
+        { mesh: wire(new THREE.BoxGeometry(1.6, 1.6, 1.6), 3.2, 0xffffff), r: 72, tilt: 1.2, sp: 0.014, ph: 4 },
+        { mesh: wire(new THREE.IcosahedronGeometry(1, 0), 3.6, ACC), r: 90, tilt: 0.2, sp: -0.006, ph: 1 }
+    ];
+    sats.forEach(function (s) {
+        var pivot = new THREE.Group(); pivot.rotation.z = s.tilt; pivot.rotation.x = s.tilt * 0.5;
+        s.mesh.position.x = s.r; pivot.add(s.mesh); pivot.rotation.y = s.ph; root.add(pivot);
+        orbiters.push({ pivot: pivot, mesh: s.mesh, sp: s.sp });
+    });
+
+    /* Campo de partículas */
+    var N = 380, pos = new Float32Array(N * 3);
+    for (var i = 0; i < N; i++) {
+        var r = 95 + Math.random() * 60, a = Math.random() * Math.PI * 2, b = Math.acos(2 * Math.random() - 1);
+        pos[i * 3] = r * Math.sin(b) * Math.cos(a); pos[i * 3 + 1] = r * Math.cos(b); pos[i * 3 + 2] = r * Math.sin(b) * Math.sin(a);
+    }
+    var sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.45 }));
+    scene.add(stars);
+
+    bindDrag();
+    animate();
+}
+
+/* Arrastre con inercia + inclinación suave con el cursor */
+var vel = { x: 0, y: 0 }, dragging = false, last = { x: 0, y: 0 }, hover = { x: 0, y: 0 };
+function bindDrag() {
+    container.addEventListener('pointerdown', function (e) {
+        dragging = true; last.x = e.clientX; last.y = e.clientY;
+        container.classList.add('drag'); container.setPointerCapture(e.pointerId);
+    });
+    container.addEventListener('pointermove', function (e) {
+        var r = container.getBoundingClientRect();
+        hover.x = ((e.clientX - r.left) / r.width - 0.5); hover.y = ((e.clientY - r.top) / r.height - 0.5);
+        if (!dragging) return;
+        var dx = e.clientX - last.x, dy = e.clientY - last.y;
+        last.x = e.clientX; last.y = e.clientY;
+        vel.y = dx * 0.006; vel.x = dy * 0.006;
+        root.rotation.y += vel.y; root.rotation.x = Math.max(-1.2, Math.min(1.2, root.rotation.x + vel.x));
+    });
+    function up() { dragging = false; container.classList.remove('drag'); }
+    container.addEventListener('pointerup', up);
+    container.addEventListener('pointercancel', up);
+    container.addEventListener('pointerleave', function () { hover.x = 0; hover.y = 0; });
+}
+
+var clock = 0;
+function animate() {
+    requestAnimationFrame(animate);
+    clock += 0.016;
+    if (!dragging) {
+        root.rotation.y += 0.0025 + vel.y;
+        root.rotation.x = Math.max(-1.2, Math.min(1.2, root.rotation.x + vel.x));
+        vel.x *= 0.95; vel.y *= 0.95;
+        root.rotation.x += (0.35 + hover.y * 0.4 - root.rotation.x) * 0.01 * (Math.abs(vel.x) < 0.001 ? 1 : 0);
+    }
+    buses.forEach(function (b) { b.pivot.rotation.y += b.speed; });
+    orbiters.forEach(function (o) { o.pivot.rotation.y += o.sp; o.mesh.rotation.x += 0.02; o.mesh.rotation.y += 0.015; });
+    nodes.forEach(function (n) { var s = 1 + 0.35 * Math.sin(clock * 3 + n.off); n.halo.scale.set(s, s, s); n.halo.material.opacity = 0.75 - 0.35 * Math.abs(Math.sin(clock * 3 + n.off)); });
+    var rn = root.userData.runner; if (rn) { rn.mesh.position.copy(rn.curve.getPoint((clock * 0.18) % 1)); }
+    stars.rotation.y -= 0.0004;
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', function () {
+    if (!container || !container.clientWidth || !renderer) return;
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+});
+
+window.onload = init;
 </script>
 </body>
 </html>
