@@ -1,340 +1,340 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNAC | Rutas 2026-B</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNAC | Rutas 2026-B</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    <style>
-        :root { --accent: #00E5FF; --dark: #050505; --ok: #2ee59d; --bad: #ff4d4d; }
+<style>
+:root { --accent:#00E5FF; --dark:#050505; --ok:#2ee59d; --bad:#ff4d4d; }
+*, *::before, *::after { box-sizing: border-box; }
+body, html { margin:0; padding:0; min-height:100vh; background:var(--dark); font-family:'Inter',sans-serif; color:#fff; overflow-x:hidden; }
+a:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 
-        body, html {
-            margin: 0; padding: 0; min-height: 100vh;
-            background-color: var(--dark);
-            font-family: 'Inter', sans-serif;
-            color: #ffffff; overflow-x: hidden;
-        }
-        a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes pulseRing { 0%{box-shadow:0 0 0 0 rgba(46,229,157,.6)} 100%{box-shadow:0 0 0 12px rgba(46,229,157,0)} }
+.animate-fade-up { animation:fadeInUp .8s ease-out forwards; }
+.animate-float { animation:float 5s ease-in-out infinite; }
+@media (prefers-reduced-motion:reduce){ *,*::before,*::after{animation:none!important;transition:none!important} }
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(46,229,157,.6); } 100% { box-shadow: 0 0 0 12px rgba(46,229,157,0); } }
-        .animate-fade-up { animation: fadeInUp .8s ease-out forwards; }
-        .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s ease, transform .8s ease; }
-        .reveal.in { opacity: 1; transform: none; }
-        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .reveal { opacity: 1; transform: none; } }
+.main-wrapper {
+  position:relative; min-height:100vh;
+  background:radial-gradient(circle at 50% 50%, rgba(20,20,20,.4) 0%, rgba(5,5,5,1) 100%),
+             url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
+  background-size:cover; background-position:center; background-attachment:fixed;
+}
+.main-wrapper::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background-image:linear-gradient(rgba(0,229,255,.035) 1px,transparent 1px), linear-gradient(90deg,rgba(0,229,255,.035) 1px,transparent 1px);
+  background-size:54px 54px;
+  -webkit-mask-image:radial-gradient(circle at 70% 25%,#000 0%,transparent 70%); mask-image:radial-gradient(circle at 70% 25%,#000 0%,transparent 70%);
+}
 
-        .main-wrapper {
-            position: relative;
-            background: radial-gradient(circle at 50% 50%, rgba(20,20,20,.4) 0%, rgba(5,5,5,1) 100%),
-                        url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
-            background-size: cover; background-position: center; background-attachment: fixed;
-            min-height: 100vh; display: flex; flex-direction: column; align-items: stretch;
-        }
-        .main-wrapper::before {
-            content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
-            background-image: linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
-            background-size: 54px 54px;
-            -webkit-mask-image: radial-gradient(circle at 60% 20%, #000 0%, transparent 75%);
-                    mask-image: radial-gradient(circle at 60% 20%, #000 0%, transparent 75%);
-        }
+/* CONTENEDOR CENTRADO */
+.wrap { position:relative; z-index:2; width:100%; max-width:1180px; margin:0 auto; padding:0 20px; }
+.block { margin-bottom:28px; }
 
-        /* ANCHO COMPLETO */
-        .full { position: relative; z-index: 2; width: 100%; padding-left: clamp(16px, 2.2vw, 40px); padding-right: clamp(16px, 2.2vw, 40px); box-sizing: border-box; }
+/* HEADER */
+.nav-link { font-size:11px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,.6); transition:.3s; text-transform:uppercase; position:relative; }
+.nav-link:hover, .active-link { color:var(--accent); }
+.nav-link::after { content:''; position:absolute; width:0; height:2px; bottom:-6px; left:0; background:var(--accent); transition:width .3s; }
+.nav-link:hover::after, .active-link::after { width:100%; }
+.by-pill { display:inline-flex; align-items:center; gap:8px; font-size:10px; font-weight:700; letter-spacing:1.5px; padding:7px 12px; border-radius:999px; color:var(--accent); background:rgba(0,229,255,.08); border:1px solid rgba(0,229,255,.35); text-transform:uppercase; transition:.3s; }
+.by-pill:hover { background:var(--accent); color:#000; }
+#mobile-menu { position:fixed; inset:0; background:rgba(5,5,5,.98); z-index:2000; display:none; flex-direction:column; align-items:center; justify-content:center; gap:35px; }
+#mobile-menu.active { display:flex; }
 
-        header { width: 100%; padding: 26px clamp(16px, 2.2vw, 40px); z-index: 100; box-sizing: border-box; }
-        .nav-link { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,.6); transition: .3s; text-transform: uppercase; position: relative; }
-        .nav-link:hover, .active-link { color: var(--accent); }
-        .nav-link::after { content:''; position:absolute; width:0; height:2px; bottom:-6px; left:0; background:var(--accent); transition: width .3s; }
-        .nav-link:hover::after, .active-link::after { width: 100%; }
+/* HERO */
+.hero { display:grid; grid-template-columns:1.15fr .85fr; gap:24px; align-items:center; padding:8px 0 10px; }
+h1.title { font-family:'Montserrat',sans-serif; font-size:clamp(2rem,5vw,3.3rem); line-height:1.02; font-weight:800; text-transform:uppercase; margin:0; }
+.chip { display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:600; color:rgba(255,255,255,.8); padding:7px 12px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); }
+.chip i { color:var(--accent); font-size:11px; }
+.clock-box { display:inline-flex; align-items:baseline; gap:14px; margin-top:22px; padding:12px 18px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); backdrop-filter:blur(6px); }
+.clock-box p { margin:0; }
+#clock { font-family:'Montserrat'; font-size:1.9rem; font-weight:800; letter-spacing:3px; }
 
-        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
-        #mobile-menu.active { display: flex; }
+/* ESCENA 3D */
+.scene-wrap { position:relative; width:100%; max-width:400px; aspect-ratio:1; margin:0 auto; }
+#globe-box { width:100%; height:100%; cursor:grab; touch-action:pan-y; }
+#globe-box.drag { cursor:grabbing; }
+#globe-box canvas { display:block; }
+.hint { position:absolute; left:50%; bottom:-6px; transform:translateX(-50%); font-size:10px; letter-spacing:1.5px; color:rgba(255,255,255,.45); display:flex; gap:8px; align-items:center; white-space:nowrap; pointer-events:none; text-transform:uppercase; }
+.hint i { color:var(--accent); }
+.tag3d { position:absolute; z-index:3; font-size:10px; font-weight:700; letter-spacing:1px; padding:6px 10px; border-radius:8px; text-transform:uppercase; pointer-events:none; background:rgba(5,5,5,.7); border:1px solid rgba(0,229,255,.3); color:var(--accent); backdrop-filter:blur(6px); }
 
-        h1.title { font-family: 'Montserrat', sans-serif; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1; font-weight: 800; text-transform: uppercase; margin: 0; }
+/* TARJETAS */
+.glass { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); backdrop-filter:blur(8px); border-radius:15px; }
+.sec-head { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.sec-head .bar { width:34px; height:3px; background:var(--accent); border-radius:2px; }
+.sec-head h2 { font-family:'Montserrat'; font-size:11px; font-weight:800; letter-spacing:4px; text-transform:uppercase; margin:0; color:var(--accent); }
+.strip { display:grid; grid-template-columns:repeat(4,1fr); gap:15px; }
+.card-tech { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); padding:18px 10px; border-radius:15px; text-align:center; transition:.3s; backdrop-filter:blur(6px); }
+.card-tech:hover { border-color:var(--accent); transform:translateY(-4px); }
+.card-tech i { color:var(--accent); font-size:1.1rem; margin-bottom:8px; display:block; }
+.card-tech h3 { font-family:'Montserrat'; font-size:1.5rem; font-weight:800; margin:0; }
+.card-tech p { font-size:9px; color:#7d8791; text-transform:uppercase; letter-spacing:1px; margin:4px 0 0; }
 
-        .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8); padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); }
-        .chip i { color: var(--accent); font-size: 11px; }
+/* RUTAS */
+.tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+.tab { text-align:left; padding:16px; border-radius:14px; cursor:pointer; position:relative; overflow:hidden; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); transition:.3s; color:inherit; font:inherit; display:flex; align-items:center; gap:12px; }
+.tab::after { content:''; position:absolute; left:0; top:0; height:2px; width:0; background:var(--accent); transition:width .4s; }
+.tab:hover { border-color:rgba(0,229,255,.4); background:rgba(0,229,255,.04); transform:translateY(-3px); }
+.tab.active { border-color:var(--accent); background:rgba(0,229,255,.1); }
+.tab.active::after, .tab:hover::after { width:100%; }
+.tab .hr { font-family:'Montserrat'; font-size:1.1rem; font-weight:800; margin:0; white-space:nowrap; }
+.tab .nm { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#aab4be; margin:0; line-height:1.4; }
+.tab .dy { font-size:9px; color:var(--accent); margin:3px 0 0; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+.live-dot { width:9px; height:9px; border-radius:50%; background:#555; margin-left:auto; flex-shrink:0; }
+.live-dot.on { background:var(--ok); animation:pulseRing 1.6s infinite; }
 
-        .glass { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(8px); border-radius: 15px; }
-        .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-        .sec-head .bar { width: 30px; height: 3px; background: var(--accent); border-radius: 2px; }
-        .sec-head h2 { font-family:'Montserrat'; font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin: 0; color: var(--accent); }
+/* MAPA + PARADEROS */
+.dash { display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:20px; align-items:stretch; }
+.map-shell { position:relative; padding:6px; height:540px; overflow:hidden; }
+.map-shell iframe { width:100%; height:100%; border:0; border-radius:11px; }
+.map-shell:fullscreen { padding:0; border-radius:0; background:#050505; height:100vh; }
+.map-shell:fullscreen iframe { border-radius:0; }
+.map-top { position:absolute; z-index:5; top:18px; left:18px; right:18px; display:flex; justify-content:space-between; gap:10px; pointer-events:none; flex-wrap:wrap; }
+.map-tag { pointer-events:auto; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; padding:9px 13px; border-radius:10px; background:rgba(5,5,5,.8); border:1px solid rgba(0,229,255,.3); backdrop-filter:blur(6px); color:#fff; display:inline-flex; gap:8px; align-items:center; font-family:inherit; }
+.map-tag i { color:var(--accent); }
+.map-btn { cursor:pointer; transition:.3s; }
+.map-btn:hover { background:var(--accent); color:#000; }
+.map-btn:hover i { color:#000; }
+.stops-card { padding:22px; display:flex; flex-direction:column; height:540px; }
+#stops-container { overflow-y:auto; flex:1; padding-right:8px; scrollbar-width:thin; scrollbar-color:rgba(0,229,255,.4) transparent; }
+.stop { position:relative; display:flex; gap:12px; align-items:center; padding-left:20px; min-height:36px; border-left:1px solid #2c3338; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#aab4be; transition:.3s; }
+.stop::before { content:''; position:absolute; left:-5px; top:50%; margin-top:-4px; width:8px; height:8px; background:var(--accent); border-radius:50%; box-shadow:0 0 10px var(--accent); }
+.stop .n { font-size:9px; color:#5d6872; min-width:18px; }
+.stop.off { color:var(--bad); } .stop.off::before { background:var(--bad); box-shadow:0 0 10px var(--bad); }
+.stop.passed { opacity:.38; } .stop.passed::before { background:#666; box-shadow:none; }
+.stop.now { color:#fff; background:linear-gradient(90deg,rgba(46,229,157,.14),transparent); border-left-color:var(--ok); }
+.stop.now::before { background:var(--ok); box-shadow:0 0 14px var(--ok); width:11px; height:11px; left:-6px; margin-top:-5px; }
+.stop.now::after { content:'Posible ubicación'; margin-left:auto; font-size:8px; letter-spacing:1.5px; color:var(--ok); }
 
-        /* FRANJA DE DATOS */
-        .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .card-tech { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); padding: 18px 10px; border-radius: 15px; text-align: center; transition: .3s; backdrop-filter: blur(6px); }
-        .card-tech:hover { border-color: var(--accent); transform: translateY(-4px); }
-        .card-tech i { color: var(--accent); font-size: 1.1rem; margin-bottom: 8px; display: block; }
-        .card-tech h3 { font-family:'Montserrat'; font-size: 1.5rem; font-weight: 800; margin: 0; }
-        .card-tech p { font-size: 9px; color: #7d8791; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0; }
+/* INFO */
+.info { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; align-items:stretch; }
+.info .glass { padding:24px; }
+.badge { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; font-size:10px; font-weight:800; letter-spacing:2px; text-transform:uppercase; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#aab4be; }
+.badge.run { color:var(--ok); border-color:rgba(46,229,157,.3); background:rgba(46,229,157,.1); }
+.hud-bar { width:100%; height:6px; background:rgba(255,255,255,.1); border-radius:20px; position:relative; margin:26px 0 14px; }
+.hud-fill { height:100%; background:var(--accent); box-shadow:0 0 15px var(--accent); border-radius:20px; transition:width 1s linear; }
+.bus-pin { position:absolute; top:-11px; transform:translateX(-50%); transition:left 1s linear; }
+.bus-pin div { background:var(--accent); padding:6px 7px; border-radius:8px; box-shadow:0 0 18px rgba(0,229,255,.5); color:#000; font-size:10px; }
+.doc { display:flex; gap:14px; align-items:flex-start; }
+.doc i { font-size:1.1rem; color:var(--accent); margin-top:2px; }
+.doc b { display:block; font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+.doc span { font-size:12px; color:#8b95a0; font-weight:300; line-height:1.6; }
+.img-small { width:100%; height:110px; border-radius:12px; object-fit:cover; border:1px solid rgba(255,255,255,.1); }
 
-        /* TABLERO 3 COLUMNAS */
-        .dash { display: grid; grid-template-columns: 340px minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
-        .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+/* CRÉDITO DEL CREADOR */
+.credit-card { position:relative; overflow:hidden; text-align:center; padding:46px 24px 40px; border-radius:20px; border:1px solid rgba(0,229,255,.35); background:linear-gradient(160deg,rgba(0,229,255,.10),rgba(5,5,5,.75) 60%); box-shadow:0 0 60px rgba(0,229,255,.12), inset 0 0 40px rgba(0,229,255,.04); }
+.credit-card::before { content:''; position:absolute; inset:-1px; border-radius:20px; padding:1px; background:conic-gradient(from 0deg,transparent,var(--accent),transparent 30%); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; animation:spin 6s linear infinite; pointer-events:none; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.avatar { width:68px; height:68px; margin:0 auto 18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.6rem; color:#000; background:var(--accent); box-shadow:0 0 0 6px rgba(0,229,255,.15), 0 0 30px rgba(0,229,255,.6); animation:pulseAv 2.4s ease-in-out infinite; }
+@keyframes pulseAv { 0%,100%{box-shadow:0 0 0 6px rgba(0,229,255,.15),0 0 30px rgba(0,229,255,.5)} 50%{box-shadow:0 0 0 14px rgba(0,229,255,.05),0 0 46px rgba(0,229,255,.9)} }
+.made { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:#8b95a0; font-weight:600; }
+.beat { color:#ff5c7a; display:inline-block; animation:beat 1.2s ease-in-out infinite; }
+@keyframes beat { 0%,100%{transform:scale(1)} 20%{transform:scale(1.35)} 40%{transform:scale(1)} 60%{transform:scale(1.2)} }
+.by-label { margin:14px 0 4px; font-size:11px; letter-spacing:6px; text-transform:uppercase; color:#cfd8de; font-weight:700; }
+.creator { font-family:'Montserrat'; font-weight:900; font-size:clamp(2.2rem,8vw,4rem); letter-spacing:clamp(4px,1.6vw,14px); line-height:1.1; text-transform:uppercase; }
+.shine { background:linear-gradient(100deg,#00E5FF 20%,#fff 40%,#00E5FF 60%,#7affc1 80%); background-size:250% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; animation:shine 3.2s linear infinite; display:inline-block; filter:drop-shadow(0 0 18px rgba(0,229,255,.45)); }
+@keyframes shine { to { background-position:-250% 0; } }
+.creator .letters span { display:inline-block; animation:wave 2.6s ease-in-out infinite; }
+@keyframes wave { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+.typed { display:block; margin-top:12px; font-size:13px; color:var(--accent); font-weight:600; letter-spacing:1px; min-height:20px; }
+.typed::after { content:'▍'; margin-left:2px; animation:blink 1s steps(2) infinite; }
+@keyframes blink { 50%{opacity:0} }
+.skills { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:20px; }
+.road { position:relative; height:30px; margin-top:30px; border-bottom:2px solid rgba(255,255,255,.08); }
+.road::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:repeating-linear-gradient(90deg,var(--accent) 0 22px,transparent 22px 52px); opacity:.55; animation:lane 1.4s linear infinite; }
+@keyframes lane { to { background-position:-52px 0; } }
+.bus-run { position:absolute; bottom:4px; left:-60px; font-size:22px; color:var(--accent); filter:drop-shadow(0 0 10px rgba(0,229,255,.8)); animation:drive 9s linear infinite; }
+@keyframes drive { 0%{left:-80px} 100%{left:105%} }
+.copy { font-size:9px; color:#6b747d; letter-spacing:1px; text-transform:uppercase; font-style:italic; font-weight:300; margin:22px 0 0; }
+footer.foot { position:relative; z-index:2; text-align:center; padding:0 20px 34px; }
 
-        /* Rutas */
-        .tab {
-            width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; cursor: pointer; position: relative; overflow: hidden;
-            background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); transition: .3s; color: inherit; font: inherit;
-            display: flex; align-items: center; gap: 14px;
-        }
-        .tab::after { content:''; position:absolute; left:0; top:0; height:2px; width:0; background:var(--accent); transition: width .4s; }
-        .tab:hover { border-color: rgba(0,229,255,.4); background: rgba(0,229,255,.04); transform: translateX(4px); }
-        .tab.active { border-color: var(--accent); background: rgba(0,229,255,.1); }
-        .tab.active::after, .tab:hover::after { width: 100%; }
-        .tab .hr { font-family:'Montserrat'; font-size: 1.15rem; font-weight: 800; margin: 0; min-width: 78px; }
-        .tab .nm { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #aab4be; margin: 0; line-height: 1.4; }
-        .tab .dy { font-size: 9px; color: var(--accent); margin: 3px 0 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-        .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #555; margin-left: auto; flex-shrink: 0; }
-        .live-dot.on { background: var(--ok); animation: pulseRing 1.6s infinite; }
-
-        /* Panel en vivo */
-        .badge { display:inline-flex; align-items:center; gap:8px; padding: 6px 12px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: #aab4be; }
-        .badge.run { color: var(--ok); border-color: rgba(46,229,157,.3); background: rgba(46,229,157,.1); }
-        .hud-bar { width: 100%; height: 6px; background: rgba(255,255,255,.1); border-radius: 20px; position: relative; margin: 24px 0 14px; }
-        .hud-fill { height: 100%; background: var(--accent); box-shadow: 0 0 15px var(--accent); border-radius: 20px; transition: width 1s linear; }
-        .bus-pin { position: absolute; top: -11px; transform: translateX(-50%); transition: left 1s linear; }
-        .bus-pin div { background: var(--accent); padding: 6px 7px; border-radius: 8px; box-shadow: 0 0 18px rgba(0,229,255,.5); color: #000; font-size: 10px; }
-
-        /* Mapa */
-        .map-shell { position: relative; padding: 6px; height: calc(100vh - 190px); min-height: 560px; overflow: hidden; }
-        .map-shell iframe { width: 100%; height: 100%; border: 0; border-radius: 11px; }
-        .map-shell:fullscreen { padding: 0; border-radius: 0; background: #050505; height: 100vh; }
-        .map-shell:fullscreen iframe { border-radius: 0; }
-        .map-top { position: absolute; z-index: 5; top: 18px; left: 18px; right: 18px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; flex-wrap: wrap; }
-        .map-tag { pointer-events: auto; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 9px 13px; border-radius: 10px; background: rgba(5,5,5,.8); border: 1px solid rgba(0,229,255,.3); backdrop-filter: blur(6px); color: #fff; display: inline-flex; gap: 8px; align-items: center; }
-        .map-tag i { color: var(--accent); }
-        .map-btn { cursor: pointer; transition: .3s; }
-        .map-btn:hover { background: var(--accent); color: #000; }
-        .map-btn:hover i { color: #000; }
-
-        /* Paraderos */
-        .stops-card { padding: 22px; display: flex; flex-direction: column; height: calc(100vh - 190px); min-height: 560px; }
-        #stops-container { overflow-y: auto; flex: 1; padding-right: 8px; scrollbar-width: thin; scrollbar-color: rgba(0,229,255,.4) transparent; }
-        .stop { position: relative; display: flex; gap: 12px; align-items: center; padding: 0 0 0 20px; min-height: 36px; border-left: 1px solid #2c3338; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #aab4be; transition: .3s; }
-        .stop::before { content:''; position:absolute; left:-5px; top: 50%; margin-top: -4px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
-        .stop .n { font-size: 9px; color: #5d6872; min-width: 18px; }
-        .stop.off { color: var(--bad); } .stop.off::before { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
-        .stop.passed { opacity: .38; } .stop.passed::before { background: #666; box-shadow: none; }
-        .stop.now { color: #fff; background: linear-gradient(90deg, rgba(46,229,157,.14), transparent); border-left-color: var(--ok); }
-        .stop.now::before { background: var(--ok); box-shadow: 0 0 14px var(--ok); width: 11px; height: 11px; left: -6px; margin-top: -5px; }
-        .stop.now::after { content: 'Posible ubicación'; margin-left: auto; font-size: 8px; letter-spacing: 1.5px; color: var(--ok); }
-
-        .doc { display: flex; gap: 14px; align-items: flex-start; }
-        .doc i { font-size: 1.1rem; color: var(--accent); margin-top: 2px; }
-        .doc b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-        .doc span { font-size: 12px; color: #8b95a0; font-weight: 300; line-height: 1.6; }
-
-        .img-small { width: 100%; height: 130px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); }
-
-        /* ================= CRÉDITO ANIMADO ================= */
-        footer.credit { position: relative; z-index: 2; width: 100%; margin-top: 50px; padding: 0 0 46px; overflow: hidden; background: linear-gradient(to top, rgba(0,229,255,.06), transparent); border-top: 1px solid rgba(255,255,255,.06); }
-        .road { position: relative; height: 34px; margin-bottom: 30px; border-bottom: 2px solid rgba(255,255,255,.08); }
-        .road::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background: repeating-linear-gradient(90deg, var(--accent) 0 22px, transparent 22px 52px); opacity: .55; animation: lane 1.4s linear infinite; }
-        @keyframes lane { to { background-position: -52px 0; } }
-        .bus-run { position: absolute; bottom: 4px; left: -60px; font-size: 22px; color: var(--accent); filter: drop-shadow(0 0 10px rgba(0,229,255,.8)); animation: drive 9s linear infinite; }
-        .bus-run::after { content:''; position:absolute; right: 100%; top: 50%; width: 70px; height: 2px; background: linear-gradient(to left, rgba(0,229,255,.6), transparent); transform: translateY(-50%); }
-        @keyframes drive { 0% { left: -80px; } 100% { left: 105%; } }
-
-        .credit-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 0 16px; position: relative; }
-        .made { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8b95a0; font-weight: 600; }
-        .beat { color: #ff5c7a; display: inline-block; animation: beat 1.2s ease-in-out infinite; }
-        @keyframes beat { 0%, 100% { transform: scale(1); } 20% { transform: scale(1.35); } 40% { transform: scale(1); } 60% { transform: scale(1.2); } }
-        .by { font-family: 'Montserrat'; font-weight: 800; font-size: clamp(.8rem, 2.4vw, 1.1rem); letter-spacing: clamp(3px, 1.4vw, 10px); text-transform: uppercase; color: #cfd8de; }
-        .shine {
-            background: linear-gradient(100deg, #00E5FF 20%, #ffffff 40%, #00E5FF 60%, #7affc1 80%); background-size: 250% 100%;
-            -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
-            animation: shine 3.2s linear infinite; text-shadow: 0 0 22px rgba(0,229,255,.35); display: inline-block;
-        }
-        @keyframes shine { to { background-position: -250% 0; } }
-        .by .letters span { display: inline-block; animation: wave 2.6s ease-in-out infinite; }
-        @keyframes wave { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-7px); } }
-        .typed { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 1px; min-height: 18px; }
-        .typed::after { content: '▍'; margin-left: 2px; animation: blink 1s steps(2) infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .glow-line { width: 120px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: breathe 2.4s ease-in-out infinite; }
-        @keyframes breathe { 0%, 100% { opacity: .35; transform: scaleX(.6); } 50% { opacity: 1; transform: scaleX(1.15); } }
-        .copy { font-size: 9px; color: #6b747d; letter-spacing: 1px; text-transform: uppercase; font-style: italic; font-weight: 300; margin-top: 4px; }
-        .spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: 0; animation: spark 5s ease-in-out infinite; }
-        @keyframes spark { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
-
-        /* RESPONSIVE */
-        @media (max-width: 1400px) { .dash { grid-template-columns: 300px minmax(0, 1fr) 320px; } }
-        @media (max-width: 1100px) {
-            .dash { grid-template-columns: 1fr; }
-            .map-shell { height: 460px; min-height: 0; }
-            .stops-card { height: 460px; min-height: 0; }
-        }
-        @media (max-width: 768px) {
-            .nav-minimal { display: none; }
-            .strip { grid-template-columns: repeat(2, 1fr); }
-            .map-shell { height: 380px; }
-        }
-    </style>
+/* RESPONSIVE */
+@media (max-width:1000px) {
+  .hero { grid-template-columns:1fr; text-align:center; }
+  .hero .chips { justify-content:center; }
+  .tabs { grid-template-columns:repeat(2,1fr); }
+  .dash { grid-template-columns:1fr; }
+  .map-shell { height:420px; } .stops-card { height:420px; }
+  .info { grid-template-columns:1fr; }
+}
+@media (max-width:768px) { .nav-minimal { display:none; } .strip { grid-template-columns:repeat(2,1fr); } .tag3d { display:none; } .by-pill span { display:none; } }
+@media (max-width:520px) { .tabs { grid-template-columns:1fr; } }
+</style>
 </head>
 <body>
 
 <!-- MENÚ MÓVIL -->
 <div id="mobile-menu">
-    <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
-    <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Inicio</a>
-    <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-cyan-400 underline decoration-cyan-400">Rutas</a>
-    <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Ticket</a>
-    <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Registro</a>
-    <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Noticias</a>
-    <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Contacto</a>
+  <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
+  <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Inicio</a>
+  <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-cyan-400 underline decoration-cyan-400">Rutas</a>
+  <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Ticket</a>
+  <a href="registro.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Registro</a>
+  <a href="noticias.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Noticias</a>
+  <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Contacto</a>
 </div>
 
 <div class="main-wrapper">
-    <!-- HEADER -->
-    <header class="flex justify-between items-center animate-fade-up relative z-20">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center">
-                <i class="fa-solid fa-bus text-black text-lg"></i>
-            </div>
-            <div class="flex flex-col text-left">
-                <span class="text-[10px] font-black tracking-widest leading-none uppercase">UNAC</span>
-                <span class="text-[9px] text-cyan-400 font-bold uppercase">Movilidad</span>
-            </div>
+
+  <!-- HEADER -->
+  <header class="wrap animate-fade-up" style="padding-top:26px; padding-bottom:20px;">
+    <div class="flex justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center"><i class="fa-solid fa-bus text-black text-lg"></i></div>
+        <div class="flex flex-col text-left">
+          <span class="text-[10px] font-black tracking-widest leading-none uppercase">UNAC</span>
+          <span class="text-[9px] text-cyan-400 font-bold uppercase">Movilidad</span>
         </div>
-        <nav class="hidden md:flex gap-8 nav-minimal">
-            <a href="index.html" class="nav-link">Inicio</a>
-            <a href="rutas.html" class="nav-link active-link">Rutas</a>
-            <a href="ticket.html" class="nav-link">Ticket</a>
-            <a href="registro.html" class="nav-link">Registro</a>
-            <a href="noticias.html" class="nav-link">Noticias</a>
-            <a href="contacto.html" class="nav-link">Contacto</a>
-        </nav>
-        <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2 transition hover:bg-cyan-400 hover:text-black" aria-label="Abrir menú">
-            MENU <i class="fa-solid fa-bars-staggered"></i>
-        </button>
-    </header>
+      </div>
+      <nav class="hidden md:flex gap-8 nav-minimal">
+        <a href="index.html" class="nav-link">Inicio</a>
+        <a href="rutas.html" class="nav-link active-link">Rutas</a>
+        <a href="ticket.html" class="nav-link">Ticket</a>
+        <a href="registro.html" class="nav-link">Registro</a>
+        <a href="noticias.html" class="nav-link">Noticias</a>
+        <a href="contacto.html" class="nav-link">Contacto</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="#creador" class="by-pill"><i class="fa-solid fa-code"></i><span>Creado por SEBASTIAN</span></a>
+        <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2 transition hover:bg-cyan-400 hover:text-black" aria-label="Abrir menú">MENU <i class="fa-solid fa-bars-staggered"></i></button>
+      </div>
+    </div>
+  </header>
 
-    <!-- TÍTULO + RELOJ (ancho completo) -->
-    <section class="full animate-fade-up" style="margin-bottom:22px;">
-        <div class="flex flex-wrap justify-between items-end gap-5">
-            <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
-                    <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span class="text-cyan-400 text-[9px] font-bold uppercase tracking-widest">Recorrido y paradas · 2026-B</span>
-                </div>
-                <h1 class="title">Ruta Ventanilla <span class="text-cyan-400 italic opacity-90">2026-B</span></h1>
-                <div class="flex flex-wrap gap-2 mt-4">
-                    <span class="chip"><i class="fa-solid fa-route"></i> Campus Bellavista</span>
-                    <span class="chip"><i class="fa-solid fa-calendar-check"></i> Lunes a Viernes</span>
-                    <span class="chip"><i class="fa-solid fa-building-columns"></i> Servicio oficial UNAC</span>
-                </div>
-            </div>
-            <div class="text-right">
-                <p id="clock" class="text-4xl font-bold tracking-widest" style="font-family:'Montserrat'">00:00:00</p>
-                <p class="text-[9px] text-gray-500 uppercase tracking-[3px] mt-1">Hora de Lima</p>
-            </div>
+  <!-- HERO: TÍTULO + ESCENA 3D -->
+  <section class="wrap block">
+    <div class="hero">
+      <div class="animate-fade-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
+          <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="text-cyan-400 text-[9px] font-bold uppercase tracking-widest">Recorrido y paradas · 2026-B</span>
         </div>
-    </section>
-
-    <!-- FRANJA DE DATOS -->
-    <section class="full" style="margin-bottom:20px;">
-        <div class="strip">
-            <div class="card-tech"><i class="fa-solid fa-location-dot"></i><h3 id="s-stops">—</h3><p>Paraderos</p></div>
-            <div class="card-tech"><i class="fa-solid fa-play"></i><h3 id="s-dep">—</h3><p>Hora de salida</p></div>
-            <div class="card-tech"><i class="fa-solid fa-flag-checkered"></i><h3 id="s-arr">—</h3><p>Llegada aprox.</p></div>
-            <div class="card-tech"><i class="fa-solid fa-signal"></i><h3 id="s-state">—</h3><p>Estado</p></div>
+        <h1 class="title">Ruta Ventanilla <br><span class="text-cyan-400 italic opacity-90">2026-B</span></h1>
+        <div class="chips flex flex-wrap gap-2 mt-5">
+          <span class="chip"><i class="fa-solid fa-route"></i> Campus Bellavista</span>
+          <span class="chip"><i class="fa-solid fa-calendar-check"></i> Lunes a Viernes</span>
+          <span class="chip"><i class="fa-solid fa-building-columns"></i> Servicio oficial UNAC</span>
         </div>
-    </section>
-
-    <!-- TABLERO -->
-    <main class="full">
-        <div class="dash">
-
-            <!-- IZQUIERDA -->
-            <div class="col">
-                <div>
-                    <div class="sec-head"><span class="bar"></span><h2>Elige tu servicio</h2></div>
-                    <div class="flex flex-col gap-3" id="route-tabs"></div>
-                </div>
-
-                <div class="glass" style="padding:22px;">
-                    <div class="sec-head" style="margin-bottom:12px;"><span class="bar"></span><h2>Monitor</h2></div>
-                    <p id="route-name" class="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-3">—</p>
-                    <span id="status-badge" class="badge"><span id="status-text">Cargando</span></span>
-                    <div class="hud-bar">
-                        <div id="bar-fill" class="hud-fill" style="width:0%"></div>
-                        <div id="bus-icon" class="bus-pin" style="left:0%"><div><i class="fa-solid fa-bus"></i></div></div>
-                    </div>
-                    <div class="flex justify-between text-[9px] text-gray-500 font-black uppercase italic gap-2">
-                        <span id="p-orig">Origen</span>
-                        <span id="eta-txt" class="text-cyan-400 font-bold text-center">—</span>
-                        <span id="p-dest" class="text-right">Destino</span>
-                    </div>
-                    <p class="text-[10px] text-gray-500 font-light mt-4 leading-relaxed">La posición se estima según el horario programado, no es un GPS en tiempo real.</p>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <img src="DSC07555-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
-                    <img src="DSC07588-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
-                </div>
-            </div>
-
-            <!-- CENTRO: MAPA -->
-            <div class="col">
-                <div class="glass map-shell" id="map-shell">
-                    <div class="map-top">
-                        <span class="map-tag"><i class="fa-solid fa-route"></i> <span id="map-title">Ruta</span></span>
-                        <button class="map-tag map-btn" id="btn-full" type="button"><i class="fa-solid fa-expand"></i> Pantalla completa</button>
-                    </div>
-                    <iframe id="main-map" title="Mapa de la ruta" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                </div>
-
-                <div class="glass" style="padding:24px; border-left:4px solid var(--bad); background:rgba(120,20,20,.10);">
-                    <h5 class="text-red-500 font-black text-[11px] mb-3 uppercase tracking-[3px]">❗ Dato adicional importante</h5>
-                    <p class="text-[13px] leading-relaxed text-white font-medium mb-3 italic">
-                        AVISO ESTUDIANTIL: Debido a la alta demanda masiva, informamos que el último paradero con capacidad garantizada es <span class="text-cyan-400 font-black underline underline-offset-4 uppercase">CARSA VENTANILLA 😫</span>. No se confíen de cupos posteriores.
-                    </p>
-                    <p class="text-[11px] text-gray-300 italic border-t border-white/5 pt-3">Comuníquense con el <span class="text-white font-bold underline">delegado 🧐</span> para verificar espacios reales 😰.</p>
-                </div>
-            </div>
-
-            <!-- DERECHA -->
-            <div class="col">
-                <div class="glass stops-card">
-                    <div class="sec-head" style="margin-bottom:14px;"><span class="bar"></span><h2>Secuencia de paraderos</h2></div>
-                    <div id="stops-container"></div>
-                </div>
-
-                <div class="glass" style="padding:22px; border-left:4px solid var(--accent);">
-                    <h4 class="text-[10px] font-black text-cyan-400 uppercase tracking-[4px] mb-5 italic">Documentación requerida</h4>
-                    <div class="space-y-4">
-                        <div class="doc"><i class="fa-solid fa-id-card"></i><div><b>Carnet universitario vigente</b><span>Obligatorio para acceder al servicio.</span></div></div>
-                        <div class="doc"><i class="fa-solid fa-address-card"></i><div><b>DNI original</b><span>Opcional, para verificación adicional.</span></div></div>
-                        <div class="doc"><i class="fa-solid fa-file-invoice"></i><div><b>Constancia de matrícula</b><span>Semestre vigente, si no tiene carnet.</span></div></div>
-                    </div>
-                </div>
-            </div>
-
+        <div class="clock-box">
+          <p id="clock">00:00:00</p>
+          <p class="text-[9px] text-gray-500 uppercase tracking-[3px]">Hora de Lima</p>
         </div>
-    </main>
+      </div>
 
-    <!-- CRÉDITO ANIMADO -->
-    <footer class="credit reveal" id="credit">
-        <div class="road"><div class="bus-run"><i class="fa-solid fa-bus"></i></div></div>
-        <div class="credit-inner">
-            <span class="spark" style="left:18%; bottom:40px; animation-delay:0s"></span>
-            <span class="spark" style="left:32%; bottom:20px; animation-delay:1.2s"></span>
-            <span class="spark" style="left:68%; bottom:30px; animation-delay:2.1s"></span>
-            <span class="spark" style="left:82%; bottom:50px; animation-delay:.6s"></span>
+      <div class="scene-wrap animate-float">
+        <div id="globe-box" aria-label="Escena 3D interactiva, arrastra para rotar"></div>
+        <span class="tag3d" style="top:12%; left:0;"><i class="fa-solid fa-bus"></i> Unidad 01</span>
+        <span class="tag3d" style="bottom:16%; right:0;"><i class="fa-solid fa-bus"></i> Unidad 02</span>
+        <div class="hint"><i class="fa-solid fa-hand-pointer"></i> Arrastra para rotar</div>
+      </div>
+    </div>
+  </section>
 
-            <span class="made">Hecho con <i class="fa-solid fa-heart beat"></i> para la comunidad UNAC</span>
-            <span class="by">Sistema creado por <b class="shine" id="creator">SEBASTIAN</b></span>
-            <span class="typed" id="typed"></span>
-            <span class="glow-line"></span>
-            <span class="copy">© 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+  <!-- DATOS -->
+  <section class="wrap block">
+    <div class="strip">
+      <div class="card-tech"><i class="fa-solid fa-location-dot"></i><h3 id="s-stops">—</h3><p>Paraderos</p></div>
+      <div class="card-tech"><i class="fa-solid fa-play"></i><h3 id="s-dep">—</h3><p>Hora de salida</p></div>
+      <div class="card-tech"><i class="fa-solid fa-flag-checkered"></i><h3 id="s-arr">—</h3><p>Llegada aprox.</p></div>
+      <div class="card-tech"><i class="fa-solid fa-signal"></i><h3 id="s-state">—</h3><p>Estado</p></div>
+    </div>
+  </section>
+
+  <!-- SELECTOR DE RUTAS -->
+  <section class="wrap block">
+    <div class="sec-head"><span class="bar"></span><h2>Elige tu servicio</h2></div>
+    <div class="tabs" id="route-tabs"></div>
+  </section>
+
+  <!-- MAPA + PARADEROS -->
+  <section class="wrap block">
+    <div class="dash">
+      <div class="glass map-shell" id="map-shell">
+        <div class="map-top">
+          <span class="map-tag"><i class="fa-solid fa-route"></i> <span id="map-title">Ruta</span></span>
+          <button class="map-tag map-btn" id="btn-full" type="button"><i class="fa-solid fa-expand"></i> Pantalla completa</button>
         </div>
-    </footer>
+        <iframe id="main-map" title="Mapa de la ruta" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+      <div class="glass stops-card">
+        <div class="sec-head" style="margin-bottom:14px;"><span class="bar"></span><h2>Paraderos</h2></div>
+        <div id="stops-container"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MONITOR + AVISO + DOCUMENTOS -->
+  <section class="wrap block">
+    <div class="info">
+      <div class="glass">
+        <div class="sec-head" style="margin-bottom:12px;"><span class="bar"></span><h2>Monitor</h2></div>
+        <p id="route-name" class="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-3">—</p>
+        <span id="status-badge" class="badge"><span id="status-text">Cargando</span></span>
+        <div class="hud-bar">
+          <div id="bar-fill" class="hud-fill" style="width:0%"></div>
+          <div id="bus-icon" class="bus-pin" style="left:0%"><div><i class="fa-solid fa-bus"></i></div></div>
+        </div>
+        <div class="flex justify-between text-[9px] text-gray-500 font-black uppercase italic gap-2">
+          <span id="p-orig">Origen</span>
+          <span id="eta-txt" class="text-cyan-400 font-bold text-center">—</span>
+          <span id="p-dest" class="text-right">Destino</span>
+        </div>
+        <p class="text-[10px] text-gray-500 font-light mt-4 leading-relaxed">La posición se estima según el horario programado, no es un GPS en tiempo real.</p>
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <img src="DSC07555-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
+          <img src="DSC07588-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
+        </div>
+      </div>
+
+      <div class="glass" style="border-left:4px solid var(--bad); background:rgba(120,20,20,.10);">
+        <h5 class="text-red-500 font-black text-[11px] mb-3 uppercase tracking-[3px]">❗ Dato adicional importante</h5>
+        <p class="text-[13px] leading-relaxed text-white font-medium mb-3 italic">
+          AVISO ESTUDIANTIL: Debido a la alta demanda masiva, informamos que el último paradero con capacidad garantizada es <span class="text-cyan-400 font-black underline underline-offset-4 uppercase">CARSA VENTANILLA 😫</span>. No se confíen de cupos posteriores.
+        </p>
+        <p class="text-[11px] text-gray-300 italic border-t border-white/5 pt-3">Comuníquense con el <span class="text-white font-bold underline">delegado 🧐</span> para verificar espacios reales 😰.</p>
+      </div>
+
+      <div class="glass" style="border-left:4px solid var(--accent);">
+        <h4 class="text-[10px] font-black text-cyan-400 uppercase tracking-[4px] mb-5 italic">Documentación requerida</h4>
+        <div class="space-y-4">
+          <div class="doc"><i class="fa-solid fa-id-card"></i><div><b>Carnet universitario vigente</b><span>Obligatorio para acceder al servicio.</span></div></div>
+          <div class="doc"><i class="fa-solid fa-address-card"></i><div><b>DNI original</b><span>Opcional, para verificación adicional.</span></div></div>
+          <div class="doc"><i class="fa-solid fa-file-invoice"></i><div><b>Constancia de matrícula</b><span>Semestre vigente, si no tiene carnet.</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRÉDITO DEL CREADOR -->
+  <section class="wrap block" id="creador">
+    <div class="credit-card">
+      <div class="avatar"><i class="fa-solid fa-code"></i></div>
+      <span class="made">Hecho con <i class="fa-solid fa-heart beat"></i> para la comunidad UNAC</span>
+      <p class="by-label">Sistema creado por</p>
+      <div class="creator"><span class="shine" id="creator">SEBASTIAN</span></div>
+      <span class="typed" id="typed"></span>
+      <div class="skills">
+        <span class="chip"><i class="fa-solid fa-pen-ruler"></i> Diseño</span>
+        <span class="chip"><i class="fa-solid fa-laptop-code"></i> Desarrollo web</span>
+        <span class="chip"><i class="fa-solid fa-cube"></i> Animación 3D</span>
+      </div>
+      <div class="road"><div class="bus-run"><i class="fa-solid fa-bus"></i></div></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p class="copy">© 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.</p>
+  </footer>
 </div>
 
 <script>
@@ -439,11 +439,9 @@ $('btn-full').addEventListener('click', function () {
 
 /* ---------------- CRÉDITO ANIMADO ---------------- */
 (function () {
-    // letras con onda
     const c = $('creator'), txt = c.textContent;
     c.innerHTML = '<span class="letters">' + txt.split('').map((ch, i) => '<span style="animation-delay:' + (i * 0.12) + 's">' + ch + '</span>').join('') + '</span>';
 
-    // texto que se escribe solo
     const phrases = ['Diseñando la movilidad universitaria', 'Programando cada ruta con cariño', 'Conectando a la comunidad UNAC', 'Que nunca pierdas tu bus 🚌'];
     const el = $('typed'); let p = 0, i = 0, del = false;
     function type() {
@@ -455,17 +453,155 @@ $('btn-full').addEventListener('click', function () {
         else { del = false; p = (p + 1) % phrases.length; setTimeout(type, 400); }
     }
     type();
-
-    // aparece al hacer scroll
-    const f = $('credit');
-    if ('IntersectionObserver' in window) {
-        new IntersectionObserver(function (es, ob) { es.forEach(e => { if (e.isIntersecting) { f.classList.add('in'); ob.disconnect(); } }); }, { threshold: 0.15 }).observe(f);
-    } else f.classList.add('in');
 })();
+
+/* ---------------- ESCENA 3D ---------------- */
+var scene, camera, renderer, root, stars, clock3 = 0;
+var container = $('globe-box');
+var orbiters = [], buses = [], nodes = [];
+var ACC = 0x00E5FF;
+
+function lonLatToVec(lat, lon, r) {
+    var phi = (90 - lat) * Math.PI / 180, th = (lon + 180) * Math.PI / 180;
+    return new THREE.Vector3(-r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th));
+}
+
+function makeBus() {
+    var g = new THREE.Group();
+    var lineMat = new THREE.LineBasicMaterial({ color: ACC, transparent: true, opacity: 0.95 });
+    var fillMat = new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.14 });
+    function box(w, h, d, x, y, z, fill) {
+        var geo = new THREE.BoxGeometry(w, h, d);
+        var m = new THREE.Mesh(geo, fill || fillMat); m.position.set(x, y, z);
+        var e = new THREE.LineSegments(new THREE.EdgesGeometry(geo), lineMat); e.position.copy(m.position);
+        g.add(m); g.add(e);
+    }
+    box(11, 4.2, 4.4, 0, 0, 0);
+    box(9.6, 1.5, 4.6, -0.2, 0.8, 0, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22 }));
+    box(0.6, 1.6, 4.0, 5.55, 0.5, 0, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }));
+    [[-3.5, 2.4], [3.5, 2.4], [-3.5, -2.4], [3.5, -2.4]].forEach(function (p) {
+        var w = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.8, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
+        w.rotation.x = Math.PI / 2; w.position.set(p[0], -2.1, p[1]); g.add(w);
+    });
+    return g;
+}
+
+function makeRing(r, tz, op) {
+    var ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.12, 8, 160), new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: op }));
+    ring.rotation.set(Math.PI / 2, 0, tz);
+    return ring;
+}
+
+function init3D() {
+    if (!container || typeof THREE === 'undefined') return;
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.z = 150;
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    root = new THREE.Group(); root.rotation.x = 0.35; scene.add(root);
+
+    var globe = new THREE.Mesh(new THREE.IcosahedronGeometry(35, 2), new THREE.MeshBasicMaterial({ color: ACC, wireframe: true, transparent: true, opacity: 0.18 }));
+    globe.add(new THREE.Points(new THREE.IcosahedronGeometry(35.5, 2), new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.55 })));
+    root.add(globe);
+    root.add(new THREE.Mesh(new THREE.SphereGeometry(33.6, 32, 32), new THREE.MeshBasicMaterial({ color: 0x03141a, transparent: true, opacity: 0.85 })));
+
+    var start = lonLatToVec(-8, -95, 35.6), end = lonLatToVec(18, -40, 35.6);
+    var mid = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(52);
+    var curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    root.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(80)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 })));
+    [start, end].forEach(function (p, i) {
+        var n = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), new THREE.MeshBasicMaterial({ color: ACC }));
+        n.position.copy(p);
+        var halo = new THREE.Mesh(new THREE.RingGeometry(2, 2.5, 32), new THREE.MeshBasicMaterial({ color: ACC, transparent: true, opacity: 0.7, side: THREE.DoubleSide }));
+        halo.position.copy(p); halo.lookAt(p.clone().multiplyScalar(2));
+        root.add(n); root.add(halo); nodes.push({ halo: halo, off: i * 1.5 });
+    });
+    var runner = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    root.add(runner); root.userData.runner = { mesh: runner, curve: curve };
+
+    root.add(makeRing(55, 0.25, 0.35)); root.add(makeRing(66, -0.45, 0.22));
+    [[55, 0.25, 0.012, 0], [66, -0.45, -0.009, 2.4]].forEach(function (c) {
+        var pivot = new THREE.Group(); pivot.rotation.z = c[1];
+        var bus = makeBus(); bus.position.x = c[0]; bus.rotation.y = Math.PI / 2; bus.scale.setScalar(0.62);
+        pivot.add(bus); pivot.rotation.y = c[3]; root.add(pivot); buses.push({ pivot: pivot, speed: c[2] });
+    });
+
+    function wire(geo, size, color) {
+        var m = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.9 }));
+        m.scale.setScalar(size); return m;
+    }
+    [
+        { mesh: wire(new THREE.OctahedronGeometry(1), 4.2, 0xffffff), r: 78, tilt: 0.7, sp: 0.011, ph: 0 },
+        { mesh: wire(new THREE.TorusKnotGeometry(1, 0.28, 60, 8), 3.4, ACC), r: 84, tilt: -0.9, sp: -0.008, ph: 2 },
+        { mesh: wire(new THREE.BoxGeometry(1.6, 1.6, 1.6), 3.2, 0xffffff), r: 72, tilt: 1.2, sp: 0.014, ph: 4 },
+        { mesh: wire(new THREE.IcosahedronGeometry(1, 0), 3.6, ACC), r: 90, tilt: 0.2, sp: -0.006, ph: 1 }
+    ].forEach(function (s) {
+        var pivot = new THREE.Group(); pivot.rotation.z = s.tilt; pivot.rotation.x = s.tilt * 0.5;
+        s.mesh.position.x = s.r; pivot.add(s.mesh); pivot.rotation.y = s.ph; root.add(pivot);
+        orbiters.push({ pivot: pivot, mesh: s.mesh, sp: s.sp });
+    });
+
+    var N = 380, pos = new Float32Array(N * 3);
+    for (var i = 0; i < N; i++) {
+        var r = 95 + Math.random() * 60, a = Math.random() * Math.PI * 2, b = Math.acos(2 * Math.random() - 1);
+        pos[i * 3] = r * Math.sin(b) * Math.cos(a); pos[i * 3 + 1] = r * Math.cos(b); pos[i * 3 + 2] = r * Math.sin(b) * Math.sin(a);
+    }
+    var sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.45 }));
+    scene.add(stars);
+
+    bindDrag(); animate3D();
+}
+
+var vel = { x: 0, y: 0 }, dragging = false, last = { x: 0, y: 0 };
+function bindDrag() {
+    container.addEventListener('pointerdown', function (e) {
+        dragging = true; last.x = e.clientX; last.y = e.clientY;
+        container.classList.add('drag'); container.setPointerCapture(e.pointerId);
+    });
+    container.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        var dx = e.clientX - last.x, dy = e.clientY - last.y;
+        last.x = e.clientX; last.y = e.clientY;
+        vel.y = dx * 0.006; vel.x = dy * 0.006;
+        root.rotation.y += vel.y; root.rotation.x = Math.max(-1.2, Math.min(1.2, root.rotation.x + vel.x));
+    });
+    function up() { dragging = false; container.classList.remove('drag'); }
+    container.addEventListener('pointerup', up);
+    container.addEventListener('pointercancel', up);
+}
+
+function animate3D() {
+    requestAnimationFrame(animate3D);
+    clock3 += 0.016;
+    if (!dragging) {
+        root.rotation.y += 0.0025 + vel.y;
+        root.rotation.x = Math.max(-1.2, Math.min(1.2, root.rotation.x + vel.x));
+        vel.x *= 0.95; vel.y *= 0.95;
+    }
+    buses.forEach(function (b) { b.pivot.rotation.y += b.speed; });
+    orbiters.forEach(function (o) { o.pivot.rotation.y += o.sp; o.mesh.rotation.x += 0.02; o.mesh.rotation.y += 0.015; });
+    nodes.forEach(function (n) { var s = 1 + 0.35 * Math.sin(clock3 * 3 + n.off); n.halo.scale.set(s, s, s); n.halo.material.opacity = 0.75 - 0.35 * Math.abs(Math.sin(clock3 * 3 + n.off)); });
+    var rn = root.userData.runner; if (rn) rn.mesh.position.copy(rn.curve.getPoint((clock3 * 0.18) % 1));
+    stars.rotation.y -= 0.0004;
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', function () {
+    if (!container || !container.clientWidth || !renderer) return;
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+});
 
 buildTabs();
 selectRoute(0);
 setInterval(updateTracker, 1000);
+window.addEventListener('load', init3D);
 </script>
 </body>
 </html>
