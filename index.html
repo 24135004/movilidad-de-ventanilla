@@ -2,118 +2,147 @@
 <html lang="es">
 <head><meta name="google-site-verification" content="DXjJSnDAZ8sb0fRpk0pmvu8SfvsjK4mS9oN3Sp2aCSs" />
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UNAC | Movilidad Inteligente 2026-B</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        :root { 
-            /* Se cambió el color de amarillo a un Cian/Azul Eléctrico tecnológico */
-            --accent: #00E5FF; 
-            --dark: #050505;
-        }
-        
-        body, html { 
-            margin: 0; padding: 0; min-height: 100vh; 
+        :root { --accent: #00E5FF; --dark: #050505; }
+
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body, html {
+            margin: 0; padding: 0; min-height: 100vh;
             background-color: var(--dark);
             font-family: 'Inter', sans-serif;
-            color: #ffffff;
-            overflow-x: hidden;
+            color: #fff; overflow-x: hidden;
         }
+        a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-        /* ANIMACIONES */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        .animate-fade-up { animation: fadeInUp 0.8s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes zoomSlow { from { transform: scale(1); } to { transform: scale(1.08); } }
+        .animate-fade-up { animation: fadeInUp .8s ease-out forwards; }
         .animate-float { animation: float 4s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
-        /* FONDO */
-        .main-wrapper {
-            position: relative;
-            background: radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.4) 0%, rgba(5, 5, 5, 1) 100%), 
-                        url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center;
+        /* ===== HEADER FIJO ===== */
+        #topbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            transition: background .3s, border-color .3s; border-bottom: 1px solid transparent;
         }
+        #topbar.scrolled { background: rgba(5,5,5,.85); backdrop-filter: blur(14px); border-color: rgba(255,255,255,.08); }
+        .bar-in { max-width: 1200px; margin: 0 auto; padding: 22px 20px; display: flex; justify-content: space-between; align-items: center; transition: padding .3s; }
+        #topbar.scrolled .bar-in { padding: 14px 20px; }
 
-        header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 100; }
-
-        /* NAVEGACIÓN LIMPIA */
-        .nav-link { 
-            font-size: 11px; font-weight: 700; letter-spacing: 2px; 
-            color: rgba(255, 255, 255, 0.6); transition: 0.3s;
+        .nav-link {
+            font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            color: rgba(255,255,255,.65); transition: .3s;
             text-transform: uppercase; position: relative;
         }
         .nav-link:hover, .active-link { color: var(--accent); }
-        .nav-link::after {
-            content: ''; position: absolute; width: 0; height: 2px;
-            bottom: -6px; left: 0; background: var(--accent); transition: width 0.3s;
-        }
+        .nav-link::after { content:''; position:absolute; width:0; height:2px; bottom:-6px; left:0; background:var(--accent); transition: width .3s; }
         .nav-link:hover::after, .active-link::after { width: 100%; }
 
-        /* MENU MOVIL OVERLAY */
-        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,0.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
+        #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
         #mobile-menu.active { display: flex; }
 
+        /* ===== HERO CON FOTO ===== */
+        .hero { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .hero-slides { position: absolute; inset: 0; z-index: 0; }
+        .hero-slides img {
+            position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+            opacity: 0; transition: opacity 1.4s ease;
+        }
+        .hero-slides img.on { opacity: 1; animation: zoomSlow 9s ease-out forwards; }
+        .hero-shade {
+            position: absolute; inset: 0; z-index: 1;
+            background:
+              linear-gradient(90deg, rgba(5,5,5,.95) 0%, rgba(5,5,5,.75) 45%, rgba(5,5,5,.3) 100%),
+              linear-gradient(0deg, #050505 0%, transparent 30%);
+        }
+
         .content-box {
-            max-width: 1100px; width: 90%;
+            position: relative; z-index: 2;
+            max-width: 1100px; width: 90%; margin: 0 auto;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 20px 0; flex-grow: 1;
+            padding: 130px 0 60px;
         }
 
         h1 {
             font-family: 'Montserrat', sans-serif;
-            font-size: clamp(2rem, 6vw, 3.5rem);
+            font-size: clamp(2rem, 6vw, 3.8rem);
             line-height: 1; font-weight: 800; text-transform: uppercase;
         }
 
-        #globe-box { width: 400px; height: 400px; }
+        #globe-box { width: 400px; height: 400px; flex-shrink: 0; }
 
+        /* indicadores del slider */
+        .dots { display: flex; gap: 8px; margin-top: 28px; }
+        .dots button { width: 26px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.25); border: 0; padding: 0; cursor: pointer; transition: .3s; }
+        .dots button.on { background: var(--accent); width: 44px; }
+
+        /* ===== STATS ===== */
         .stats-area {
+            position: relative; z-index: 3;
             display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 15px; width: 90%; max-width: 1100px; margin-bottom: 40px;
+            gap: 15px; width: 90%; max-width: 1100px; margin: 0 auto 70px;
         }
-
         .card-tech {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 20px 10px; border-radius: 15px;
-            text-align: center; transition: 0.3s;
+            background: rgba(12,16,20,.75); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,.1);
+            padding: 24px 10px; border-radius: 15px; text-align: center; transition: .3s;
         }
         .card-tech:hover { border-color: var(--accent); transform: translateY(-5px); }
         .card-tech i { color: var(--accent); font-size: 1.2rem; margin-bottom: 10px; display: block; }
-        .card-tech h3 { font-size: 1.5rem; font-weight: 800; margin: 0; }
-        .card-tech p { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .card-tech h3 { font-family:'Montserrat'; font-size: 1.6rem; font-weight: 800; margin: 0; }
+        .card-tech p { font-size: 9px; color: #7d8791; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0; }
+
+        /* ===== GALERÍA ===== */
+        .gal-wrap { max-width: 1100px; width: 90%; margin: 0 auto; padding-bottom: 90px; }
+        .sec-head { display:flex; align-items:center; gap:14px; margin-bottom: 26px; }
+        .sec-head span.bar { width: 36px; height: 3px; background: var(--accent); border-radius: 2px; }
+        .sec-head h2 { font-family:'Montserrat'; font-size: 11px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin: 0; color: var(--accent); }
+        .gallery { display: grid; grid-template-columns: 1.5fr 1fr 1fr; grid-template-rows: 280px; gap: 14px; }
+        .ph {
+            position: relative; overflow: hidden; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,.08); background: #0d1218; margin: 0;
+        }
+        .ph img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s ease; display: block; }
+        .ph:hover img { transform: scale(1.06); }
+        .ph figcaption {
+            position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 16px 14px;
+            background: linear-gradient(0deg, rgba(5,5,5,.92), transparent);
+            font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+        }
+        .ph figcaption i { color: var(--accent); margin-right: 6px; }
+
+        footer { border-top: 1px solid rgba(255,255,255,.06); background: rgba(0,0,0,.4); }
 
         @media (max-width: 768px) {
-            header { padding: 25px 15px; }
-            .nav-minimal { display: none; } 
-            .content-box { flex-direction: column-reverse; text-align: center; padding-top: 0; align-items: center; justify-content: center; }
-            #globe-box { width: 260px; height: 260px; margin-bottom: 10px; margin: 0 auto; }
-            .stats-area { grid-template-columns: repeat(2, 1fr); margin-bottom: 30px; margin: 0 auto; }
-            h1 { margin-top: 15px; text-align: center; }
+            .bar-in { padding: 16px 15px; }
+            .nav-minimal { display: none; }
+            .content-box { flex-direction: column-reverse; text-align: center; padding: 110px 0 30px; justify-content: center; }
+            #globe-box { width: 240px; height: 240px; margin: 0 auto 10px; }
+            .hero-shade { background: linear-gradient(0deg, #050505 0%, rgba(5,5,5,.8) 50%, rgba(5,5,5,.7) 100%); }
+            .stats-area { grid-template-columns: repeat(2, 1fr); margin-bottom: 50px; }
+            h1 { margin-top: 10px; text-align: center; }
             .text-side { text-align: center !important; display: flex; flex-direction: column; align-items: center; }
+            .dots { justify-content: center; }
+            .gallery { grid-template-columns: 1fr; grid-template-rows: none; }
+            .ph { height: 220px; }
         }
     </style>
 </head>
 <body>
 
-<!-- MENÚ MÓVIL ACTUALIZADO A COLOR CIAN -->
+<!-- MENÚ MÓVIL -->
 <div id="mobile-menu">
-    <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl"><i class="fa-solid fa-xmark"></i></button>
+    <button onclick="toggleMenu()" class="absolute top-10 right-10 text-cyan-400 text-4xl" aria-label="Cerrar menú"><i class="fa-solid fa-xmark"></i></button>
     <a href="index.html" class="text-xl font-black uppercase tracking-[4px] text-cyan-400 underline decoration-cyan-400">Inicio</a>
     <a href="rutas.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Rutas</a>
     <a href="ticket.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Ticket</a>
@@ -122,9 +151,9 @@
     <a href="contacto.html" class="text-xl font-black uppercase tracking-[4px] text-white hover:text-cyan-400">Contacto</a>
 </div>
 
-<div class="main-wrapper">
-    <!-- Header ACTUALIZADO A COLOR CIAN -->
-    <header class="flex justify-between items-center animate-fade-up relative z-20">
+<!-- HEADER -->
+<header id="topbar">
+    <div class="bar-in animate-fade-up">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 bg-cyan-400 rounded flex items-center justify-center">
                 <i class="fa-solid fa-bus text-black text-lg"></i>
@@ -143,75 +172,124 @@
             <a href="noticias.html" class="nav-link">Noticias</a>
             <a href="contacto.html" class="nav-link">Contacto</a>
         </nav>
-        
-        <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2 transition hover:bg-cyan-400 hover:text-black">
+
+        <button onclick="toggleMenu()" class="md:hidden bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 px-4 py-2 rounded-lg font-black text-xs flex items-center gap-2 transition hover:bg-cyan-400 hover:text-black" aria-label="Abrir menú">
             MENU <i class="fa-solid fa-bars-staggered"></i>
         </button>
-    </header>
+    </div>
+</header>
 
-    <!-- Main Content -->
+<!-- HERO -->
+<section class="hero">
+    <!--
+      FOTOS DEL HERO (slider automático).
+      Cada <img> intenta cargar primero tu foto local (carpeta img/).
+      Si aún no existe, usa la foto de respaldo para que nunca se vea vacío.
+    -->
+    <div class="hero-slides" id="slides">
+        <img class="on" src="img/hero-1.jpg" alt="Bus de la movilidad universitaria UNAC" data-fb="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920">
+        <img src="img/hero-2.jpg" alt="Unidades de la movilidad UNAC en ruta" data-fb="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=1920">
+        <img src="img/hero-3.jpg" alt="Campus de la Universidad Nacional del Callao" data-fb="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=1920">
+    </div>
+    <div class="hero-shade"></div>
+
     <main class="content-box">
         <div class="text-side animate-fade-up text-left">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
                 <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                <!-- ACTUALIZADO AL CICLO 2026-B -->
                 <span class="text-cyan-400 text-[9px] font-bold uppercase tracking-widest">Servicio Activo 2026-B</span>
             </div>
-            
+
             <h1>Movilidad <br><span class="text-cyan-400 italic opacity-90">Universitaria</span></h1>
-            <p class="mt-4 text-gray-400 text-sm max-w-md mx-auto md:mx-0 font-light">
-                <!-- ACTUALIZADO AL CICLO 2026-B -->
+            <p class="mt-4 text-gray-300 text-sm max-w-md mx-auto md:mx-0 font-light leading-relaxed">
                 Plataforma inteligente para la gestión y monitoreo de la movilidad RUTA VENTANILLA oficial de la Universidad Nacional del Callao ciclo 2026-B.
             </p>
-            
-            <!-- Botones Modificados a color cian -->
+
             <div class="flex gap-3 mt-8 justify-center md:justify-start">
                 <a href="ticket.html" class="bg-cyan-400 text-black text-[11px] font-black px-7 py-3 rounded-lg hover:scale-105 transition shadow-lg shadow-cyan-400/20 flex items-center justify-center uppercase">TICKETS</a>
-                <a href="contacto.html" class="bg-white/5 border border-white/10 text-[11px] font-bold px-7 py-3 rounded-lg hover:bg-white/10 transition flex items-center justify-center uppercase">CONTACTO</a>
+                <a href="contacto.html" class="bg-white/5 border border-white/20 text-[11px] font-bold px-7 py-3 rounded-lg hover:bg-white/10 transition flex items-center justify-center uppercase">CONTACTO</a>
             </div>
+
+            <div class="dots" id="dots" aria-label="Fotos"></div>
         </div>
 
-        <div id="globe-box" class="animate-float"></div>
+        <div id="globe-box" class="animate-float" aria-hidden="true"></div>
     </main>
 
-    <!-- Stats Area -->
+    <!-- STATS -->
     <section class="stats-area animate-fade-up">
-        <div class="card-tech">
-            <i class="fa-solid fa-route"></i>
-            <h3>02</h3>
-            <p>Unidades</p>
-        </div>
-        <div class="card-tech">
-            <i class="fa-solid fa-location-dot"></i>
-            <h3>35km</h3>
-            <p>Recorrido</p>
-        </div>
-        <div class="card-tech">
-            <i class="fa-solid fa-users"></i>
-            <h3>+600</h3>
-            <p>Usuarios</p>
-        </div>
-        <div class="card-tech">
-            <i class="fa-solid fa-clock"></i>
-            <h3>55m</h3>
-            <p>Frecuencia</p>
-        </div>
+        <div class="card-tech"><i class="fa-solid fa-route"></i><h3>02</h3><p>Unidades</p></div>
+        <div class="card-tech"><i class="fa-solid fa-location-dot"></i><h3>35km</h3><p>Recorrido</p></div>
+        <div class="card-tech"><i class="fa-solid fa-users"></i><h3>+600</h3><p>Usuarios</p></div>
+        <div class="card-tech"><i class="fa-solid fa-clock"></i><h3>55m</h3><p>Frecuencia</p></div>
     </section>
+</section>
 
-    <!-- Footer -->
-    <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/20 relative z-20">
-        <span class="text-center text-[10px] font-extrabold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
-        <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light">
-            © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
-        </span>
-    </footer>
-</div>
+<!-- GALERÍA DE LA MOVILIDAD -->
+<section class="gal-wrap">
+    <div class="sec-head"><span class="bar"></span><h2>Nuestra movilidad</h2></div>
+    <div class="gallery">
+        <figure class="ph">
+            <img src="img/bus-1.jpg" alt="Bus UNAC para estudiantes" loading="lazy" data-fb="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1000">
+            <figcaption><i class="fa-solid fa-bus"></i>Unidades para estudiantes</figcaption>
+        </figure>
+        <figure class="ph">
+            <img src="img/bus-2.jpg" alt="Ruta Ventanilla" loading="lazy" data-fb="https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=800">
+            <figcaption><i class="fa-solid fa-route"></i>Ruta Ventanilla</figcaption>
+        </figure>
+        <figure class="ph">
+            <img src="img/campus.jpg" alt="Campus UNAC" loading="lazy" data-fb="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&q=80&w=800">
+            <figcaption><i class="fa-solid fa-building-columns"></i>Ciudad universitaria</figcaption>
+        </figure>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="w-full py-12 flex flex-col items-center">
+    <span class="text-center text-[10px] font-extrabold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
+    <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light px-4">
+        © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
+    </span>
+</footer>
 
 <script>
     function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
 
-    let scene, camera, renderer, globe;
-    const container = document.getElementById('globe-box');
+    /* Foto local primero; si no existe, usa la de respaldo (data-fb) */
+    document.querySelectorAll('img[data-fb]').forEach(function (img) {
+        img.addEventListener('error', function () {
+            if (img.dataset.fb && img.src !== img.dataset.fb) { img.src = img.dataset.fb; }
+        });
+    });
+
+    /* Header con fondo al hacer scroll */
+    var bar = document.getElementById('topbar');
+    function onScroll() { bar.classList.toggle('scrolled', window.scrollY > 30); }
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
+    /* Slider del hero */
+    (function () {
+        var imgs = document.querySelectorAll('#slides img');
+        var dotsBox = document.getElementById('dots');
+        var cur = 0, timer;
+        imgs.forEach(function (_, i) {
+            var b = document.createElement('button');
+            b.setAttribute('aria-label', 'Foto ' + (i + 1));
+            b.onclick = function () { go(i); restart(); };
+            dotsBox.appendChild(b);
+        });
+        var dots = dotsBox.querySelectorAll('button');
+        function go(n) {
+            imgs[cur].classList.remove('on'); dots[cur].classList.remove('on');
+            cur = n; imgs[cur].classList.add('on'); dots[cur].classList.add('on');
+        }
+        function restart() { clearInterval(timer); timer = setInterval(function () { go((cur + 1) % imgs.length); }, 6000); }
+        dots[0].classList.add('on'); restart();
+    })();
+
+    /* Globo 3D */
+    var scene, camera, renderer, globe;
+    var container = document.getElementById('globe-box');
 
     function init() {
         if (!container) return;
@@ -220,42 +298,32 @@
         camera.position.z = 100;
 
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(container.clientWidth, container.clientHeight);
         container.appendChild(renderer.domElement);
 
-        const geometry = new THREE.IcosahedronGeometry(35, 2);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x00E5FF, /* CAMBIO DE COLOR EN EL GLOBO 3D (Cian) */
-            wireframe: true,
-            transparent: true,
-            opacity: 0.15
-        });
-        globe = new THREE.Mesh(geometry, material);
+        globe = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(35, 2),
+            new THREE.MeshBasicMaterial({ color: 0x00E5FF, wireframe: true, transparent: true, opacity: 0.25 })
+        );
+        globe.add(new THREE.Points(
+            new THREE.IcosahedronGeometry(35.5, 2),
+            new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.6 })
+        ));
         scene.add(globe);
-
-        const pointsGeom = new THREE.IcosahedronGeometry(35.5, 2);
-        const pointsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.5 });
-        globe.add(new THREE.Points(pointsGeom, pointsMat));
-
         animate();
     }
 
     function animate() {
         requestAnimationFrame(animate);
-        if (globe) {
-            globe.rotation.y += 0.002;
-            globe.rotation.x += 0.001;
-        }
+        if (globe) { globe.rotation.y += 0.002; globe.rotation.x += 0.001; }
         renderer.render(scene, camera);
     }
 
-    window.addEventListener('resize', () => {
-        if (!container || !container.clientWidth) return;
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        renderer.setSize(width, height);
-        camera.aspect = width / height;
+    window.addEventListener('resize', function () {
+        if (!container || !container.clientWidth || !renderer) return;
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
     });
 
