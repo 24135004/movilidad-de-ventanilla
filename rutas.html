@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNAC | Rutas en Vivo 2026-B</title>
+    <title>UNAC | Rutas 2026-B</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <style>
-        :root { --accent: #00E5FF; --dark: #050505; --warn: #ffb020; --bad: #ff4d4d; --ok: #2ee59d; }
+        :root { --accent: #00E5FF; --dark: #050505; --ok: #2ee59d; --bad: #ff4d4d; }
 
         body, html {
             margin: 0; padding: 0; min-height: 100vh;
@@ -21,27 +21,32 @@
         a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(0,229,255,.55); } 100% { box-shadow: 0 0 0 14px rgba(0,229,255,0); } }
+        @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(46,229,157,.6); } 100% { box-shadow: 0 0 0 12px rgba(46,229,157,0); } }
         .animate-fade-up { animation: fadeInUp .8s ease-out forwards; }
-        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+        .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s ease, transform .8s ease; }
+        .reveal.in { opacity: 1; transform: none; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .reveal { opacity: 1; transform: none; } }
 
         .main-wrapper {
             position: relative;
             background: radial-gradient(circle at 50% 50%, rgba(20,20,20,.4) 0%, rgba(5,5,5,1) 100%),
                         url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1920');
             background-size: cover; background-position: center; background-attachment: fixed;
-            min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: stretch;
         }
         .main-wrapper::before {
             content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
             background-image: linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
                               linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
             background-size: 54px 54px;
-            -webkit-mask-image: radial-gradient(circle at 70% 25%, #000 0%, transparent 70%);
-                    mask-image: radial-gradient(circle at 70% 25%, #000 0%, transparent 70%);
+            -webkit-mask-image: radial-gradient(circle at 60% 20%, #000 0%, transparent 75%);
+                    mask-image: radial-gradient(circle at 60% 20%, #000 0%, transparent 75%);
         }
 
-        header { width: 100%; max-width: 1200px; padding: 30px 20px; z-index: 100; }
+        /* ANCHO COMPLETO */
+        .full { position: relative; z-index: 2; width: 100%; padding-left: clamp(16px, 2.2vw, 40px); padding-right: clamp(16px, 2.2vw, 40px); box-sizing: border-box; }
+
+        header { width: 100%; padding: 26px clamp(16px, 2.2vw, 40px); z-index: 100; box-sizing: border-box; }
         .nav-link { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,.6); transition: .3s; text-transform: uppercase; position: relative; }
         .nav-link:hover, .active-link { color: var(--accent); }
         .nav-link::after { content:''; position:absolute; width:0; height:2px; bottom:-6px; left:0; background:var(--accent); transition: width .3s; }
@@ -50,115 +55,126 @@
         #mobile-menu { position: fixed; inset: 0; background: rgba(5,5,5,.98); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 35px; }
         #mobile-menu.active { display: flex; }
 
-        .wrap { position: relative; z-index: 2; width: 90%; max-width: 1100px; }
+        h1.title { font-family: 'Montserrat', sans-serif; font-size: clamp(1.8rem, 4vw, 3rem); line-height: 1; font-weight: 800; text-transform: uppercase; margin: 0; }
 
-        h1.title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: clamp(2rem, 6vw, 3.5rem);
-            line-height: 1; font-weight: 800; text-transform: uppercase;
-        }
-
-        .chip {
-            display: inline-flex; align-items: center; gap: 8px;
-            font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8);
-            padding: 7px 12px; border-radius: 999px;
-            background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
-        }
+        .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.8); padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); }
         .chip i { color: var(--accent); font-size: 11px; }
 
-        .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
-        .sec-head .bar { width: 36px; height: 3px; background: var(--accent); border-radius: 2px; }
-        .sec-head h2 { font-family:'Montserrat'; font-size: 11px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; margin: 0; color: var(--accent); }
-
         .glass { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(8px); border-radius: 15px; }
+        .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .sec-head .bar { width: 30px; height: 3px; background: var(--accent); border-radius: 2px; }
+        .sec-head h2 { font-family:'Montserrat'; font-size: 10px; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; margin: 0; color: var(--accent); }
 
-        /* SELECTOR DE RUTAS */
-        .route-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        /* FRANJA DE DATOS */
+        .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .card-tech { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); padding: 18px 10px; border-radius: 15px; text-align: center; transition: .3s; backdrop-filter: blur(6px); }
+        .card-tech:hover { border-color: var(--accent); transform: translateY(-4px); }
+        .card-tech i { color: var(--accent); font-size: 1.1rem; margin-bottom: 8px; display: block; }
+        .card-tech h3 { font-family:'Montserrat'; font-size: 1.5rem; font-weight: 800; margin: 0; }
+        .card-tech p { font-size: 9px; color: #7d8791; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0; }
+
+        /* TABLERO 3 COLUMNAS */
+        .dash { display: grid; grid-template-columns: 340px minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+        .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+        /* Rutas */
         .tab {
-            text-align: left; padding: 20px; border-radius: 15px; cursor: pointer; position: relative; overflow: hidden;
+            width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; cursor: pointer; position: relative; overflow: hidden;
             background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); transition: .3s; color: inherit; font: inherit;
+            display: flex; align-items: center; gap: 14px;
         }
         .tab::after { content:''; position:absolute; left:0; top:0; height:2px; width:0; background:var(--accent); transition: width .4s; }
-        .tab:hover { border-color: rgba(0,229,255,.4); transform: translateY(-4px); background: rgba(0,229,255,.04); }
-        .tab:hover::after, .tab.active::after { width: 100%; }
-        .tab.active { border-color: var(--accent); background: rgba(0,229,255,.09); }
-        .tab .hr { font-family:'Montserrat'; font-size: 1.35rem; font-weight: 800; margin: 0; }
-        .tab .nm { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #8b95a0; margin: 6px 0 0; }
-        .tab .dy { font-size: 10px; color: var(--accent); margin: 10px 0 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; display:flex; align-items:center; gap:6px; }
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; }
+        .tab:hover { border-color: rgba(0,229,255,.4); background: rgba(0,229,255,.04); transform: translateX(4px); }
+        .tab.active { border-color: var(--accent); background: rgba(0,229,255,.1); }
+        .tab.active::after, .tab:hover::after { width: 100%; }
+        .tab .hr { font-family:'Montserrat'; font-size: 1.15rem; font-weight: 800; margin: 0; min-width: 78px; }
+        .tab .nm { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #aab4be; margin: 0; line-height: 1.4; }
+        .tab .dy { font-size: 9px; color: var(--accent); margin: 3px 0 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #555; margin-left: auto; flex-shrink: 0; }
         .live-dot.on { background: var(--ok); animation: pulseRing 1.6s infinite; }
 
-        /* PANEL EN VIVO */
-        .badge { display:inline-flex; align-items:center; gap:8px; padding: 6px 12px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(0,229,255,.25); background: rgba(0,229,255,.1); color: var(--accent); }
+        /* Panel en vivo */
+        .badge { display:inline-flex; align-items:center; gap:8px; padding: 6px 12px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: #aab4be; }
         .badge.run { color: var(--ok); border-color: rgba(46,229,157,.3); background: rgba(46,229,157,.1); }
-        .badge.idle { color: #aab4be; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.04); }
-        .hud-bar { width: 100%; height: 6px; background: rgba(255,255,255,.1); border-radius: 20px; position: relative; margin: 22px 0 14px; }
+        .hud-bar { width: 100%; height: 6px; background: rgba(255,255,255,.1); border-radius: 20px; position: relative; margin: 24px 0 14px; }
         .hud-fill { height: 100%; background: var(--accent); box-shadow: 0 0 15px var(--accent); border-radius: 20px; transition: width 1s linear; }
         .bus-pin { position: absolute; top: -11px; transform: translateX(-50%); transition: left 1s linear; }
         .bus-pin div { background: var(--accent); padding: 6px 7px; border-radius: 8px; box-shadow: 0 0 18px rgba(0,229,255,.5); color: #000; font-size: 10px; }
 
-        /* TARJETAS DE DATOS */
-        .stats-area { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .card-tech { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); padding: 22px 10px; border-radius: 15px; text-align: center; transition: .3s; backdrop-filter: blur(6px); }
-        .card-tech:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .card-tech i { color: var(--accent); font-size: 1.2rem; margin-bottom: 10px; display: block; }
-        .card-tech h3 { font-family:'Montserrat'; font-size: 1.45rem; font-weight: 800; margin: 0; }
-        .card-tech p { font-size: 9px; color: #7d8791; text-transform: uppercase; letter-spacing: 1px; margin: 4px 0 0; }
-        .card-tech small { display: block; margin-top: 8px; font-size: 11px; color: rgba(255,255,255,.45); font-weight: 300; }
-        .t-ok { color: var(--ok) !important; } .t-warn { color: var(--warn) !important; } .t-bad { color: var(--bad) !important; }
+        /* Mapa */
+        .map-shell { position: relative; padding: 6px; height: calc(100vh - 190px); min-height: 560px; overflow: hidden; }
+        .map-shell iframe { width: 100%; height: 100%; border: 0; border-radius: 11px; }
+        .map-shell:fullscreen { padding: 0; border-radius: 0; background: #050505; height: 100vh; }
+        .map-shell:fullscreen iframe { border-radius: 0; }
+        .map-top { position: absolute; z-index: 5; top: 18px; left: 18px; right: 18px; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; flex-wrap: wrap; }
+        .map-tag { pointer-events: auto; font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 9px 13px; border-radius: 10px; background: rgba(5,5,5,.8); border: 1px solid rgba(0,229,255,.3); backdrop-filter: blur(6px); color: #fff; display: inline-flex; gap: 8px; align-items: center; }
+        .map-tag i { color: var(--accent); }
+        .map-btn { cursor: pointer; transition: .3s; }
+        .map-btn:hover { background: var(--accent); color: #000; }
+        .map-btn:hover i { color: #000; }
 
-        /* MAPA */
-        .map-shell { position: relative; padding: 6px; height: 500px; overflow: hidden; }
-        #gmap, #fallback-map { width: 100%; height: 100%; border-radius: 12px; border: 0; background: #0b1316; }
-        #fallback-map { display: none; }
-        .map-tools { position: absolute; top: 18px; left: 18px; z-index: 5; display: flex; gap: 8px; flex-wrap: wrap; }
-        .map-btn {
-            display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-            font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
-            padding: 9px 13px; border-radius: 10px; color: #fff; text-decoration: none;
-            background: rgba(5,5,5,.78); border: 1px solid rgba(0,229,255,.3); backdrop-filter: blur(6px); transition: .3s;
-        }
-        .map-btn i { color: var(--accent); }
-        .map-btn:hover, .map-btn.on { background: var(--accent); color: #000; }
-        .map-btn:hover i, .map-btn.on i { color: #000; }
-        .map-note { position: absolute; z-index: 5; left: 18px; right: 18px; bottom: 18px; font-size: 11px; padding: 10px 14px; border-radius: 10px; background: rgba(5,5,5,.82); border: 1px solid rgba(255,176,32,.35); color: #ffd48a; display: none; }
-
-        /* LINEA DE TIEMPO */
-        .tl { position: relative; padding-left: 8px; }
-        .tl-item { position: relative; display: flex; gap: 14px; padding: 0 0 18px 18px; border-left: 1px solid #2c3338; }
-        .tl-item:last-child { border-left-color: transparent; padding-bottom: 0; }
-        .tl-item::before { content:''; position:absolute; left:-5px; top:3px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-        .tl-item.done { opacity: .4; }
-        .tl-item.done::before { background: #666; box-shadow: none; }
-        .tl-item.next::before { background: var(--ok); box-shadow: 0 0 14px var(--ok); width: 11px; height: 11px; left: -6px; }
-        .tl-item .n { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
-        .tl-item .t { font-size: 11px; color: var(--accent); margin: 2px 0 0; font-weight: 600; }
-        .tl-empty { font-size: 12px; color: #8b95a0; line-height: 1.7; font-weight: 300; }
-
-        /* PARADEROS */
-        .stops-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 15px; text-align: left; }
-        .stop-point { position: relative; padding-left: 20px; font-size: 10px; font-weight: 700; border-left: 1px solid #333; color: #aaa; text-transform: uppercase; line-height: 1.5; }
-        .stop-point::before { content: ''; position: absolute; left: -4px; top: 4px; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
-        .stop-point.off { color: var(--bad); }
-        .stop-point.off::before { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+        /* Paraderos */
+        .stops-card { padding: 22px; display: flex; flex-direction: column; height: calc(100vh - 190px); min-height: 560px; }
+        #stops-container { overflow-y: auto; flex: 1; padding-right: 8px; scrollbar-width: thin; scrollbar-color: rgba(0,229,255,.4) transparent; }
+        .stop { position: relative; display: flex; gap: 12px; align-items: center; padding: 0 0 0 20px; min-height: 36px; border-left: 1px solid #2c3338; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #aab4be; transition: .3s; }
+        .stop::before { content:''; position:absolute; left:-5px; top: 50%; margin-top: -4px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); }
+        .stop .n { font-size: 9px; color: #5d6872; min-width: 18px; }
+        .stop.off { color: var(--bad); } .stop.off::before { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+        .stop.passed { opacity: .38; } .stop.passed::before { background: #666; box-shadow: none; }
+        .stop.now { color: #fff; background: linear-gradient(90deg, rgba(46,229,157,.14), transparent); border-left-color: var(--ok); }
+        .stop.now::before { background: var(--ok); box-shadow: 0 0 14px var(--ok); width: 11px; height: 11px; left: -6px; margin-top: -5px; }
+        .stop.now::after { content: 'Posible ubicación'; margin-left: auto; font-size: 8px; letter-spacing: 1.5px; color: var(--ok); }
 
         .doc { display: flex; gap: 14px; align-items: flex-start; }
         .doc i { font-size: 1.1rem; color: var(--accent); margin-top: 2px; }
         .doc b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
         .doc span { font-size: 12px; color: #8b95a0; font-weight: 300; line-height: 1.6; }
 
-        .img-small { width: 100%; height: 110px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); }
+        .img-small { width: 100%; height: 130px; border-radius: 12px; object-fit: cover; border: 1px solid rgba(255,255,255,.1); }
 
-        footer { z-index: 2; }
+        /* ================= CRÉDITO ANIMADO ================= */
+        footer.credit { position: relative; z-index: 2; width: 100%; margin-top: 50px; padding: 0 0 46px; overflow: hidden; background: linear-gradient(to top, rgba(0,229,255,.06), transparent); border-top: 1px solid rgba(255,255,255,.06); }
+        .road { position: relative; height: 34px; margin-bottom: 30px; border-bottom: 2px solid rgba(255,255,255,.08); }
+        .road::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:2px; background: repeating-linear-gradient(90deg, var(--accent) 0 22px, transparent 22px 52px); opacity: .55; animation: lane 1.4s linear infinite; }
+        @keyframes lane { to { background-position: -52px 0; } }
+        .bus-run { position: absolute; bottom: 4px; left: -60px; font-size: 22px; color: var(--accent); filter: drop-shadow(0 0 10px rgba(0,229,255,.8)); animation: drive 9s linear infinite; }
+        .bus-run::after { content:''; position:absolute; right: 100%; top: 50%; width: 70px; height: 2px; background: linear-gradient(to left, rgba(0,229,255,.6), transparent); transform: translateY(-50%); }
+        @keyframes drive { 0% { left: -80px; } 100% { left: 105%; } }
 
-        @media (max-width: 900px) { .route-grid, .stats-area { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px) {
-            header { padding: 25px 15px; }
-            .nav-minimal { display: none; }
-            .map-shell { height: 420px; }
-            .stops-grid { grid-template-columns: 1fr; }
+        .credit-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; padding: 0 16px; position: relative; }
+        .made { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #8b95a0; font-weight: 600; }
+        .beat { color: #ff5c7a; display: inline-block; animation: beat 1.2s ease-in-out infinite; }
+        @keyframes beat { 0%, 100% { transform: scale(1); } 20% { transform: scale(1.35); } 40% { transform: scale(1); } 60% { transform: scale(1.2); } }
+        .by { font-family: 'Montserrat'; font-weight: 800; font-size: clamp(.8rem, 2.4vw, 1.1rem); letter-spacing: clamp(3px, 1.4vw, 10px); text-transform: uppercase; color: #cfd8de; }
+        .shine {
+            background: linear-gradient(100deg, #00E5FF 20%, #ffffff 40%, #00E5FF 60%, #7affc1 80%); background-size: 250% 100%;
+            -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+            animation: shine 3.2s linear infinite; text-shadow: 0 0 22px rgba(0,229,255,.35); display: inline-block;
         }
-        @media (max-width: 480px) { .route-grid { grid-template-columns: 1fr; } }
+        @keyframes shine { to { background-position: -250% 0; } }
+        .by .letters span { display: inline-block; animation: wave 2.6s ease-in-out infinite; }
+        @keyframes wave { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-7px); } }
+        .typed { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 1px; min-height: 18px; }
+        .typed::after { content: '▍'; margin-left: 2px; animation: blink 1s steps(2) infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .glow-line { width: 120px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--accent), transparent); animation: breathe 2.4s ease-in-out infinite; }
+        @keyframes breathe { 0%, 100% { opacity: .35; transform: scaleX(.6); } 50% { opacity: 1; transform: scaleX(1.15); } }
+        .copy { font-size: 9px; color: #6b747d; letter-spacing: 1px; text-transform: uppercase; font-style: italic; font-weight: 300; margin-top: 4px; }
+        .spark { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: 0; animation: spark 5s ease-in-out infinite; }
+        @keyframes spark { 0% { opacity: 0; transform: translateY(20px) scale(.5); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
+
+        /* RESPONSIVE */
+        @media (max-width: 1400px) { .dash { grid-template-columns: 300px minmax(0, 1fr) 320px; } }
+        @media (max-width: 1100px) {
+            .dash { grid-template-columns: 1fr; }
+            .map-shell { height: 460px; min-height: 0; }
+            .stops-card { height: 460px; min-height: 0; }
+        }
+        @media (max-width: 768px) {
+            .nav-minimal { display: none; }
+            .strip { grid-template-columns: repeat(2, 1fr); }
+            .map-shell { height: 380px; }
+        }
     </style>
 </head>
 <body>
@@ -199,522 +215,257 @@
         </button>
     </header>
 
-    <!-- HERO -->
-    <section class="wrap animate-fade-up" style="margin-top:10px; margin-bottom:34px;">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
-            <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span class="text-cyan-400 text-[9px] font-bold uppercase tracking-widest">Monitor de ruta 2026-B</span>
-        </div>
-        <h1 class="title">Ruta Ventanilla <br><span class="text-cyan-400 italic opacity-90">en tiempo real</span></h1>
-        <p class="mt-4 text-gray-400 text-sm max-w-xl font-light leading-relaxed">
-            Consulta el recorrido oficial hacia el Campus Bellavista, el tiempo estimado con el tráfico actual de Google Maps y la hora aproximada de paso por cada punto.
-        </p>
-        <div class="flex flex-wrap gap-2 mt-5">
-            <span class="chip"><i class="fa-solid fa-route"></i> 4 servicios</span>
-            <span class="chip"><i class="fa-solid fa-traffic-light"></i> Tráfico Google Maps</span>
-            <span class="chip"><i class="fa-solid fa-calendar-check"></i> Lunes a Viernes</span>
+    <!-- TÍTULO + RELOJ (ancho completo) -->
+    <section class="full animate-fade-up" style="margin-bottom:22px;">
+        <div class="flex flex-wrap justify-between items-end gap-5">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 mb-4">
+                    <span class="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span class="text-cyan-400 text-[9px] font-bold uppercase tracking-widest">Recorrido y paradas · 2026-B</span>
+                </div>
+                <h1 class="title">Ruta Ventanilla <span class="text-cyan-400 italic opacity-90">2026-B</span></h1>
+                <div class="flex flex-wrap gap-2 mt-4">
+                    <span class="chip"><i class="fa-solid fa-route"></i> Campus Bellavista</span>
+                    <span class="chip"><i class="fa-solid fa-calendar-check"></i> Lunes a Viernes</span>
+                    <span class="chip"><i class="fa-solid fa-building-columns"></i> Servicio oficial UNAC</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <p id="clock" class="text-4xl font-bold tracking-widest" style="font-family:'Montserrat'">00:00:00</p>
+                <p class="text-[9px] text-gray-500 uppercase tracking-[3px] mt-1">Hora de Lima</p>
+            </div>
         </div>
     </section>
 
-    <!-- SELECTOR DE SERVICIO -->
-    <section class="wrap animate-fade-up" style="margin-bottom:34px;">
-        <div class="sec-head"><span class="bar"></span><h2>Elige tu servicio</h2></div>
-        <div class="route-grid" id="route-tabs"></div>
+    <!-- FRANJA DE DATOS -->
+    <section class="full" style="margin-bottom:20px;">
+        <div class="strip">
+            <div class="card-tech"><i class="fa-solid fa-location-dot"></i><h3 id="s-stops">—</h3><p>Paraderos</p></div>
+            <div class="card-tech"><i class="fa-solid fa-play"></i><h3 id="s-dep">—</h3><p>Hora de salida</p></div>
+            <div class="card-tech"><i class="fa-solid fa-flag-checkered"></i><h3 id="s-arr">—</h3><p>Llegada aprox.</p></div>
+            <div class="card-tech"><i class="fa-solid fa-signal"></i><h3 id="s-state">—</h3><p>Estado</p></div>
+        </div>
     </section>
 
-    <!-- PANEL EN VIVO -->
-    <section class="wrap" style="margin-bottom:22px;">
-        <div class="glass" style="padding:26px;">
-            <div class="flex flex-wrap justify-between items-center gap-4">
+    <!-- TABLERO -->
+    <main class="full">
+        <div class="dash">
+
+            <!-- IZQUIERDA -->
+            <div class="col">
                 <div>
-                    <p id="route-name" class="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-2">—</p>
-                    <span id="status-badge" class="badge idle"><span class="live-dot"></span><span id="status-text">Cargando</span></span>
+                    <div class="sec-head"><span class="bar"></span><h2>Elige tu servicio</h2></div>
+                    <div class="flex flex-col gap-3" id="route-tabs"></div>
                 </div>
-                <div class="text-right">
-                    <p id="clock" class="text-2xl font-bold tracking-widest" style="font-family:'Montserrat'">00:00:00</p>
-                    <p class="text-[9px] text-gray-500 uppercase tracking-widest mt-1">Hora de Lima</p>
+
+                <div class="glass" style="padding:22px;">
+                    <div class="sec-head" style="margin-bottom:12px;"><span class="bar"></span><h2>Monitor</h2></div>
+                    <p id="route-name" class="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-3">—</p>
+                    <span id="status-badge" class="badge"><span id="status-text">Cargando</span></span>
+                    <div class="hud-bar">
+                        <div id="bar-fill" class="hud-fill" style="width:0%"></div>
+                        <div id="bus-icon" class="bus-pin" style="left:0%"><div><i class="fa-solid fa-bus"></i></div></div>
+                    </div>
+                    <div class="flex justify-between text-[9px] text-gray-500 font-black uppercase italic gap-2">
+                        <span id="p-orig">Origen</span>
+                        <span id="eta-txt" class="text-cyan-400 font-bold text-center">—</span>
+                        <span id="p-dest" class="text-right">Destino</span>
+                    </div>
+                    <p class="text-[10px] text-gray-500 font-light mt-4 leading-relaxed">La posición se estima según el horario programado, no es un GPS en tiempo real.</p>
                 </div>
-            </div>
-            <div class="hud-bar">
-                <div id="bar-fill" class="hud-fill" style="width:0%"></div>
-                <div id="bus-icon" class="bus-pin" style="left:0%"><div><i class="fa-solid fa-bus"></i></div></div>
-            </div>
-            <div class="flex justify-between text-[9px] text-gray-500 font-black uppercase italic tracking-tighter gap-2">
-                <span id="p-orig">Origen</span>
-                <span id="eta-txt" class="text-cyan-400 font-bold text-center">—</span>
-                <span id="p-dest" class="text-right">Destino</span>
-            </div>
-            <p id="sched-line" class="text-[11px] text-gray-400 font-light mt-4"></p>
-        </div>
-    </section>
 
-    <!-- ESTADÍSTICAS -->
-    <section class="wrap" style="margin-bottom:22px;">
-        <div class="stats-area">
-            <div class="card-tech"><i class="fa-solid fa-gauge-simple"></i><h3 id="st-free">—</h3><p>Sin tráfico</p><small>Tiempo base</small></div>
-            <div class="card-tech"><i class="fa-solid fa-traffic-light"></i><h3 id="st-live">—</h3><p>Con tráfico</p><small id="st-traffic">Estado del tránsito</small></div>
-            <div class="card-tech"><i class="fa-solid fa-flag-checkered"></i><h3 id="st-eta">—</h3><p>Llegada estimada</p><small>Hora aproximada</small></div>
-            <div class="card-tech"><i class="fa-solid fa-road"></i><h3 id="st-dist">—</h3><p>Distancia</p><small>Recorrido total</small></div>
-        </div>
-    </section>
-
-    <!-- MAPA -->
-    <section class="wrap" style="margin-bottom:34px;">
-        <div class="glass map-shell">
-            <div class="map-tools">
-                <button class="map-btn" id="btn-traffic" type="button"><i class="fa-solid fa-car-side"></i> Tráfico</button>
-                <button class="map-btn" id="btn-center" type="button"><i class="fa-solid fa-crosshairs"></i> Centrar</button>
-                <a class="map-btn" id="btn-open" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Abrir en Google Maps</a>
-            </div>
-            <div id="gmap"></div>
-            <iframe id="fallback-map" title="Mapa de la ruta" loading="lazy"></iframe>
-            <div class="map-note" id="map-note"></div>
-        </div>
-    </section>
-
-    <!-- DETALLE -->
-    <section class="wrap" style="margin-bottom:34px;">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div class="lg:col-span-5 glass" style="padding:26px;">
-                <div class="sec-head" style="margin-bottom:18px;"><span class="bar"></span><h2>Hora estimada por punto</h2></div>
-                <div id="timeline" class="tl"></div>
-            </div>
-            <div class="lg:col-span-7 glass" style="padding:26px;">
-                <div class="sec-head" style="margin-bottom:18px;"><span class="bar"></span><h2>Secuencia de paraderos</h2></div>
-                <div id="stops-container" class="stops-grid"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- AVISO + DOCUMENTOS -->
-    <section class="wrap" style="margin-bottom:70px;">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div class="lg:col-span-7 glass" style="padding:26px; border-left:4px solid var(--bad); background:rgba(120,20,20,.10);">
-                <h5 class="text-red-500 font-black text-[11px] mb-4 uppercase tracking-[3px]">❗ Dato adicional importante</h5>
-                <p class="text-[13px] leading-relaxed text-white font-medium mb-3 italic">
-                    AVISO ESTUDIANTIL: Debido a la alta demanda masiva, informamos que el último paradero con capacidad garantizada es <span class="text-cyan-400 font-black underline underline-offset-4 uppercase">CARSA VENTANILLA 😫</span>. No se confíen de cupos posteriores.
-                </p>
-                <p class="text-[11px] text-gray-300 italic border-t border-white/5 pt-3">Comuníquense con el <span class="text-white font-bold underline">delegado 🧐</span> para verificar espacios reales 😰.</p>
-            </div>
-            <div class="lg:col-span-5 glass" style="padding:26px; border-left:4px solid var(--accent);">
-                <h4 class="text-[10px] font-black text-cyan-400 uppercase tracking-[4px] mb-5 italic">Documentación requerida</h4>
-                <div class="space-y-4">
-                    <div class="doc"><i class="fa-solid fa-id-card"></i><div><b>Carnet universitario vigente</b><span>Obligatorio para acceder al servicio.</span></div></div>
-                    <div class="doc"><i class="fa-solid fa-address-card"></i><div><b>DNI original</b><span>Opcional, para verificación adicional.</span></div></div>
-                    <div class="doc"><i class="fa-solid fa-file-invoice"></i><div><b>Constancia de matrícula</b><span>Semestre vigente, si no tiene carnet.</span></div></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <img src="DSC07555-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
+                    <img src="DSC07588-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
                 </div>
             </div>
-            <div class="lg:col-span-12 grid grid-cols-2 gap-5">
-                <img src="DSC07555-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
-                <img src="DSC07588-768x432.jpg" class="img-small" alt="Unidad de movilidad UNAC" onerror="this.style.display='none'">
-            </div>
-        </div>
-    </section>
 
-    <!-- FOOTER -->
-    <footer class="w-full py-12 flex flex-col items-center border-t border-white/5 bg-black/20 relative z-20">
-        <span class="text-center text-[10px] font-extrabold tracking-[8px] text-cyan-400 mb-2 uppercase">SISTEMA CREADO POR SEBASTIAN</span>
-        <span class="text-center text-[9px] text-gray-500 tracking-[1px] uppercase italic font-light px-4">
-            © 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.
-        </span>
+            <!-- CENTRO: MAPA -->
+            <div class="col">
+                <div class="glass map-shell" id="map-shell">
+                    <div class="map-top">
+                        <span class="map-tag"><i class="fa-solid fa-route"></i> <span id="map-title">Ruta</span></span>
+                        <button class="map-tag map-btn" id="btn-full" type="button"><i class="fa-solid fa-expand"></i> Pantalla completa</button>
+                    </div>
+                    <iframe id="main-map" title="Mapa de la ruta" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+
+                <div class="glass" style="padding:24px; border-left:4px solid var(--bad); background:rgba(120,20,20,.10);">
+                    <h5 class="text-red-500 font-black text-[11px] mb-3 uppercase tracking-[3px]">❗ Dato adicional importante</h5>
+                    <p class="text-[13px] leading-relaxed text-white font-medium mb-3 italic">
+                        AVISO ESTUDIANTIL: Debido a la alta demanda masiva, informamos que el último paradero con capacidad garantizada es <span class="text-cyan-400 font-black underline underline-offset-4 uppercase">CARSA VENTANILLA 😫</span>. No se confíen de cupos posteriores.
+                    </p>
+                    <p class="text-[11px] text-gray-300 italic border-t border-white/5 pt-3">Comuníquense con el <span class="text-white font-bold underline">delegado 🧐</span> para verificar espacios reales 😰.</p>
+                </div>
+            </div>
+
+            <!-- DERECHA -->
+            <div class="col">
+                <div class="glass stops-card">
+                    <div class="sec-head" style="margin-bottom:14px;"><span class="bar"></span><h2>Secuencia de paraderos</h2></div>
+                    <div id="stops-container"></div>
+                </div>
+
+                <div class="glass" style="padding:22px; border-left:4px solid var(--accent);">
+                    <h4 class="text-[10px] font-black text-cyan-400 uppercase tracking-[4px] mb-5 italic">Documentación requerida</h4>
+                    <div class="space-y-4">
+                        <div class="doc"><i class="fa-solid fa-id-card"></i><div><b>Carnet universitario vigente</b><span>Obligatorio para acceder al servicio.</span></div></div>
+                        <div class="doc"><i class="fa-solid fa-address-card"></i><div><b>DNI original</b><span>Opcional, para verificación adicional.</span></div></div>
+                        <div class="doc"><i class="fa-solid fa-file-invoice"></i><div><b>Constancia de matrícula</b><span>Semestre vigente, si no tiene carnet.</span></div></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- CRÉDITO ANIMADO -->
+    <footer class="credit reveal" id="credit">
+        <div class="road"><div class="bus-run"><i class="fa-solid fa-bus"></i></div></div>
+        <div class="credit-inner">
+            <span class="spark" style="left:18%; bottom:40px; animation-delay:0s"></span>
+            <span class="spark" style="left:32%; bottom:20px; animation-delay:1.2s"></span>
+            <span class="spark" style="left:68%; bottom:30px; animation-delay:2.1s"></span>
+            <span class="spark" style="left:82%; bottom:50px; animation-delay:.6s"></span>
+
+            <span class="made">Hecho con <i class="fa-solid fa-heart beat"></i> para la comunidad UNAC</span>
+            <span class="by">Sistema creado por <b class="shine" id="creator">SEBASTIAN</b></span>
+            <span class="typed" id="typed"></span>
+            <span class="glow-line"></span>
+            <span class="copy">© 2026-B UNAC - Movilidad Universitaria. Todos los derechos reservados.</span>
+        </div>
     </footer>
 </div>
 
 <script>
-/* =====================================================================
-   CONFIGURACIÓN
-   1) Crea una API key en Google Cloud Console y activa: "Maps JavaScript API"
-      y "Directions API" (requiere facturación activa; hay crédito mensual gratis).
-   2) Restringe la key a tu dominio (HTTP referrers) para que nadie más la use.
-   3) Pégala aquí. Si la dejas vacía, la página sigue funcionando con el
-      mapa simple y los horarios programados (sin tráfico en vivo).
-   ===================================================================== */
-const CONFIG = {
-    MAPS_API_KEY: 'TU_API_KEY_AQUI',
-    REFRESH_MS: 120000   // recalcula el tráfico cada 2 minutos
-};
+function toggleMenu() { document.getElementById('mobile-menu').classList.toggle('active'); }
+const $ = id => document.getElementById(id);
 
-/* ---------------- DATOS DE RUTAS ----------------
-   tS / tE: ventana de servicio en horas decimales (5.25 = 5:15).
-   points: puntos de control con coordenadas (para trazar la ruta y calcular ETA). */
+/* ---------------- DATOS ---------------- */
 const ROUTES = [
     {
-        id: 0, label: "5:15 AM", name: "SEDE UNAC / UNAC", orig: "Sede UNAC", dest: "Callao", tS: 5.25, tE: 6.75,
-        points: [
-            { n: "Sede UNAC", lat: -11.823069, lng: -77.1325654 },
-            { n: "Hogar", lat: -11.8252305, lng: -77.1234052 },
-            { n: "Ov. Zapallal", lat: -11.8431826, lng: -77.101874 },
-            { n: "Cruce Ventanilla", lat: -11.8375611, lng: -77.1111321 },
-            { n: "Policlínico", lat: -11.84153, lng: -77.11502 },
-            { n: "Av. Trujillo", lat: -11.85413, lng: -77.12089 },
-            { n: "Semáforo", lat: -11.8595582, lng: -77.124529 },
-            { n: "Carsa Ventanilla", lat: -11.8754478, lng: -77.1269141 },
-            { n: "Quince (15)", lat: -12.0405814, lng: -77.1160577 },
-            { n: "UNAC Callao", lat: -12.0613052, lng: -77.1172487 }
-        ],
-        stops: ["Sede UNAC (Inicio)", "Hogar", "Ov. Zapallal", "Cruce Ventanilla", "Policlínico", "Av. Trujillo", "Semáforo", "Carsa Ventanilla", "QUINCE (15)", "UNAC Callao (Fin)"],
-        embed: 'https://www.google.com/maps/embed?pb=!1m62!1m12!1m3!1d159337.9280060247!2d-77.1556698885926!3d-11.941967764977532!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m47!3e0!4m3!3m2!1d-11.823069!2d-77.13256539999999!4m3!3m2!1d-11.8252305!2d-77.1234052!4m3!3m2!1d-11.843182599999999!2d-77.101874!4m3!3m2!1d-11.8375611!2d-77.11113209999999!4m5!1s0x9105d43d3b9d9f15%3A0x7484f44b11f271b!2sPolicl%C3%ADnico%20Emanuel%2C%20Ventanilla%2007076!3m2!1d-11.841529999999999!2d-77.11502!4m5!1s0x9105d41212110f83%3A0x3381ebbdfb7c3a11!2sCajamarca%2C%20Mi%20Per%C3%BA%2007056!3m2!1d-11.85413!2d-77.12089!4m3!3m2!1d-11.859558199999999!2d-77.124529!4m3!3m2!1d-11.8754478!2d-77.1269141!4m3!3m2!1d-12.040581399999999!2d-77.1160577!4m5!1s0x9105cb910984762b%3A0x104327c627fa29ad!2sUniversidad%20Nacional%20del%20Callao%2C%20Av.%20Juan%20Pablo%20%E2%85%A1%20306%2C%20Bellavista%2007011!3m2!1d-12.0613052!2d-77.11724869999999!5e1!3m2!1ses-419!2spe!4v1777142468277!5m2!1ses-419!2spe'
+        label: "5:15 AM", name: "SEDE UNAC / UNAC", orig: "Sede UNAC", dest: "Callao", tS: 5.25, tE: 6.75,
+        map: 'https://www.google.com/maps/embed?pb=!1m62!1m12!1m3!1d159337.9280060247!2d-77.1556698885926!3d-11.941967764977532!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m47!3e0!4m3!3m2!1d-11.823069!2d-77.13256539999999!4m3!3m2!1d-11.8252305!2d-77.1234052!4m3!3m2!1d-11.843182599999999!2d-77.101874!4m3!3m2!1d-11.8375611!2d-77.11113209999999!4m5!1s0x9105d43d3b9d9f15%3A0x7484f44b11f271b!2sPolicl%C3%ADnico%20Emanuel%2C%20Ventanilla%2007076!3m2!1d-11.841529999999999!2d-77.11502!4m5!1s0x9105d41212110f83%3A0x3381ebbdfb7c3a11!2sCajamarca%2C%20Mi%20Per%C3%BA%2007056!3m2!1d-11.85413!2d-77.12089!4m3!3m2!1d-11.859558199999999!2d-77.124529!4m3!3m2!1d-11.8754478!2d-77.1269141!4m3!3m2!1d-12.040581399999999!2d-77.1160577!4m5!1s0x9105cb910984762b%3A0x104327c627fa29ad!2sUniversidad%20Nacional%20del%20Callao%2C%20Av.%20Juan%20Pablo%20%E2%85%A1%20306%2C%20Bellavista%2007011!3m2!1d-12.0613052!2d-77.11724869999999!5e1!3m2!1ses-419!2spe!4v1777142468277!5m2!1ses-419!2spe',
+        stops: ["Sede UNAC (Inicio)", "Hogar", "Ov. Zapallal", "Cruce Ventanilla", "Policlínico", "Av. Trujillo", "Semáforo", "Carsa Ventanilla", "QUINCE (15)", "UNAC Callao (Fin)"]
     },
     {
-        id: 1, label: "6:00 PM", name: "UNAC / SEDE UNAC", orig: "Callao", dest: "Sede UNAC", tS: 18, tE: 20,
-        points: [
-            { n: "UNAC Callao", lat: -12.0618527, lng: -77.118114 },
-            { n: "Palomino", lat: -12.05741, lng: -77.11646 },
-            { n: "Quince (15) / Repsol", lat: -12.0401626, lng: -77.1169468 },
-            { n: "Av. Huaura", lat: -11.85585, lng: -77.12837 },
-            { n: "Ov. Zapallal", lat: -11.8431261, lng: -77.1019199 },
-            { n: "Fundición / Flecha", lat: -11.8244667, lng: -77.1229334 },
-            { n: "Hogar", lat: -11.8233842, lng: -77.1250032 },
-            { n: "Sede UNAC", lat: -11.8234521, lng: -77.1333493 }
-        ],
-        stops: ["UNAC Callao (Inicio)", "IMUPESA", "PESQUERO", "BAYER", "CARRILLO", "OQUENDO", "GRIFO REPSOL", "QUINCE (15)", "MARQUEZ", "INKA COLA", "SANTA FE", "OCHO (8)", "SEGUNDO", "CENTRO (inhabilitado)", "TERCERO", "LICENCIADOS", "TELEFONO", "PLAZA VEA (inhabilitado)", "PUENTE", "HUARA", "TRUJILLO", "MODULOS AZULES", "PARADERO BUSES", "POLICLINICO", "GRIFO REPSOL", "CRUCE DE VENTANILLA", "DONOFOFRIO", "OV. ZAPALLAL", "FUNDICION", "FLECHA", "HOGAR", "SEDE UNAC (Fin)"],
-        embed: 'https://www.google.com/maps/embed?pb=!1m54!1m12!1m3!1d91283.5448213373!2d-77.11522911083303!3d-11.904422407959084!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m39!3e0!4m3!3m2!1d-12.0618527!2d-77.11811399999999!4m5!1s0x9105cbefb611a025%3A0xc0bf38abdac64504!2sPalomino%2C%20Bellavista%2007011!3m2!1d-12.057409999999999!2d-77.11646!4m3!3m2!1d-12.040162599999999!2d-77.1169468!4m5!1s0x9105d47287f4ff0d%3A0x291fbd59642651e8!2sHuaura%2C%20Mi%20Per%C3%BA%2007056!3m2!1d-11.85585!2d-77.12836999999999!4m3!3m2!1d-11.8431261!2d-77.1019199!4m3!3m2!1d-11.8244667!2d-77.1229334!4m3!3m2!1d-11.8233842!2d-77.1250032!4m5!1s0x9105d526b243bda5%3A0x4f54a232b468d4dd!2sUNAC%20-%20VENTANILLA%2C%205VG8%2BJM6%2C%20Ventanilla%2007076!3m2!1d-11.823452099999999!2d-77.13334929999999!5e1!3m2!1ses-419!2v1777147929441!5m2!1ses-419!2spe'
+        label: "6:00 PM", name: "UNAC / SEDE UNAC", orig: "Callao", dest: "Sede UNAC", tS: 18, tE: 20,
+        map: 'https://www.google.com/maps/embed?pb=!1m54!1m12!1m3!1d91283.5448213373!2d-77.11522911083303!3d-11.904422407959084!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m39!3e0!4m3!3m2!1d-12.0618527!2d-77.11811399999999!4m5!1s0x9105cbefb611a025%3A0xc0bf38abdac64504!2sPalomino%2C%20Bellavista%2007011!3m2!1d-12.057409999999999!2d-77.11646!4m3!3m2!1d-12.040162599999999!2d-77.1169468!4m5!1s0x9105d47287f4ff0d%3A0x291fbd59642651e8!2sHuaura%2C%20Mi%20Per%C3%BA%2007056!3m2!1d-11.85585!2d-77.12836999999999!4m3!3m2!1d-11.8431261!2d-77.1019199!4m3!3m2!1d-11.8244667!2d-77.1229334!4m3!3m2!1d-11.8233842!2d-77.1250032!4m5!1s0x9105d526b243bda5%3A0x4f54a232b468d4dd!2sUNAC%20-%20VENTANILLA%2C%205VG8%2BJM6%2C%20Ventanilla%2007076!3m2!1d-11.823452099999999!2d-77.13334929999999!5e1!3m2!1ses-419!2v1777147929441!5m2!1ses-419!2spe',
+        stops: ["UNAC Callao (Inicio)", "IMUPESA", "PESQUERO", "BAYER", "CARRILLO", "OQUENDO", "GRIFO REPSOL", "QUINCE (15)", "MARQUEZ", "INKA COLA", "SANTA FE", "OCHO (8)", "SEGUNDO", "CENTRO (inhabilitado)", "TERCERO", "LICENCIADOS", "TELEFONO", "PLAZA VEA (inhabilitado)", "PUENTE", "HUARA", "TRUJILLO", "MODULOS AZULES", "PARADERO BUSES", "POLICLINICO", "GRIFO REPSOL", "CRUCE DE VENTANILLA", "DONOFOFRIO", "OV. ZAPALLAL", "FUNDICION", "FLECHA", "HOGAR", "SEDE UNAC (Fin)"]
     },
     {
-        id: 2, label: "2:15 PM", name: "UNAC / INKA COLA", orig: "Callao", dest: "Inka Kola", tS: 14.25, tE: 15.25,
-        points: [
-            { n: "UNAC Callao", lat: -12.0613052, lng: -77.1172487 },
-            { n: "Inka Cola (Fin)", lat: -11.936489, lng: -77.1306294 }
-        ],
-        stops: ["UNAC Callao (Inicio)", "IMUPESA", "PESQUERO", "BAYER", "CARRILLO", "OQUENDO", "GRIFO REPSOL", "QUINCE (15)", "MARQUEZ", "INKA COLA (FIN)"],
-        embed: 'https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d2960.532240448023!2d-77.13256416046117!3d-11.938150732395275!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e0!4m5!1s0x9105cb910984762b%3A0x104327c627fa29ad!2sUniversidad%20Nacional%20del%20Callao%2C%20Av.%20Juan%20Pablo%20%E2%85%A1%20306%2C%20Bellavista%2007011!3m2!1d-12.0613052!2d-77.11724869999999!4m5!1s0x9105d3108cef4201%3A0xd5b9f23c6ca77ebf!2sParadero%20Inka%20Kola%2C%203V79%2BCP5%2C%20Ip%2051.62%20paradero%20Inka%20Kola%20(op.5%2C%20Avenida%20Del%20Bierzo%2C%20Ventanilla%2007046!3m2!1d-11.936489!2d-77.13062939999999!5e1!3m2!1ses-419!2v1777141785387!5m2!1ses-419!2spe'
+        label: "2:15 PM", name: "UNAC / INKA COLA", orig: "Callao", dest: "Inka Kola", tS: 14.25, tE: 15.25,
+        map: 'https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d2960.532240448023!2d-77.13256416046117!3d-11.938150732395275!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e0!4m5!1s0x9105cb910984762b%3A0x104327c627fa29ad!2sUniversidad%20Nacional%20del%20Callao%2C%20Av.%20Juan%20Pablo%20%E2%85%A1%20306%2C%20Bellavista%2007011!3m2!1d-12.0613052!2d-77.11724869999999!4m5!1s0x9105d3108cef4201%3A0xd5b9f23c6ca77ebf!2sParadero%20Inka%20Kola%2C%203V79%2BCP5%2C%20Ip%2051.62%20paradero%20Inka%20Kola%20(op.5%2C%20Avenida%20Del%20Bierzo%2C%20Ventanilla%2007046!3m2!1d-11.936489!2d-77.13062939999999!5e1!3m2!1ses-419!2v1777141785387!5m2!1ses-419!2spe',
+        stops: ["UNAC Callao (Inicio)", "IMUPESA", "PESQUERO", "BAYER", "CARRILLO", "OQUENDO", "GRIFO REPSOL", "QUINCE (15)", "MARQUEZ", "INKA COLA (FIN)"]
     },
     {
-        id: 3, label: "10:15 PM", name: "UNAC / TELÉFONO", orig: "Callao", dest: "Ventanilla", tS: 22.25, tE: 23.5,
-        points: [
-            { n: "UNAC Callao", lat: -12.0613052, lng: -77.1172487 },
-            { n: "Teléfono / Metro Ventanilla (Fin)", lat: -11.87674, lng: -77.12642 }
-        ],
-        stops: ["UNAC Callao (Inicio)", "IMUPESA", "PESQUERO", "BAYER", "CARRILLO", "OQUENDO", "GRIFO REPSOL", "QUINCE (15)", "MARQUEZ", "INKA COLA", "SANTA FE", "OCHO (8)", "SEGUNDO", "CENTRO (inhabilitado)", "TERCERO", "LICENCIADOS", "TELEFONO (FIN)"],
-        embed: 'https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d158073.67879229266!2d-77.20666131339017!3d-11.97076932739913!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e0!4m5!1s0x9105cb910984762b%3A0x104327c627fa29ad!2sUniversidad%20Nacional%20del%20Callao%2C%20Av.%20Juan%20Pablo%20%E2%85%A1%20306%2C%20Bellavista%2007011!3m2!1d-12.0613052!2d-77.11724869999999!4m5!1s0x9105d38d44d9dc71%3A0xf9cf5da526344420!2sMetro%20Ventanilla%2C%20Ventanilla%2007051!3m2!1d-11.87674!2d-77.12642!5e1!3m2!1ses-419!2v1777141648764!5m2!1ses-419!2spe'
+        label: "10:15 PM", name: "UNAC / TELÉFONO", orig: "Callao", dest: "Ventanilla", tS: 22.25, tE: 23.5,
+        map: 'https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d158073.67879229266!2d-77.20666131339017!3d-11.97076932739913!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e0!4m5!1s0x9105cb910984762b%3A0x104327c627fa29ad!2sUniversidad%20Nacional%20del%20Callao%2C%20Av.%20Juan%20Pablo%20%E2%85%A1%20306%2C%20Bellavista%2007011!3m2!1d-12.0613052!2d-77.11724869999999!4m5!1s0x9105d38d44d9dc71%3A0xf9cf5da526344420!2sMetro%20Ventanilla%2C%20Ventanilla%2007051!3m2!1d-11.87674!2d-77.12642!5e1!3m2!1ses-419!2v1777141648764!5m2!1ses-419!2spe',
+        stops: ["UNAC Callao (Inicio)", "IMUPESA", "PESQUERO", "BAYER", "CARRILLO", "OQUENDO", "GRIFO REPSOL", "QUINCE (15)", "MARQUEZ", "INKA COLA", "SANTA FE", "OCHO (8)", "SEGUNDO", "CENTRO (inhabilitado)", "TERCERO", "LICENCIADOS", "TELEFONO (FIN)"]
     }
 ];
 
-/* ---------------- UTILIDADES ---------------- */
-const $ = id => document.getElementById(id);
-function toggleMenu() { $('mobile-menu').classList.toggle('active'); }
-const pad = n => String(n).padStart(2, '0');
-function fmtClock(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
-function fmtHM(d) { return d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true }); }
-function fmtDur(sec) {
-    sec = Math.max(0, Math.round(sec));
-    const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
-    if (h > 0) return h + ' h ' + pad(m) + ' min';
-    return m + ' min';
-}
-function nextDeparture(r) {
-    const now = new Date(), win = (r.tE - r.tS) * 3600e3;
-    for (let i = 0; i < 8; i++) {
-        const d = new Date(now); d.setDate(d.getDate() + i);
-        d.setHours(Math.floor(r.tS), Math.round((r.tS % 1) * 60), 0, 0);
-        const wd = d.getDay();
-        if (wd < 1 || wd > 5) continue;
-        if (now.getTime() <= d.getTime() + win) return d;
-    }
-    return new Date();
-}
-function dayLabel(d) {
-    const t = new Date(); t.setHours(0, 0, 0, 0);
-    const x = new Date(d); x.setHours(0, 0, 0, 0);
-    const diff = Math.round((x - t) / 864e5);
-    if (diff === 0) return 'hoy';
-    if (diff === 1) return 'mañana';
-    return d.toLocaleDateString('es-PE', { weekday: 'long' });
+function hm(h) {
+    const H = Math.floor(h), M = Math.round((h % 1) * 60), ap = H >= 12 ? 'PM' : 'AM';
+    return ((H % 12) || 12) + ':' + String(M).padStart(2, '0') + ' ' + ap;
 }
 
-/* ---------------- ESTADO ---------------- */
-let state = { idx: 0, dep: null, data: null, mapsReady: false, reloading: false };
-let map, dirService, trafficLayer, polyline, busMarker, pointMarkers = [], trafficOn = false;
+let activeIdx = 0;
 
-/* ---------------- INTERFAZ: pestañas ---------------- */
 function buildTabs() {
-    $('route-tabs').innerHTML = ROUTES.map(r => `
-        <button type="button" class="tab" id="tab-${r.id}" onclick="selectRoute(${r.id})">
+    $('route-tabs').innerHTML = ROUTES.map((r, i) => `
+        <button type="button" class="tab" id="route-${i}" onclick="selectRoute(${i})">
             <p class="hr">${r.label}</p>
-            <p class="nm">${r.name}</p>
-            <p class="dy"><span class="live-dot" id="dot-${r.id}"></span> Lunes a Viernes</p>
+            <div><p class="nm">${r.name}</p><p class="dy">Lunes a Viernes</p></div>
+            <span class="live-dot" id="dot-${i}"></span>
         </button>`).join('');
 }
 
-function renderStops(r) {
-    $('stops-container').innerHTML = r.stops.map(s =>
-        `<div class="stop-point${s.toLowerCase().includes('inhabilitado') ? ' off' : ''}">${s}</div>`).join('');
-}
-
-/* ---------------- GOOGLE MAPS ---------------- */
-const DARK_STYLE = [
-    { elementType: 'geometry', stylers: [{ color: '#0b1316' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#7d8791' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#050505' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#18242a' }] },
-    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#1f3139' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#27434d' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#06101a' }] },
-    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-    { featureType: 'transit', stylers: [{ visibility: 'off' }] }
-];
-
-function showFallbackMap(msg) {
-    state.mapsReady = false;
-    $('gmap').style.display = 'none';
-    const f = $('fallback-map');
-    f.style.display = 'block';
-    f.src = ROUTES[state.idx].embed;
-    $('btn-traffic').style.display = 'none';
-    $('btn-center').style.display = 'none';
-    if (msg) { const n = $('map-note'); n.textContent = msg; n.style.display = 'block'; }
-    renderFallbackStats();
-}
-
-function loadMaps() {
-    const key = CONFIG.MAPS_API_KEY;
-    if (!key || key.indexOf('TU_') === 0) {
-        showFallbackMap('Mapa básico: agrega tu API key de Google Maps en CONFIG para ver tráfico en vivo y horas estimadas por punto.');
-        return;
-    }
-    window.gm_authFailure = function () { showFallbackMap('La API key de Google Maps fue rechazada. Revisa que Maps JavaScript API y Directions API estén activas y que el dominio esté permitido.'); };
-    const s = document.createElement('script');
-    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=geometry&callback=onMapsReady&language=es&region=PE';
-    s.async = true; s.defer = true;
-    s.onerror = function () { showFallbackMap('No se pudo cargar Google Maps. Se muestra el mapa básico.'); };
-    document.head.appendChild(s);
-}
-
-window.onMapsReady = function () {
-    state.mapsReady = true;
-    map = new google.maps.Map($('gmap'), {
-        center: { lat: -11.95, lng: -77.12 }, zoom: 11, styles: DARK_STYLE,
-        disableDefaultUI: true, zoomControl: true, fullscreenControl: true, gestureHandling: 'greedy'
-    });
-    dirService = new google.maps.DirectionsService();
-    trafficLayer = new google.maps.TrafficLayer();
-    busMarker = new google.maps.Marker({
-        map: null, zIndex: 999, title: 'Posición estimada de la unidad',
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#00E5FF', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 3 }
-    });
-    $('btn-traffic').onclick = function () {
-        trafficOn = !trafficOn;
-        trafficLayer.setMap(trafficOn ? map : null);
-        this.classList.toggle('on', trafficOn);
-    };
-    $('btn-center').onclick = fitRoute;
-    loadRoute(state.idx);
-    setInterval(function () { if (state.mapsReady && !document.hidden) fetchDirections(state.idx, true); }, CONFIG.REFRESH_MS);
-};
-
-function fitRoute() {
-    if (!map || !state.data) return;
-    const b = new google.maps.LatLngBounds();
-    state.data.path.forEach(p => b.extend(p));
-    map.fitBounds(b, 40);
-}
-
-function fetchDirections(idx, silent) {
-    const r = ROUTES[idx];
-    const pts = r.points;
-    const dep = state.dep || nextDeparture(r);
-    const depTime = new Date(Math.max(dep.getTime(), Date.now() + 60000));
-    const req = {
-        origin: { lat: pts[0].lat, lng: pts[0].lng },
-        destination: { lat: pts[pts.length - 1].lat, lng: pts[pts.length - 1].lng },
-        waypoints: pts.slice(1, -1).map(p => ({ location: { lat: p.lat, lng: p.lng }, stopover: true })),
-        travelMode: google.maps.TravelMode.DRIVING,
-        drivingOptions: { departureTime: depTime, trafficModel: google.maps.TrafficModel.BEST_GUESS },
-        optimizeWaypoints: false
-    };
-    return new Promise(function (resolve) {
-        dirService.route(req, function (res, status) {
-            if (idx !== state.idx) return resolve(false);
-            if (status !== 'OK' || !res.routes[0]) {
-                if (!silent) { const n = $('map-note'); n.textContent = 'Google Maps no pudo calcular la ruta (' + status + '). Se usan los horarios programados.'; n.style.display = 'block'; }
-                state.data = null; renderStats(); renderTimeline();
-                return resolve(false);
-            }
-            $('map-note').style.display = 'none';
-            const route = res.routes[0];
-            let free = 0, live = 0, dist = 0;
-            const cum = [];
-            route.legs.forEach(function (l) {
-                free += l.duration.value;
-                live += (l.duration_in_traffic ? l.duration_in_traffic.value : l.duration.value);
-                dist += l.distance.value;
-                cum.push(live);
-            });
-            const path = route.overview_path;
-            const cumD = [0];
-            for (let i = 1; i < path.length; i++) cumD.push(cumD[i - 1] + google.maps.geometry.spherical.computeDistanceBetween(path[i - 1], path[i]));
-            state.data = { free: free, total: live, dist: dist, legCum: cum, path: path, cumD: cumD, hasTraffic: !!route.legs[0].duration_in_traffic };
-            drawRoute(r);
-            renderStats(); renderTimeline();
-            resolve(true);
-        });
-    });
-}
-
-function drawRoute(r) {
-    if (polyline) polyline.setMap(null);
-    pointMarkers.forEach(m => m.setMap(null)); pointMarkers = [];
-    polyline = new google.maps.Polyline({ path: state.data.path, strokeColor: '#00E5FF', strokeOpacity: 0.9, strokeWeight: 5, map: map });
-    r.points.forEach(function (p, i) {
-        const edge = (i === 0 || i === r.points.length - 1);
-        pointMarkers.push(new google.maps.Marker({
-            map: map, position: { lat: p.lat, lng: p.lng }, title: p.n,
-            icon: { path: google.maps.SymbolPath.CIRCLE, scale: edge ? 7 : 4.5, fillColor: edge ? '#00E5FF' : '#ffffff', fillOpacity: 1, strokeColor: '#050505', strokeWeight: 2 }
-        }));
-    });
-    if (!state.fitted || state.fitted !== r.id) { fitRoute(); state.fitted = r.id; }
-}
-
-function pointAt(frac) {
-    const d = state.data;
-    if (!d || !d.path.length) return null;
-    const target = Math.max(0, Math.min(1, frac)) * d.cumD[d.cumD.length - 1];
-    for (let i = 1; i < d.cumD.length; i++) {
-        if (d.cumD[i] >= target) {
-            const seg = d.cumD[i] - d.cumD[i - 1] || 1, t = (target - d.cumD[i - 1]) / seg;
-            return new google.maps.LatLng(
-                d.path[i - 1].lat() + (d.path[i].lat() - d.path[i - 1].lat()) * t,
-                d.path[i - 1].lng() + (d.path[i].lng() - d.path[i - 1].lng()) * t);
-        }
-    }
-    return d.path[d.path.length - 1];
-}
-
-/* ---------------- RENDER: estadísticas y línea de tiempo ---------------- */
-function renderStats() {
-    const r = ROUTES[state.idx], d = state.data;
-    if (!d) { renderFallbackStats(); return; }
-    $('st-free').textContent = fmtDur(d.free);
-    $('st-live').textContent = fmtDur(d.total);
-    $('st-dist').textContent = (d.dist / 1000).toFixed(1) + ' km';
-    $('st-eta').textContent = fmtHM(new Date(state.dep.getTime() + d.total * 1000));
-    const ratio = d.total / d.free, el = $('st-live'), tx = $('st-traffic');
-    el.className = ''; tx.className = '';
-    let label, cls;
-    if (!d.hasTraffic) { label = 'Sin datos de tráfico'; cls = ''; }
-    else if (ratio < 1.15) { label = 'Tránsito fluido'; cls = 't-ok'; }
-    else if (ratio < 1.4) { label = 'Tránsito moderado'; cls = 't-warn'; }
-    else { label = 'Tránsito pesado'; cls = 't-bad'; }
-    tx.textContent = label; if (cls) { el.classList.add(cls); tx.classList.add(cls); }
-}
-
-function renderFallbackStats() {
-    const r = ROUTES[state.idx];
-    const win = (r.tE - r.tS) * 3600;
-    $('st-free').textContent = '—';
-    $('st-live').textContent = '—';
-    $('st-traffic').textContent = 'Requiere API key';
-    $('st-traffic').className = '';
-    $('st-dist').textContent = '—';
-    $('st-eta').textContent = fmtHM(new Date(state.dep.getTime() + win * 1000)) + '*';
-    renderTimeline();
-}
-
-function renderTimeline() {
-    const r = ROUTES[state.idx], d = state.data, box = $('timeline');
-    if (!d) {
-        box.innerHTML = '<p class="tl-empty">Las horas estimadas por punto aparecerán aquí cuando Google Maps esté conectado. Mientras tanto, la ventana programada del servicio es de <b>' + fmtHM(state.dep) + '</b> a <b>' + fmtHM(new Date(state.dep.getTime() + (r.tE - r.tS) * 3600e3)) + '</b>.</p>';
-        return;
-    }
-    const now = Date.now(), dep = state.dep.getTime();
-    let html = '', nextMarked = false;
-    r.points.forEach(function (p, i) {
-        const sec = i === 0 ? 0 : d.legCum[i - 1];
-        const t = new Date(dep + sec * 1000);
-        const passed = t.getTime() < now && now >= dep;
-        let cls = '';
-        if (passed) cls = 'done';
-        else if (!nextMarked && now >= dep) { cls = 'next'; nextMarked = true; }
-        html += '<div class="tl-item ' + cls + '"><div><p class="n">' + p.n + '</p><p class="t">' + fmtHM(t) + (i === 0 ? ' · salida' : '') + '</p></div></div>';
-    });
-    box.innerHTML = html;
-}
-
-/* ---------------- SELECCIÓN DE RUTA ---------------- */
-function selectRoute(idx) { state.idx = idx; loadRoute(idx); }
-
-function loadRoute(idx) {
-    const r = ROUTES[idx];
+function selectRoute(idx) {
+    activeIdx = idx;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    $('tab-' + idx).classList.add('active');
-    state.dep = nextDeparture(r);
-    state.data = null; state.reloading = false;
+    $('route-' + idx).classList.add('active');
+    const r = ROUTES[idx];
+    $('main-map').src = r.map;
+    $('map-title').textContent = r.name;
     $('route-name').textContent = r.name;
     $('p-orig').textContent = r.orig;
     $('p-dest').textContent = r.dest;
-    renderStops(r);
-
-    // enlace "Abrir en Google Maps" (no requiere API key)
-    const p = r.points, mids = p.slice(1, -1).slice(0, 8).map(x => x.lat + ',' + x.lng).join('|');
-    $('btn-open').href = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' + p[0].lat + ',' + p[0].lng +
-        '&destination=' + p[p.length - 1].lat + ',' + p[p.length - 1].lng + (mids ? '&waypoints=' + encodeURIComponent(mids) : '');
-
-    if (state.mapsReady) {
-        if (busMarker) busMarker.setMap(null);
-        renderTimeline();
-        fetchDirections(idx, false);
-    } else {
-        $('fallback-map').src = r.embed;
-        renderFallbackStats();
-    }
-    tick();
+    $('s-stops').textContent = r.stops.length;
+    $('s-dep').textContent = hm(r.tS);
+    $('s-arr').textContent = hm(r.tE);
+    $('stops-container').innerHTML = r.stops.map((s, i) =>
+        `<div class="stop${s.toLowerCase().includes('inhabilitado') ? ' off' : ''}" data-i="${i}"><span class="n">${String(i + 1).padStart(2, '0')}</span>${s}</div>`).join('');
+    updateTracker();
 }
 
-/* ---------------- RELOJ / ESTADO EN VIVO ---------------- */
-function tick() {
+function updateTracker() {
     const now = new Date();
+    const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+    const d = now.getDay();
     $('clock').textContent = now.toLocaleTimeString('es-PE', { hour12: false });
 
-    // puntos verdes en las pestañas de servicios activos
-    ROUTES.forEach(function (r) {
-        const h = now.getHours() + now.getMinutes() / 60, wd = now.getDay();
-        $('dot-' + r.id).classList.toggle('on', wd >= 1 && wd <= 5 && h >= r.tS && h <= r.tE);
-    });
+    ROUTES.forEach((r, i) => $('dot-' + i).classList.toggle('on', d >= 1 && d <= 5 && h >= r.tS && h <= r.tE));
 
-    const r = ROUTES[state.idx];
-    if (!state.dep) return;
-    const winSec = (r.tE - r.tS) * 3600;
-    const total = state.data ? state.data.total : winSec;
-    const elapsed = (now.getTime() - state.dep.getTime()) / 1000;
+    const c = ROUTES[activeIdx];
+    const run = (d >= 1 && d <= 5) && h >= c.tS && h <= c.tE;
+    const badge = $('status-badge');
+    const stops = document.querySelectorAll('.stop');
+    stops.forEach(s => s.classList.remove('passed', 'now'));
 
-    const badge = $('status-badge'), st = $('status-text'), eta = $('eta-txt');
-    const fill = $('bar-fill'), icon = $('bus-icon');
-    badge.className = 'badge idle'; $('status-badge').firstElementChild.className = 'live-dot';
-
-    let pct = 0;
-    if (elapsed < 0) {
-        st.textContent = 'Sale ' + dayLabel(state.dep) + ' a las ' + fmtHM(state.dep);
-        eta.textContent = 'SALE EN ' + fmtDur(-elapsed).toUpperCase();
-        $('sched-line').textContent = 'Salida programada ' + dayLabel(state.dep) + ' ' + fmtHM(state.dep) + (state.data ? ' · llegada estimada ' + fmtHM(new Date(state.dep.getTime() + total * 1000)) : '') + '.';
-        if (busMarker) busMarker.setMap(null);
-    } else if (elapsed <= winSec) {
-        if (elapsed >= total) {
-            pct = 100; st.textContent = 'Llegó a destino'; eta.textContent = 'SERVICIO FINALIZADO';
-            if (busMarker) busMarker.setMap(null);
-        } else {
-            pct = (elapsed / total) * 100;
-            badge.className = 'badge run'; badge.firstElementChild.className = 'live-dot on';
-            st.textContent = 'En tránsito (estimado)';
-            eta.textContent = 'LLEGA EN ' + fmtDur(total - elapsed).toUpperCase();
-            if (busMarker && state.data) { busMarker.setPosition(pointAt(pct / 100)); busMarker.setMap(map); }
-        }
-        $('sched-line').textContent = 'Salida programada ' + fmtHM(state.dep) + ' · llegada estimada ' + fmtHM(new Date(state.dep.getTime() + total * 1000)) + '. La posición se estima según horario y tráfico; no es un GPS real de la unidad.';
-    } else if (!state.reloading) {
-        state.reloading = true; loadRoute(state.idx); return;
+    if (run) {
+        const pr = ((h - c.tS) / (c.tE - c.tS)) * 100;
+        $('bar-fill').style.width = pr + '%'; $('bus-icon').style.left = pr + '%';
+        badge.className = 'badge run'; $('status-text').textContent = 'En tránsito';
+        const mins = Math.max(0, Math.round((c.tE - h) * 60));
+        $('eta-txt').textContent = 'Llega en ~' + mins + ' min';
+        $('s-state').textContent = 'En ruta'; $('s-state').style.color = 'var(--ok)';
+        const cur = Math.min(stops.length - 1, Math.floor((pr / 100) * stops.length));
+        stops.forEach((s, i) => { if (i < cur) s.classList.add('passed'); else if (i === cur) s.classList.add('now'); });
+    } else {
+        $('bar-fill').style.width = '0%'; $('bus-icon').style.left = '0%';
+        badge.className = 'badge'; $('status-text').textContent = 'Fuera de horario';
+        $('eta-txt').textContent = 'Sale a las ' + hm(c.tS);
+        $('s-state').textContent = 'En espera'; $('s-state').style.color = '#aab4be';
     }
-    fill.style.width = pct + '%'; icon.style.left = pct + '%';
-    if (state.data && elapsed >= 0 && elapsed <= winSec) renderTimelineLight(elapsed);
 }
 
-let lastTl = 0;
-function renderTimelineLight() { const t = Date.now(); if (t - lastTl > 30000) { lastTl = t; renderTimeline(); } }
+/* Pantalla completa del mapa */
+$('btn-full').addEventListener('click', function () {
+    const el = $('map-shell');
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (el.requestFullscreen) el.requestFullscreen();
+});
 
-/* ---------------- INICIO ---------------- */
+/* ---------------- CRÉDITO ANIMADO ---------------- */
+(function () {
+    // letras con onda
+    const c = $('creator'), txt = c.textContent;
+    c.innerHTML = '<span class="letters">' + txt.split('').map((ch, i) => '<span style="animation-delay:' + (i * 0.12) + 's">' + ch + '</span>').join('') + '</span>';
+
+    // texto que se escribe solo
+    const phrases = ['Diseñando la movilidad universitaria', 'Programando cada ruta con cariño', 'Conectando a la comunidad UNAC', 'Que nunca pierdas tu bus 🚌'];
+    const el = $('typed'); let p = 0, i = 0, del = false;
+    function type() {
+        const full = phrases[p];
+        el.textContent = full.slice(0, i);
+        if (!del && i < full.length) { i++; setTimeout(type, 55); }
+        else if (!del) { del = true; setTimeout(type, 1600); }
+        else if (i > 0) { i--; setTimeout(type, 28); }
+        else { del = false; p = (p + 1) % phrases.length; setTimeout(type, 400); }
+    }
+    type();
+
+    // aparece al hacer scroll
+    const f = $('credit');
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es, ob) { es.forEach(e => { if (e.isIntersecting) { f.classList.add('in'); ob.disconnect(); } }); }, { threshold: 0.15 }).observe(f);
+    } else f.classList.add('in');
+})();
+
 buildTabs();
-state.dep = nextDeparture(ROUTES[0]);
-loadRoute(0);
-loadMaps();
-setInterval(tick, 1000);
+selectRoute(0);
+setInterval(updateTracker, 1000);
 </script>
 </body>
 </html>
